@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   PROVIDERS_SAVE_CREDENTIAL: 'providers:save-credential',
   PROVIDERS_DELETE_CREDENTIAL: 'providers:delete-credential',
   PROVIDERS_VALIDATE_CREDENTIAL: 'providers:validate-credential',
+  PROVIDERS_TEST_CONNECTION: 'providers:test-connection',
 
   // Models
   MODELS_LIST_AVAILABLE: 'models:list-available',

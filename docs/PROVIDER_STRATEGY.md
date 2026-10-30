@@ -183,8 +183,32 @@ export interface ProviderHealthState {
   cooldownUntil?: number; // Epoch timestamp
   lastErrorMessage?: string;
   activeRequests: number;
+  maxConcurrency: number;
 }
 ```
+
+### Advanced Routing & Turn-Integrity Patterns (From FreeLLM Reference)
+
+1. **Dead-Turn Recovery (Pre-First-Byte Failover):**
+   - The stream manager monitors `hasStreamedFirstByte`.
+   - If an error (`429`, timeout, in-band error, or network drop) happens before ANY byte reaches the renderer, the stream is canceled and invisibly retried on the next available provider. The user experiences zero error messages and zero interruption.
+   - If failure occurs after first byte was emitted, the stream halts cleanly and renders an inline "Resume with Fallback" prompt.
+
+2. **In-Band Anomaly Detection (`inBandErrorDetector`):**
+   - Some free endpoints return HTTP 200 with an in-band credit exhaustion notice in the message body (e.g. *"insufficient credits"*, *"top-up required"*, *"rate limit exceeded"*).
+   - The router analyzes the first response chunk. If matched, it converts the response into a structured `RateLimitExceeded` / `QuotaExhausted` error and triggers failover.
+
+3. **Multi-Key Concurrency Leases (`acquireLease` / `releaseLease`):**
+   - Prevents parallel agent tool calls from overloading a single API key's concurrency limit.
+   - If a key has reached its active lease cap, the router automatically selects an alternate configured key or fallback provider.
+
+4. **Human-Readable Cooldown Expiry & Exhaustion Summary (`formatResetEta`):**
+   - When all candidate providers are unavailable, the router produces actionable, client-safe diagnostics:
+     `"All models exhausted. Gemini 2.5: 429 Rate limited (resets in ~45s). Groq: 429 TPM cap (resets in ~2m). Add keys or wait for limits to reset."`
+
+5. **Pre-Flight Context Floor Filtering (`passesContextWindowFloor`):**
+   - Automatically computes `estimatedPromptTokens = (promptChars / 3.8) + attachedFilesTokens`.
+   - Bypasses models whose `contextWindow` cannot accommodate the prompt, avoiding wasteful 400/413 round-trips.
 
 ---
 

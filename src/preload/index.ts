@@ -50,6 +50,14 @@ const electronApi: IElectronApi = {
   validateCredential: (credentialId: string): Promise<{ valid: boolean; error?: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_VALIDATE_CREDENTIAL, credentialId)
   },
+  testProviderConnection: (payload: {
+    providerId: string
+    apiKey?: string
+    credentialId?: string
+    customEndpoint?: string
+  }): Promise<{ success: boolean; latencyMs: number; modelsCount: number; error?: string }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_TEST_CONNECTION, payload)
+  },
 
   // Models
   listModels: (providerId?: string): Promise<ModelDescriptorDTO[]> => {

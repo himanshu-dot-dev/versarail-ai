@@ -4,12 +4,14 @@ import { SenderVerifier } from '../sender-verifier'
 import { SecretStorageService } from '../../security/safe-storage.service'
 import { SqliteDatabase } from '../../storage/sqlite-database'
 import { SaveCredentialSchema } from '@shared/schemas/provider.schema'
-import { ProviderMetadataDTO } from '@shared/domain/models'
+import { ProviderMetadataDTO, ModelDescriptorDTO, ProviderId } from '@shared/domain/models'
+import { ProviderRegistry } from '../../providers/provider-registry'
 import { randomUUID } from 'crypto'
 
 export function registerProviderHandlers(): void {
   const secretStore = SecretStorageService.getInstance()
   const db = SqliteDatabase.getInstance()
+  const registry = ProviderRegistry.getInstance()
 
   // 1. List Providers & Credentials (Masked)
   ipcMain.handle(IPC_CHANNELS.PROVIDERS_LIST, async (event: IpcMainInvokeEvent): Promise<ProviderMetadataDTO[]> => {
@@ -108,5 +110,117 @@ export function registerProviderHandlers(): void {
       return { success: true }
     }
   )
-}
 
+  // 4. Validate Saved Credential
+  ipcMain.handle(
+    IPC_CHANNELS.PROVIDERS_VALIDATE_CREDENTIAL,
+    async (
+      event: IpcMainInvokeEvent,
+      credentialId: string
+    ): Promise<{ valid: boolean; latencyMs: number; modelsCount: number; error?: string }> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.PROVIDERS_VALIDATE_CREDENTIAL)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      const meta = secretStore.getCredentialMetadata(credentialId)
+      const apiKey = await secretStore.getDecryptedKey(credentialId)
+      if (!meta || !apiKey) {
+        return { valid: false, latencyMs: 0, modelsCount: 0, error: 'Credential not found in secure storage' }
+      }
+
+      const adapter = registry.getAdapter(meta.providerId as ProviderId)
+      if (!adapter) {
+        return { valid: false, latencyMs: 0, modelsCount: 0, error: `No adapter registered for provider ${meta.providerId}` }
+      }
+
+      const result = await adapter.validateKey(apiKey, meta.customEndpoint)
+
+      // Update SQLite health status
+      const status = result.valid ? 'healthy' : 'unauthenticated'
+      const updateStmt = db.prepare('UPDATE provider_metadata SET health_status = ? WHERE id = ?')
+      updateStmt.run(status, credentialId)
+
+      return {
+        valid: result.valid,
+        latencyMs: result.latencyMs,
+        modelsCount: result.modelsCount,
+        error: result.error
+      }
+    }
+  )
+
+  // 5. Test Provider Connection (for new or existing keys)
+  ipcMain.handle(
+    IPC_CHANNELS.PROVIDERS_TEST_CONNECTION,
+    async (
+      event: IpcMainInvokeEvent,
+      payload: { providerId: string; apiKey?: string; credentialId?: string; customEndpoint?: string }
+    ): Promise<{ success: boolean; latencyMs: number; modelsCount: number; error?: string }> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.PROVIDERS_TEST_CONNECTION)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      let keyToTest = payload.apiKey
+      let endpoint = payload.customEndpoint
+
+      if (!keyToTest && payload.credentialId) {
+        const meta = secretStore.getCredentialMetadata(payload.credentialId)
+        const decryptedKey = await secretStore.getDecryptedKey(payload.credentialId)
+        if (decryptedKey) {
+          keyToTest = decryptedKey
+          endpoint = endpoint || meta?.customEndpoint
+        }
+      }
+
+      if (!keyToTest) {
+        return { success: false, latencyMs: 0, modelsCount: 0, error: 'No API key provided for connection test' }
+      }
+
+      const adapter = registry.getAdapter(payload.providerId as ProviderId)
+      if (!adapter) {
+        return { success: false, latencyMs: 0, modelsCount: 0, error: `No adapter registered for provider ${payload.providerId}` }
+      }
+
+      const result = await adapter.validateKey(keyToTest, endpoint)
+
+      return {
+        success: result.valid,
+        latencyMs: result.latencyMs,
+        modelsCount: result.modelsCount,
+        error: result.error
+      }
+    }
+  )
+
+  // 6. List Available Models
+  ipcMain.handle(
+    IPC_CHANNELS.MODELS_LIST_AVAILABLE,
+    async (event: IpcMainInvokeEvent, providerId?: string): Promise<ModelDescriptorDTO[]> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.MODELS_LIST_AVAILABLE)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      const adapters = providerId
+        ? [registry.getAdapter(providerId as ProviderId)].filter(Boolean)
+        : registry.getAllAdapters()
+
+      const allModels: ModelDescriptorDTO[] = []
+
+      for (const adapter of adapters) {
+        if (!adapter) continue
+        // Retrieve key if any
+        const creds = secretStore.listCredentialMetadata().filter((c) => c.providerId === adapter.id)
+        let key = ''
+        if (creds.length > 0) {
+          const decrypted = await secretStore.getDecryptedKey(creds[0].id)
+          if (decrypted) key = decrypted
+        }
+
+        const models = await adapter.listModels(key)
+        allModels.push(...models)
+      }
+
+      return allModels
+    }
+  )
+}

@@ -111,10 +111,12 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 * **Prerequisites:** Milestone 2 complete.
 * **Tasks:**
   - Define `IProviderAdapter` contract and shared schemas in `src/shared/contracts/`.
+  - Implement reusable `OpenAICompatAdapter` base class handling SSE parsing, bearer auth, and model discovery.
   - Implement `gemini-adapter.ts` using `@google/genai` (validating models `gemini-2.5-flash`, `gemini-2.5-pro`).
-  - Implement `groq-adapter.ts` using `groq-sdk` (validating models `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`).
+  - Implement `groq-adapter.ts` using `groq-sdk` / `OpenAICompatAdapter` (validating models `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`).
+  - Implement in-band error detection and tool argument dialect repair (stripping markdown fences from tool call arguments).
   - Implement Provider Dashboard UI: add credential, label, live validation check, status badge, delete.
-* **Tests:** Unit tests with mocked HTTP responses for validation endpoints and credential encryption.
+* **Tests:** Unit tests with mocked HTTP responses for validation endpoints, in-band error detection, and credential encryption.
 * **Acceptance Criteria:** User can add, validate, and manage Gemini and Groq API keys; keys stored encrypted; credentials masked in UI.
 
 ---
@@ -125,11 +127,12 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 * **Tasks:**
   - Build `PromptComposer.tsx` and `ChatFeed.tsx` in React renderer.
   - Implement `agent-runtime.ts` streaming loop handling incoming token chunks.
+  - Implement **Dead-Turn Recovery Protocol**: track `hasStreamedFirstByte` so pre-first-byte errors failover invisibly with zero user interruption.
   - Implement IPC streaming channel (`agent:stream-token`) to update UI without blocking.
   - Persist conversation messages and run records in SQLite.
   - Implement user cancellation button triggering `AbortController`.
-* **Tests:** Unit tests for stream chunk assembly; integration test for conversation history retrieval.
-* **Acceptance Criteria:** Chat streams smoothly token-by-token; conversations persist across app reboots; cancellation halts stream immediately.
+* **Tests:** Unit tests for stream chunk assembly and pre-first-byte failover; integration test for conversation history retrieval.
+* **Acceptance Criteria:** Chat streams smoothly token-by-token; conversations persist across app reboots; pre-first-byte errors failover invisibly.
 
 ---
 
@@ -138,11 +141,13 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 * **Prerequisites:** Milestone 4 complete.
 * **Tasks:**
   - Implement `error-classifier.ts` mapping HTTP status codes and headers to `NormalizedProviderError`.
-  - Implement `failover-engine.ts` with retry backoff (jitter) and provider cooldown tracking.
+  - Implement `failover-engine.ts` with retry backoff (jitter), provider cooldown tracking, and concurrency leases (`acquireLease` / `releaseLease`).
+  - Implement Pre-Flight Context Floor Filtering (`passesContextWindowFloor`) to exclude models unable to fit the prompt.
+  - Implement human-readable cooldown countdowns (`formatResetEta`) and client-safe diagnostics (`summarizeExhaustion`).
   - Enforce privacy/workspace gating before failing over to alternative providers.
   - Display failover notifications and health badges in the React UI.
-* **Tests:** `tests/integration/provider-failover.test.ts` (simulating 429 rate limit failover from Groq to Gemini).
-* **Acceptance Criteria:** Simulated 429 triggers exponential backoff or automatic fallback without dropping conversation history or leaking secrets.
+* **Tests:** `tests/integration/provider-failover.test.ts` (simulating 429 rate limit failover from Groq to Gemini with human-readable reset countdown).
+* **Acceptance Criteria:** Simulated 429 triggers exponential backoff or automatic fallback without dropping conversation history or leaking secrets; exhaustion states show precise reset ETAs.
 
 ---
 

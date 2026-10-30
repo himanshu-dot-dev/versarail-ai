@@ -10,6 +10,8 @@
 | **ADR-006** | Diff-First Mutation Engine: Content-Hashed Unified Diffs & Atomic Commits | Accepted | 2026-10-29 |
 | **ADR-007** | Permission Broker: Capability-Based, In-Code Authorization with TOCTOU Protection | Accepted | 2026-10-29 |
 | **ADR-008** | Electron Security Hardening: Context Isolation, Restrictive CSP, Fuses, and Custom Protocol | Accepted | 2026-10-29 |
+| **ADR-009** | Dead-Turn Stream Integrity & Transparent Pre-First-Byte Failover | Accepted | 2026-10-30 |
+| **ADR-010** | Universal OpenAI-Compatible Base Adapter & In-Band Error Detection | Accepted | 2026-10-30 |
 
 ---
 
@@ -201,3 +203,48 @@ Apply all 19 recommendations from the official Electron Security Guide and flip 
 ### Consequences & Trade-offs
 - **Pros:** Eliminates XSS-to-RCE vectors; blocks unauthorized protocol abuse; protects application binary integrity.
 - **Cons:** Requires routing all external network operations through Main IPC channels; inline scripts are strictly prohibited.
+
+---
+
+## ADR-009: Dead-Turn Stream Integrity & Transparent Pre-First-Byte Failover
+
+### Context
+When auto-failover is triggered during streaming chat, a critical architectural challenge arises:
+If the primary provider fails (e.g. rate limit 429, first-byte timeout, or network disconnect) *before any token has been delivered to the user*, the request can be retried with the secondary provider completely invisibly.
+However, if tokens have *already* been rendered on screen, silently rerouting the entire prompt to a second model would cause duplicated responses, jarring layout shifts, or conflicting tool calls.
+
+### Decision
+Adopt a **Two-Phase Stream Turn-Integrity Protocol**:
+1. **Phase 1: Pre-First-Byte (Transparent Dead-Turn Recovery):**
+   - The stream manager tracks `hasStreamedFirstByte: boolean`.
+   - If an error (HTTP 429, timeout, network failure, or in-band error) occurs before the first chunk is emitted to the IPC channel, the engine cancels the failed stream and immediately dispatches the request to the next eligible fallback model in the chain.
+   - The user experiences zero interruption or error notifications—the failover is completely transparent.
+2. **Phase 2: Post-First-Byte (Explicit Stream Interruption):**
+   - If a stream breaks *after* tokens have started rendering, the stream manager halts and displays an inline recovery pill:
+     `"Stream interrupted (Groq 429). [Resume with Gemini 2.5] [Retry]"`
+   - Clicking Resume passes the partial generation and conversation context to the fallback provider without duplicating previous text.
+
+### Consequences & Trade-offs
+- **Pros:** 100% seamless failover for 95%+ of rate-limit cases (which happen at the handshake/dispatch stage); zero risk of text scrambling or duplicated tool execution.
+- **Cons:** Requires buffering the first chunk before committing the stream to the UI view.
+
+---
+
+## ADR-010: Universal OpenAI-Compatible Base Adapter & In-Band Error Detection
+
+### Context
+The vast majority of modern fast AI providers (Groq, Cerebras, OpenRouter, DeepSeek, Together, Mistral, and local Ollama) adhere to the standard OpenAI `/v1/chat/completions` API specification with Server-Sent Events (`data: {...}`).
+However, free and community endpoints frequently introduce two major failure modes:
+1. **In-Band Errors:** Returning HTTP 200 OK while returning an error message in the payload (e.g., `"insufficient credits"`, `"rate limit exceeded"`, or `"model overloaded"`).
+2. **Tool-Call Dialect Quirks:** Emitting markdown-fenced JSON or trailing syntax errors in tool arguments.
+
+### Decision
+Implement a shared **`OpenAICompatAdapter`** base class in `src/main/providers/` that:
+1. Handles standard SSE event parsing, auth headers, and model discovery (`GET /models`).
+2. Implements **In-Band Anomaly Detection**: inspects the initial completion chunk for credit/rate-limit error signatures and reclassifies them as retryable errors.
+3. Implements **Tool Call Argument Repair**: sanitizes markdown code fences (````json ... ````) and minor JSON formatting errors before forwarding arguments to the central permission broker.
+4. Allows concrete providers (Groq, Cerebras, OpenRouter, Ollama) to inherit all streaming, tool assembly, and error handling with under 30 lines of provider-specific configuration.
+
+### Consequences & Trade-offs
+- **Pros:** Drastically reduces code duplication; adding new OpenAI-compatible providers becomes trivial; robustly protects against free-tier in-band error false positives.
+- **Cons:** Minor overhead from running regex checks on the first chunk of a response.

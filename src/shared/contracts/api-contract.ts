@@ -27,6 +27,12 @@ export interface IElectronApi {
   }) => Promise<{ success: boolean; error?: string }>
   deleteCredential: (credentialId: string) => Promise<{ success: boolean }>
   validateCredential: (credentialId: string) => Promise<{ valid: boolean; error?: string }>
+  testProviderConnection: (payload: {
+    providerId: string
+    apiKey?: string
+    credentialId?: string
+    customEndpoint?: string
+  }) => Promise<{ success: boolean; latencyMs: number; modelsCount: number; error?: string }>
 
   // Models
   listModels: (providerId?: string) => Promise<ModelDescriptorDTO[]>

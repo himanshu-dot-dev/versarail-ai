@@ -192,6 +192,13 @@ export class SecretStorageService {
   }
 
   /**
+   * Returns metadata for a single credential by ID.
+   */
+  public getCredentialMetadata(credentialId: string): CredentialMetadata | undefined {
+    return this.listCredentialMetadata().find((c) => c.id === credentialId)
+  }
+
+  /**
    * Deletes a credential from disk and memory.
    */
   public deleteCredential(credentialId: string): boolean {

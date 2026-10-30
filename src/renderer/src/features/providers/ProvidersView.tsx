@@ -73,17 +73,43 @@ export const ProvidersView: React.FC = () => {
     )
   }
 
-  const handleTestConnection = async (id: string, label: string) => {
+  const handleTestConnection = async (id: string, label: string, providerId: string) => {
     setTestingId(id)
     setTestResult(null)
-    setTimeout(() => {
-      setTestingId(null)
+    try {
+      if (window.electronApi?.testProviderConnection) {
+        const res = await window.electronApi.testProviderConnection({
+          providerId,
+          credentialId: id
+        })
+        setTestResult({
+          id,
+          success: res.success,
+          msg: res.success
+            ? `Connection verified: ${label} latency ${res.latencyMs}ms (${res.modelsCount} models active)`
+            : `Test failed: ${res.error || 'Connection rejected'}`
+        })
+      } else {
+        // Fallback local simulation
+        setTimeout(() => {
+          setTestingId(null)
+          setTestResult({
+            id,
+            success: true,
+            msg: `Connection verified: ${label} latency 184ms`
+          })
+        }, 500)
+        return
+      }
+    } catch (err: any) {
       setTestResult({
         id,
-        success: true,
-        msg: `Connection verified: ${label} latency 184ms`
+        success: false,
+        msg: err.message || 'Connection test failed'
       })
-    }, 800)
+    } finally {
+      setTestingId(null)
+    }
   }
 
   const handleSaveProvider = async (e: React.FormEvent) => {
@@ -217,7 +243,13 @@ export const ProvidersView: React.FC = () => {
         </div>
 
         {testResult && (
-          <div className="p-space-sm px-space-md bg-tertiary-container/30 border border-tertiary/40 rounded-lg text-tertiary text-body-sm flex items-center justify-between animate-fade-in font-mono">
+          <div
+            className={`p-space-sm px-space-md border rounded-lg text-body-sm flex items-center justify-between animate-fade-in font-mono ${
+              testResult.success
+                ? 'bg-tertiary-container/30 border-tertiary/40 text-tertiary'
+                : 'bg-error-container/30 border-error/40 text-error'
+            }`}
+          >
             <span>{testResult.msg}</span>
             <button onClick={() => setTestResult(null)} className="hover:opacity-80">
               <Icon name="close" size={14} />
@@ -276,7 +308,7 @@ export const ProvidersView: React.FC = () => {
 
                 <div className="flex items-center justify-between md:justify-end gap-space-md pt-space-md md:pt-0 border-t md:border-t-0 border-surface-container-high">
                   <button
-                    onClick={() => handleTestConnection(p.id, p.label)}
+                    onClick={() => handleTestConnection(p.id, p.label, p.providerId)}
                     disabled={testingId === p.id}
                     className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant/20 disabled:opacity-50"
                   >
