@@ -1,0 +1,101 @@
+/* VersaRail AI Design Tokens & Color Schemes */
+
+:root,
+[data-theme="versarail-dark"],
+[data-theme="dark"] {
+  /* Surfaces & Backgrounds */
+  --color-surface: #13131b;
+  --color-surface-dim: #13131b;
+  --color-surface-bright: #393841;
+  --color-surface-container-lowest: #0d0d15;
+  --color-surface-container-low: #1b1b23;
+  --color-surface-container: #1f1f27;
+  --color-surface-container-high: #292932;
+  --color-surface-container-highest: #34343d;
+
+  /* Typography & Foreground */
+  --color-on-surface: #e4e1ed;
+  --color-on-surface-variant: #c7c4d7;
+  --color-inverse-surface: #e4e1ed;
+  --color-inverse-on-surface: #303038;
+
+  /* Outlines & Borders */
+  --color-outline: #908fa0;
+  --color-outline-variant: #464554;
+  --color-border-subtle: #212631;
+
+  /* Primary Interactive Accents (Electric Violet) */
+  --color-primary: #c0c1ff;
+  --color-on-primary: #1000a9;
+  --color-primary-container: #8083ff;
+  --color-on-primary-container: #0d0096;
+  --color-inverse-primary: #494bd6;
+
+  /* Secondary Accents (Soft Indigo) */
+  --color-secondary: #bdc2ff;
+  --color-on-secondary: #131e8c;
+  --color-secondary-container: #2f3aa3;
+  --color-on-secondary-container: #a8afff;
+
+  /* Tertiary Accents (Cyan Telemetry) */
+  --color-tertiary: #4cd7f6;
+  --color-on-tertiary: #003640;
+  --color-tertiary-container: #009eb9;
+  --color-on-tertiary-container: #002f38;
+
+  /* Error & Alerts */
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* Whole Canvas Background */
+  --color-background: #13131b;
+  --color-on-background: #e4e1ed;
+}
+
+/* Light Theme Scheme */
+[data-theme="light"] {
+  --color-surface: #f8fafc;
+  --color-surface-dim: #f1f5f9;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f8fafc;
+  --color-surface-container: #f1f5f9;
+  --color-surface-container-high: #e2e8f0;
+  --color-surface-container-highest: #cbd5e1;
+
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+  --color-inverse-surface: #1e293b;
+  --color-inverse-on-surface: #f8fafc;
+
+  --color-outline: #94a3b8;
+  --color-outline-variant: #cbd5e1;
+  --color-border-subtle: #e2e8f0;
+
+  --color-primary: #4f46e5;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #6366f1;
+  --color-on-primary-container: #ffffff;
+  --color-inverse-primary: #c7d2fe;
+
+  --color-secondary: #6366f1;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #e0e7ff;
+  --color-on-secondary-container: #3730a3;
+
+  --color-tertiary: #0284c7;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #bae6fd;
+  --color-on-tertiary-container: #0369a1;
+
+  --color-error: #ef4444;
+  --color-on-error: #ffffff;
+  --color-error-container: #fee2e2;
+  --color-on-error-container: #991b1b;
+
+  --color-background: #f8fafc;
+  --color-on-background: #0f172a;
+}
+
