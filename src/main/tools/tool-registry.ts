@@ -1,5 +1,6 @@
 import { ITool, ToolExecutionContext } from './tool.interface'
 import { ReadFileTool } from './builtin/read-file.tool'
+import { FileSearchTool } from './builtin/file-search-tool'
 import { WriteFileTool } from './builtin/write-file.tool'
 import { ListDirTool } from './builtin/list-dir.tool'
 import { ExecCmdTool } from './builtin/exec-cmd.tool'
@@ -41,6 +42,7 @@ export class ToolRegistry {
 
   private registerDefaults(): void {
     this.registerTool(new ReadFileTool())
+    this.registerTool(new FileSearchTool())
     this.registerTool(new WriteFileTool())
     this.registerTool(new ListDirTool())
     this.registerTool(new ExecCmdTool())
@@ -51,7 +53,17 @@ export class ToolRegistry {
   }
 
   public getTool(name: string): ITool | undefined {
-    return this.tools.get(name)
+    if (this.tools.has(name)) {
+      return this.tools.get(name)
+    }
+    // Handle aliases
+    if (name === 'file_read') {
+      return this.tools.get('read_file')
+    }
+    if (name === 'search_files') {
+      return this.tools.get('file_search')
+    }
+    return undefined
   }
 
   public listTools(): ITool[] {

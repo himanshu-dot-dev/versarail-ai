@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { useUiStore } from '../../app/useUiStore'
 
@@ -12,23 +12,61 @@ interface FileItem {
   ext?: string
 }
 
-const mockFiles: FileItem[] = [
-  { id: '1', name: 'src', path: 'src', type: 'folder', modified: 'Just now' },
-  { id: '2', name: 'docs', path: 'docs', type: 'folder', modified: '1 hour ago' },
-  { id: '3', name: 'tests', path: 'tests', type: 'folder', modified: '2 hours ago' },
-  { id: '4', name: 'package.json', path: 'package.json', type: 'file', size: '2.4 KB', modified: 'Today', ext: 'json' },
-  { id: '5', name: 'tsconfig.json', path: 'tsconfig.json', type: 'file', size: '1.1 KB', modified: 'Today', ext: 'json' },
-  { id: '6', name: 'electron.vite.config.ts', path: 'electron.vite.config.ts', type: 'file', size: '1.8 KB', modified: 'Today', ext: 'ts' },
-  { id: '7', name: 'tailwind.config.js', path: 'tailwind.config.js', type: 'file', size: '2.1 KB', modified: 'Today', ext: 'js' },
-  { id: '8', name: 'README.md', path: 'README.md', type: 'file', size: '4.2 KB', modified: 'Yesterday', ext: 'md' }
+const defaultFiles: FileItem[] = [
+  { id: '1', name: 'src', path: 'src', type: 'folder', modified: 'Folder' },
+  { id: '2', name: 'docs', path: 'docs', type: 'folder', modified: 'Folder' },
+  { id: '3', name: 'tests', path: 'tests', type: 'folder', modified: 'Folder' },
+  { id: '4', name: 'package.json', path: 'package.json', type: 'file', size: '2.4 KB', modified: 'Config', ext: 'json' },
+  { id: '5', name: 'tsconfig.json', path: 'tsconfig.json', type: 'file', size: '1.1 KB', modified: 'Config', ext: 'json' },
+  { id: '6', name: 'electron.vite.config.ts', path: 'electron.vite.config.ts', type: 'file', size: '1.8 KB', modified: 'Config', ext: 'ts' },
+  { id: '7', name: 'tailwind.config.js', path: 'tailwind.config.js', type: 'file', size: '2.1 KB', modified: 'Config', ext: 'js' },
+  { id: '8', name: 'README.md', path: 'README.md', type: 'file', size: '4.2 KB', modified: 'Docs', ext: 'md' }
 ]
 
 export const FileExplorerView: React.FC = () => {
   const { workspace, setActiveView } = useUiStore()
+  const [fileList, setFileList] = useState<FileItem[]>(defaultFiles)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(mockFiles[3])
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(defaultFiles[3])
 
-  const filteredFiles = mockFiles.filter((f) =>
+  useEffect(() => {
+    if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
+      window.electronApi
+        .inspectWorkspaceFiles('.')
+        .then((result) => {
+          if (result && (result.dirs.length > 0 || result.files.length > 0)) {
+            const items: FileItem[] = []
+            result.dirs.forEach((d, idx) => {
+              items.push({
+                id: `dir-${idx}`,
+                name: d,
+                path: d,
+                type: 'folder',
+                modified: 'Directory'
+              })
+            })
+            result.files.forEach((f, idx) => {
+              const ext = f.includes('.') ? f.split('.').pop() : undefined
+              items.push({
+                id: `file-${idx}`,
+                name: f,
+                path: f,
+                type: 'file',
+                ext,
+                modified: 'Workspace File'
+              })
+            })
+            setFileList(items)
+            if (items.length > 0) {
+              setSelectedFile(items[0])
+            }
+          }
+        })
+        .catch(console.error)
+    }
+  }, [workspace.path])
+
+  const filteredFiles = fileList.filter((f) =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -70,7 +108,7 @@ export const FileExplorerView: React.FC = () => {
         <div className="flex-1 bg-surface-container-low rounded-xl border border-outline-variant/20 overflow-y-auto p-space-md flex flex-col gap-1">
           <div className="flex items-center gap-2 px-space-md py-space-sm text-on-surface-variant font-mono text-[11px] border-b border-surface-container-high mb-1">
             <Icon name="folder_open" size={16} className="text-primary" />
-            <span className="truncate">{workspace.path || 'C:\\Users\\hs521\\Desktop\\Devlopment\\ai-agent-harness'}</span>
+            <span className="truncate">{workspace.path || 'No Workspace Open'}</span>
           </div>
 
           {filteredFiles.map((item) => {
@@ -165,4 +203,3 @@ export const FileExplorerView: React.FC = () => {
 }
 
 export default FileExplorerView
-

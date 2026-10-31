@@ -6,12 +6,14 @@ import { safeStorage } from 'electron'
 import { registerProviderHandlers } from './handlers/provider-handlers'
 import { registerChatHandlers } from './handlers/chat-handlers'
 import { registerPermissionHandlers } from './handlers/permission-handlers'
+import { registerWorkspaceHandlers } from './handlers/workspace-handlers'
 
 export function registerIpcHandlers(): void {
   // Register modular domain handlers
   registerProviderHandlers()
   registerChatHandlers()
   registerPermissionHandlers()
+  registerWorkspaceHandlers()
 
   // Window Controls
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, (event: IpcMainEvent) => {

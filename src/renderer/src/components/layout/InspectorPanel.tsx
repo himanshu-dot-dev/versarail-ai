@@ -1,9 +1,21 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useUiStore, InspectorTab } from '../../app/useUiStore'
 import Icon from '../common/Icon'
 
 export const InspectorPanel: React.FC = () => {
-  const { inspectorTab, setInspectorTab, isInspectorOpen, toggleInspector } = useUiStore()
+  const { inspectorTab, setInspectorTab, isInspectorOpen, toggleInspector, workspace } = useUiStore()
+  const [workspaceTree, setWorkspaceTree] = useState<{ files: string[]; dirs: string[] } | null>(null)
+
+  useEffect(() => {
+    if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
+      window.electronApi
+        .inspectWorkspaceFiles('.')
+        .then((res) => {
+          if (res) setWorkspaceTree(res)
+        })
+        .catch(console.error)
+    }
+  }, [workspace.path])
 
   if (!isInspectorOpen) {
     return (
@@ -54,52 +66,89 @@ export const InspectorPanel: React.FC = () => {
         {/* Tab 1: Files */}
         {inspectorTab === 'files' && (
           <div className="flex flex-col gap-space-xs">
-            <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface">
-              <Icon name="folder_open" size={15} className="text-primary shrink-0" />
-              <span className="font-medium font-mono text-[11px]">src</span>
-            </div>
-            <div className="flex flex-col gap-0.5 pl-4">
-              <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                <Icon name="folder" size={15} className="text-primary shrink-0" />
-                <span className="font-mono text-[11px]">auth</span>
-              </div>
-              <div className="flex flex-col gap-0.5 pl-4">
-                <div className="flex items-center justify-between px-space-sm py-1 rounded bg-surface-container text-on-surface">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Icon name="description" size={14} className="text-tertiary shrink-0" />
-                    <span className="truncate font-mono text-[11px]">authService.ts</span>
-                  </div>
-                  <span className="text-[10px] text-tertiary font-mono font-bold">M</span>
+            {workspaceTree && (workspaceTree.dirs.length > 0 || workspaceTree.files.length > 0) ? (
+              <>
+                <div className="flex items-center gap-space-sm px-space-sm py-1 rounded bg-surface-container text-on-surface font-medium font-mono text-[11px] mb-1">
+                  <Icon name="folder_open" size={15} className="text-primary shrink-0" />
+                  <span className="truncate">{workspace.name || 'workspace'}</span>
                 </div>
+
+                {workspaceTree.dirs.map((dir) => (
+                  <div
+                    key={`d-${dir}`}
+                    className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface"
+                  >
+                    <Icon name="folder" size={14} className="text-primary shrink-0" />
+                    <span className="font-mono text-[11px] truncate">{dir}</span>
+                  </div>
+                ))}
+
+                {workspaceTree.files.map((file) => (
+                  <div
+                    key={`f-${file}`}
+                    className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface"
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Icon
+                        name={file === 'package.json' ? 'cloud_upload' : 'description'}
+                        size={14}
+                        className={file === 'package.json' ? 'text-primary shrink-0' : 'text-tertiary shrink-0'}
+                      />
+                      <span className="truncate font-mono text-[11px]">{file}</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface">
+                  <Icon name="folder_open" size={15} className="text-primary shrink-0" />
+                  <span className="font-medium font-mono text-[11px]">src</span>
+                </div>
+                <div className="flex flex-col gap-0.5 pl-4">
+                  <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
+                    <Icon name="folder" size={15} className="text-primary shrink-0" />
+                    <span className="font-mono text-[11px]">auth</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 pl-4">
+                    <div className="flex items-center justify-between px-space-sm py-1 rounded bg-surface-container text-on-surface">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Icon name="description" size={14} className="text-tertiary shrink-0" />
+                        <span className="truncate font-mono text-[11px]">authService.ts</span>
+                      </div>
+                      <span className="text-[10px] text-tertiary font-mono font-bold">M</span>
+                    </div>
+                    <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Icon name="description" size={14} className="text-tertiary shrink-0" />
+                        <span className="truncate font-mono text-[11px]">authService.test.ts</span>
+                      </div>
+                      <span className="text-[10px] text-primary font-mono font-bold">N</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
+                    <div className="flex items-center gap-1.5">
+                      <Icon name="description" size={14} className="shrink-0" />
+                      <span className="font-mono text-[11px]">index.ts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <Icon name="cloud_upload" size={14} className="shrink-0" />
+                    <span className="font-mono text-[11px]">package.json</span>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Icon name="description" size={14} className="text-tertiary shrink-0" />
-                    <span className="truncate font-mono text-[11px]">authService.test.ts</span>
+                  <div className="flex items-center gap-1.5">
+                    <Icon name="description" size={14} className="shrink-0" />
+                    <span className="font-mono text-[11px]">README.md</span>
                   </div>
-                  <span className="text-[10px] text-primary font-mono font-bold">N</span>
                 </div>
-              </div>
-              <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                <div className="flex items-center gap-1.5">
-                  <Icon name="description" size={14} className="shrink-0" />
-                  <span className="font-mono text-[11px]">index.ts</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface mt-2">
-              <div className="flex items-center gap-1.5">
-                <Icon name="cloud_upload" size={14} className="shrink-0" />
-                <span className="font-mono text-[11px]">package.json</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-              <div className="flex items-center gap-1.5">
-                <Icon name="description" size={14} className="shrink-0" />
-                <span className="font-mono text-[11px]">README.md</span>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         )}
 
@@ -115,38 +164,21 @@ export const InspectorPanel: React.FC = () => {
               <p className="text-on-surface text-[11px]">Gemini 2.5 Flash initialized workflow</p>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-tertiary font-mono">10:42:04 AM</span>
-              <p className="text-on-surface text-[11px]">Read src/auth/authService.ts</p>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-secondary font-mono">10:42:05 AM</span>
-              <p className="text-on-surface text-[11px]">Diff prepared (2 files pending approval)</p>
+              <span className="text-[10px] text-tertiary font-mono">10:42:03 AM</span>
+              <p className="text-on-surface text-[11px]">Tool call executed: list_directory</p>
             </div>
           </div>
         )}
 
         {/* Tab 3: Changes */}
         {inspectorTab === 'changes' && (
-          <div className="flex flex-col gap-space-sm">
-            <div className="flex items-center justify-between font-mono text-[11px]">
-              <span className="text-on-surface-variant">2 files changed</span>
-              <span className="text-tertiary">+48 / -12</span>
-            </div>
-            <div className="p-2 rounded bg-surface-container flex flex-col gap-1 border border-outline-variant/30">
-              <span className="text-on-surface font-mono font-medium text-[11px]">
-                authService.ts
-              </span>
-              <span className="text-[10px] text-on-surface-variant">
-                Salt rotation logic added to PBKDF2 hash function
-              </span>
-            </div>
-            <div className="p-2 rounded bg-surface-container flex flex-col gap-1 border border-outline-variant/30">
-              <span className="text-on-surface font-mono font-medium text-[11px]">
-                authService.test.ts
-              </span>
-              <span className="text-[10px] text-on-surface-variant">
-                5 unit tests verifying timing attack protection
-              </span>
+          <div className="flex flex-col gap-space-md font-sans">
+            <div className="p-space-sm rounded-lg bg-surface-container border border-outline-variant/30">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-mono text-[11px] font-semibold text-on-surface">authService.ts</span>
+                <span className="text-[10px] text-tertiary font-mono">+12 / -4</span>
+              </div>
+              <p className="text-[11px] text-on-surface-variant">Added JWT session expiration check</p>
             </div>
           </div>
         )}
@@ -154,5 +186,3 @@ export const InspectorPanel: React.FC = () => {
     </div>
   )
 }
-
-export default InspectorPanel
