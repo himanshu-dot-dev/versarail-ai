@@ -27,6 +27,13 @@ export function setupProtocolHandler(rendererDistPath: string): void {
       // Normalize pathname
       let pathname = decodeURIComponent(url.pathname)
 
+      // Strip leading virtual host/dash prefix if present (e.g., app://-/index.html)
+      if (pathname.startsWith('/-/')) {
+        pathname = pathname.substring(2)
+      } else if (pathname.startsWith('-/')) {
+        pathname = pathname.substring(1)
+      }
+
       if (pathname === '/' || pathname === '') {
         pathname = '/index.html'
       }
