@@ -1,7 +1,7 @@
 export class SecretRedactor {
   private static patterns: RegExp[] = [
     // Google Gemini API Keys
-    /AIzaSy[A-Za-z0-9_-]{33}/g,
+    /AIzaSy[A-Za-z0-9_-]{20,45}/g,
     // OpenAI API Keys
     /sk-[a-zA-Z0-9]{20,T3BlbkFJ[a-zA-Z0-9]{20,}/g,
     /sk-proj-[a-zA-Z0-9_-]{48,}/g,

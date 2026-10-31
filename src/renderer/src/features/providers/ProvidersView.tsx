@@ -55,8 +55,9 @@ export const ProvidersView: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<{ id: string; success: boolean; msg: string } | null>(null)
+  const [healthMap, setHealthMap] = useState<Record<string, { status: string; cooldownEta?: string | null; lastError?: string }>>({})
 
-  // Fetch live credentials from main process on mount
+  // Fetch live credentials and health statuses on mount
   useEffect(() => {
     if (window.electronApi?.listProviders) {
       window.electronApi.listProviders().then((list) => {
@@ -65,6 +66,18 @@ export const ProvidersView: React.FC = () => {
         }
       }).catch(console.error)
     }
+
+    const fetchHealth = () => {
+      if (window.electronApi?.getProviderHealthStatuses) {
+        window.electronApi.getProviderHealthStatuses().then((map) => {
+          if (map) setHealthMap(map)
+        }).catch(console.error)
+      }
+    }
+
+    fetchHealth()
+    const interval = setInterval(fetchHealth, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleToggle = (id: string) => {
@@ -282,10 +295,41 @@ export const ProvidersView: React.FC = () => {
                       <span className="px-space-sm py-0.5 rounded-full bg-primary/10 text-primary text-label-sm font-mono">
                         Cloud
                       </span>
-                      <span className="flex items-center gap-1 text-tertiary text-label-sm font-mono">
-                        <span className={`w-1.5 h-1.5 rounded-full ${p.enabled ? 'bg-tertiary animate-pulse' : 'bg-outline'}`} />
-                        {p.enabled ? 'Connected' : 'Disabled'}
-                      </span>
+                      {(() => {
+                        const health = healthMap[p.id]
+                        const isCooldown = health?.status === 'cooldown' || p.healthStatus === 'cooldown'
+                        const isQuotaExhausted = health?.status === 'quota_exhausted' || p.healthStatus === 'quota_exhausted'
+                        const isDegraded = health?.status === 'degraded' || p.healthStatus === 'degraded'
+
+                        if (isCooldown) {
+                          return (
+                            <span className="px-space-sm py-0.5 rounded-full bg-error/15 text-error text-[11px] font-mono flex items-center gap-1 border border-error/20">
+                              <Icon name="schedule" size={12} />
+                              Cooldown {health?.cooldownEta || '~45s'}
+                            </span>
+                          )
+                        }
+                        if (isQuotaExhausted) {
+                          return (
+                            <span className="px-space-sm py-0.5 rounded-full bg-error/20 text-error text-[11px] font-mono border border-error/30">
+                              Quota Exhausted
+                            </span>
+                          )
+                        }
+                        if (isDegraded) {
+                          return (
+                            <span className="px-space-sm py-0.5 rounded-full bg-yellow-500/15 text-yellow-300 text-[11px] font-mono border border-yellow-500/20">
+                              Degraded
+                            </span>
+                          )
+                        }
+                        return (
+                          <span className="flex items-center gap-1 text-tertiary text-label-sm font-mono">
+                            <span className={`w-1.5 h-1.5 rounded-full ${p.enabled ? 'bg-tertiary animate-pulse' : 'bg-outline'}`} />
+                            {p.enabled ? 'Connected' : 'Disabled'}
+                          </span>
+                        )
+                      })()}
                     </div>
 
                     <div className="flex items-center gap-space-md mt-1 text-body-sm text-on-surface-variant flex-wrap font-mono">

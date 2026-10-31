@@ -6,6 +6,26 @@ import {
   PermissionResponseDTO
 } from '../domain/models'
 
+export interface FailoverEventDTO {
+  runId?: string
+  fromProvider: string
+  toProvider: string
+  fromModel: string
+  toModel: string
+  reason: string
+  isSilent: boolean
+  resetEta?: string | null
+}
+
+export interface ProviderHealthInfoDTO {
+  providerId: string
+  status: 'healthy' | 'degraded' | 'cooldown' | 'quota_exhausted'
+  cooldownUntil: number | null
+  cooldownEta?: string | null
+  activeRequests: number
+  lastError?: string
+}
+
 export interface IElectronApi {
   // System
   getSystemInfo: () => Promise<SystemInfo>
@@ -33,6 +53,7 @@ export interface IElectronApi {
     credentialId?: string
     customEndpoint?: string
   }) => Promise<{ success: boolean; latencyMs: number; modelsCount: number; error?: string }>
+  getProviderHealthStatuses: () => Promise<Record<string, ProviderHealthInfoDTO>>
 
   // Models
   listModels: (providerId?: string) => Promise<ModelDescriptorDTO[]>
@@ -41,13 +62,27 @@ export interface IElectronApi {
   respondPermission: (response: PermissionResponseDTO) => Promise<void>
   onPermissionRequest: (callback: (request: PermissionRequestDTO) => void) => () => void
 
+  // Conversations & Chat
+  listConversations: () => Promise<Array<{ id: string; title: string; selectedModel: string; workspacePath?: string | null; createdAt: string; updatedAt: string }>>
+  getConversation: (conversationId: string) => Promise<{ conversation: any; messages: any[] } | null>
+  deleteConversation: (conversationId: string) => Promise<boolean>
+  sendPrompt: (payload: {
+    conversationId: string
+    prompt: string
+    modelId: string
+    providerId: string
+    workspacePath?: string | null
+  }) => Promise<{ success: boolean; runId?: string; error?: string }>
+  cancelRun: (runId: string) => Promise<{ success: boolean }>
+
   // Agent Streaming & Activity Events
   onStreamToken: (
-    callback: (data: { runId: string; delta: string; isComplete: boolean }) => void
+    callback: (data: { runId: string; delta: string; isComplete: boolean; error?: string }) => void
   ) => () => void
   onActivityEvent: (
     callback: (event: { runId: string; type: string; summary: string; timestamp: string }) => void
   ) => () => void
+  onFailoverEvent: (callback: (data: FailoverEventDTO) => void) => () => void
 
   // Workspace
   selectWorkspaceFolder: () => Promise<{ canceled: boolean; path?: string }>

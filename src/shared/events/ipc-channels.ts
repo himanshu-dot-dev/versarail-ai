@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   PROVIDERS_DELETE_CREDENTIAL: 'providers:delete-credential',
   PROVIDERS_VALIDATE_CREDENTIAL: 'providers:validate-credential',
   PROVIDERS_TEST_CONNECTION: 'providers:test-connection',
+  PROVIDERS_GET_HEALTH_STATUSES: 'providers:get-health-statuses',
 
   // Models
   MODELS_LIST_AVAILABLE: 'models:list-available',
@@ -28,6 +29,7 @@ export const IPC_CHANNELS = {
   AGENT_CANCEL_RUN: 'agent:cancel-run',
   AGENT_STREAM_TOKEN: 'agent:stream-token',
   AGENT_ACTIVITY_EVENT: 'agent:activity-event',
+  AGENT_FAILOVER: 'agent:failover',
 
   // Permissions & Broker
   PERMISSION_REQUEST: 'permission:request',

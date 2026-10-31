@@ -4,10 +4,12 @@ import { SenderVerifier } from './sender-verifier'
 import { SystemInfo } from '@shared/domain/models'
 import { safeStorage } from 'electron'
 import { registerProviderHandlers } from './handlers/provider-handlers'
+import { registerChatHandlers } from './handlers/chat-handlers'
 
 export function registerIpcHandlers(): void {
   // Register modular domain handlers
   registerProviderHandlers()
+  registerChatHandlers()
 
   // Window Controls
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, (event: IpcMainEvent) => {

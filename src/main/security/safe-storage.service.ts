@@ -26,16 +26,34 @@ export interface CredentialMetadata {
 export class SecretStorageService {
   private static instance: SecretStorageService | null = null
   private storageFilePath: string
-  private sessionStore = new Map<string, string>() // In-memory session fallback
+  private sessionStore = new Map<
+    string,
+    {
+      apiKey: string
+      providerId: string
+      label: string
+      customEndpoint?: string
+      createdAt: string
+    }
+  >() // In-memory session fallback
 
-  private constructor() {
-    const userDataPath = app.getPath('userData')
-    this.storageFilePath = join(userDataPath, 'credentials.enc')
+  private constructor(customStoragePath?: string) {
+    if (customStoragePath) {
+      this.storageFilePath = customStoragePath
+    } else {
+      let userDataPath = ''
+      try {
+        userDataPath = app?.getPath ? app.getPath('userData') : process.cwd()
+      } catch {
+        userDataPath = process.cwd()
+      }
+      this.storageFilePath = join(userDataPath, 'credentials.enc')
+    }
   }
 
-  public static getInstance(): SecretStorageService {
+  public static getInstance(customStoragePath?: string): SecretStorageService {
     if (!this.instance) {
-      this.instance = new SecretStorageService()
+      this.instance = new SecretStorageService(customStoragePath)
     }
     return this.instance
   }
@@ -45,11 +63,11 @@ export class SecretStorageService {
    * Refuses persistence if Linux returns 'basic_text' (plaintext salt fallback).
    */
   public isHardwareEncryptionAvailable(): boolean {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!safeStorage?.isEncryptionAvailable || !safeStorage.isEncryptionAvailable()) {
       return false
     }
 
-    const backend = safeStorage.getSelectedStorageBackend()
+    const backend = safeStorage.getSelectedStorageBackend ? safeStorage.getSelectedStorageBackend() : 'unavailable'
     if (backend === 'basic_text') {
       console.warn(
         '[Security Warning] safeStorage backend is "basic_text". OS keyring is unavailable. Refusing disk persistence.'
@@ -86,7 +104,13 @@ export class SecretStorageService {
 
     if (!isHardwareSafe) {
       // Keep strictly in memory for the active desktop session
-      this.sessionStore.set(params.id, params.apiKey)
+      this.sessionStore.set(params.id, {
+        apiKey: params.apiKey,
+        providerId: params.providerId,
+        label: params.label,
+        customEndpoint: params.customEndpoint,
+        createdAt: new Date().toISOString()
+      })
       return { isSessionOnly: true }
     }
 
@@ -128,7 +152,7 @@ export class SecretStorageService {
   public async getDecryptedKey(credentialId: string): Promise<string | null> {
     // Check in-memory session store first
     if (this.sessionStore.has(credentialId)) {
-      return this.sessionStore.get(credentialId) || null
+      return this.sessionStore.get(credentialId)?.apiKey || null
     }
 
     const records = this.readStorageFile()
@@ -175,15 +199,16 @@ export class SecretStorageService {
     }
 
     // Include session-only credentials
-    for (const [id, key] of this.sessionStore.entries()) {
+    for (const [id, data] of this.sessionStore.entries()) {
       if (!list.some((r) => r.id === id)) {
         list.push({
           id,
-          providerId: 'session',
-          label: 'Session Credential',
-          maskedKey: SecretStorageService.maskKey(key),
+          providerId: data.providerId as any,
+          label: data.label,
+          customEndpoint: data.customEndpoint,
+          maskedKey: SecretStorageService.maskKey(data.apiKey),
           isSessionOnly: true,
-          createdAt: new Date().toISOString()
+          createdAt: data.createdAt
         })
       }
     }

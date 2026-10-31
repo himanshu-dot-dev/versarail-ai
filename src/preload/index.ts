@@ -58,6 +58,9 @@ const electronApi: IElectronApi = {
   }): Promise<{ success: boolean; latencyMs: number; modelsCount: number; error?: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_TEST_CONNECTION, payload)
   },
+  getProviderHealthStatuses: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_GET_HEALTH_STATUSES)
+  },
 
   // Models
   listModels: (providerId?: string): Promise<ModelDescriptorDTO[]> => {
@@ -76,6 +79,29 @@ const electronApi: IElectronApi = {
     return (): void => {
       ipcRenderer.removeListener(IPC_CHANNELS.PERMISSION_REQUEST, subscription)
     }
+  },
+
+  // Conversations & Chat
+  listConversations: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_LIST)
+  },
+  getConversation: (conversationId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_GET, conversationId)
+  },
+  deleteConversation: (conversationId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_DELETE, conversationId)
+  },
+  sendPrompt: (payload: {
+    conversationId: string
+    prompt: string
+    modelId: string
+    providerId: string
+    workspacePath?: string | null
+  }) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.AGENT_SEND_PROMPT, payload)
+  },
+  cancelRun: (runId: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.AGENT_CANCEL_RUN, runId)
   },
 
   // Agent Streaming & Events
@@ -105,6 +131,17 @@ const electronApi: IElectronApi = {
     ipcRenderer.on(IPC_CHANNELS.AGENT_ACTIVITY_EVENT, subscription)
     return (): void => {
       ipcRenderer.removeListener(IPC_CHANNELS.AGENT_ACTIVITY_EVENT, subscription)
+    }
+  },
+  onFailoverEvent: (
+    callback: (data: any) => void
+  ): (() => void) => {
+    const subscription = (_event: IpcRendererEvent, data: any): void => {
+      callback(data)
+    }
+    ipcRenderer.on(IPC_CHANNELS.AGENT_FAILOVER, subscription)
+    return (): void => {
+      ipcRenderer.removeListener(IPC_CHANNELS.AGENT_FAILOVER, subscription)
     }
   },
 

@@ -97,6 +97,10 @@ export class ProviderRegistry {
     return state.cooldownUntilMs
   }
 
+  public getKeyState(credentialId: string): KeyLeaseState | undefined {
+    return this.keyStates.get(credentialId)
+  }
+
   // --- Pre-Flight Context Floor Filtering ---
 
   public passesContextWindowFloor(estimatedPromptTokens: number, model: ModelDescriptorDTO): boolean {

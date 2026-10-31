@@ -6,6 +6,7 @@ import { SqliteDatabase } from '../../storage/sqlite-database'
 import { SaveCredentialSchema } from '@shared/schemas/provider.schema'
 import { ProviderMetadataDTO, ModelDescriptorDTO, ProviderId } from '@shared/domain/models'
 import { ProviderRegistry } from '../../providers/provider-registry'
+import { formatResetEta } from '../../providers/utils/reset-eta'
 import { randomUUID } from 'crypto'
 
 export function registerProviderHandlers(): void {
@@ -221,6 +222,51 @@ export function registerProviderHandlers(): void {
       }
 
       return allModels
+    }
+  )
+
+  // 7. Get Provider Health Statuses & Cooldown ETAs
+  ipcMain.handle(
+    IPC_CHANNELS.PROVIDERS_GET_HEALTH_STATUSES,
+    async (event: IpcMainInvokeEvent) => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.PROVIDERS_GET_HEALTH_STATUSES)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      const credentials = secretStore.listCredentialMetadata()
+      const healthMap: Record<string, {
+        providerId: string
+        status: 'healthy' | 'degraded' | 'cooldown' | 'quota_exhausted'
+        cooldownUntil: number | null
+        cooldownEta?: string | null
+        activeRequests: number
+        lastError?: string
+      }> = {}
+
+      const now = Date.now()
+      for (const cred of credentials) {
+        const cooldownUntil = registry.getCooldownExpiry(cred.id)
+        const state = registry.getKeyState(cred.id)
+        const isCooldown = cooldownUntil !== null && cooldownUntil > now
+
+        let status: 'healthy' | 'degraded' | 'cooldown' | 'quota_exhausted' = 'healthy'
+        if (isCooldown) {
+          status = state?.lastError?.includes('quota') ? 'quota_exhausted' : 'cooldown'
+        } else if (state?.lastError) {
+          status = 'degraded'
+        }
+
+        healthMap[cred.id] = {
+          providerId: cred.providerId,
+          status,
+          cooldownUntil,
+          cooldownEta: formatResetEta(cooldownUntil, now),
+          activeRequests: state?.activeRequests || 0,
+          lastError: state?.lastError
+        }
+      }
+
+      return healthMap
     }
   )
 }

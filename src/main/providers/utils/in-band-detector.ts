@@ -30,3 +30,8 @@ export function detectInBandError(text: string | null | undefined): string | nul
   return null
 }
 
+export const InBandDetector = {
+  detect: (text: string | null | undefined) => detectInBandError(text) !== null,
+  getMatch: (text: string | null | undefined) => detectInBandError(text)
+}
+
