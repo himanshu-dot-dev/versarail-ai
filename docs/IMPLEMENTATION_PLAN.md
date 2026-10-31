@@ -239,18 +239,18 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 | **TSK-M6-01** | Implement central ToolRegistry with Zod schema validation | M6 | P0 | High | `src/main/tools/tool-registry.ts` | TSK-M5-02 | **Completed** |
 | **TSK-M6-02** | Implement PermissionBroker with cryptographic argument hashing | M6 | P0 | High | `src/main/permissions/permission-broker.ts` | TSK-M6-01 | **Completed** |
 | **TSK-M6-03** | Build interactive Permission Review modal in React | M6 | P0 | Medium | `src/renderer/src/features/permissions/` | TSK-M6-02 | **Completed** |
-| **TSK-M7-01** | Implement native workspace folder picker dialog | M7 | P0 | Low | `src/main/workspace/workspace-service.ts` | TSK-M6-03 | Pending |
-| **TSK-M7-02** | Implement canonical path resolver with symlink escape defense | M7 | P0 | High | `src/main/workspace/path-canonicalizer.ts` | TSK-M7-01 | Pending |
-| **TSK-M7-03** | Implement file read and search tools with exclusion filtering | M7 | P0 | Medium | `src/main/tools/implementations/` | TSK-M7-02 | Pending |
-| **TSK-M8-01** | Implement file content SHA-256 hashing and diff engine | M8 | P0 | High | `src/main/changes/diff-engine.ts` | TSK-M7-03 | Pending |
-| **TSK-M8-02** | Build reviewable DiffViewer UI in React | M8 | P0 | Medium | `src/renderer/src/features/changes/` | TSK-M8-01 | Pending |
-| **TSK-M8-03** | Implement pre-application conflict detection and atomic writer | M8 | P0 | High | `src/main/changes/atomic-writer.ts` | TSK-M8-02 | Pending |
-| **TSK-M9-01** | Implement user interactive terminal using `@xterm/xterm` | M9 | P0 | High | `src/main/terminal/`, `src/renderer/src/features/terminal/` | TSK-M8-03 | Pending |
-| **TSK-M9-02** | Implement structured `AgentCommandRunner` with `child_process.spawn` | M9 | P0 | High | `src/main/agent/command-runner.ts` | TSK-M9-01 | Pending |
-| **TSK-M9-03** | Implement process-tree termination (`tree-kill`) and secret redaction | M9 | P0 | High | `src/main/agent/command-runner.ts` | TSK-M9-02 | Pending |
-| **TSK-M10-01**| Implement context window budgeting and summarization | M10| P1 | Medium | `src/main/agent/context-manager.ts` | TSK-M9-03 | Pending |
-| **TSK-M10-02**| Implement workspace data-sharing policies and privacy settings UI | M10| P0 | Medium | `src/renderer/src/features/settings/` | TSK-M10-01 | Pending |
-| **TSK-M10-03**| Build live Agent Activity Feed and Step Progress tracker | M10| P0 | Medium | `src/renderer/src/features/agent-activity/` | TSK-M10-02 | Pending |
+| **TSK-M7-01** | Implement native workspace folder picker dialog | M7 | P0 | Low | `src/main/workspace/workspace-service.ts` | TSK-M6-03 | **Completed** |
+| **TSK-M7-02** | Implement canonical path resolver with symlink escape defense | M7 | P0 | High | `src/main/workspace/path-canonicalizer.ts` | TSK-M7-01 | **Completed** |
+| **TSK-M7-03** | Implement file read and search tools with exclusion filtering | M7 | P0 | Medium | `src/main/tools/implementations/` | TSK-M7-02 | **Completed** |
+| **TSK-M8-01** | Implement file content SHA-256 hashing and diff engine | M8 | P0 | High | `src/main/changes/diff-engine.ts` | TSK-M7-03 | **Completed** |
+| **TSK-M8-02** | Build reviewable DiffViewer UI in React | M8 | P0 | Medium | `src/renderer/src/features/changes/` | TSK-M8-01 | **Completed** |
+| **TSK-M8-03** | Implement pre-application conflict detection and atomic writer | M8 | P0 | High | `src/main/changes/atomic-writer.ts` | TSK-M8-02 | **Completed** |
+| **TSK-M9-01** | Implement user interactive terminal using `@xterm/xterm` | M9 | P0 | High | `src/main/terminal/`, `src/renderer/src/features/terminal/` | TSK-M8-03 | **Completed** |
+| **TSK-M9-02** | Implement structured `AgentCommandRunner` with `child_process.spawn` | M9 | P0 | High | `src/main/agent/command-runner.ts` | TSK-M9-01 | **Completed** |
+| **TSK-M9-03** | Implement process-tree termination (`tree-kill`) and secret redaction | M9 | P0 | High | `src/main/agent/command-runner.ts` | TSK-M9-02 | **Completed** |
+| **TSK-M10-01**| Implement context window budgeting and summarization | M10| P1 | Medium | `src/main/agent/context-manager.ts` | TSK-M9-03 | **Completed** |
+| **TSK-M10-02**| Implement workspace data-sharing policies and privacy settings UI | M10| P0 | Medium | `src/renderer/src/features/settings/` | TSK-M10-01 | **Completed** |
+| **TSK-M10-03**| Build live Agent Activity Feed and Step Progress tracker | M10| P0 | Medium | `src/renderer/src/features/agent-activity/` | TSK-M10-02 | **Completed** |
 | **TSK-M11-01**| Apply compile-time Electron fuses via `@electron/fuses` | M11| P0 | Medium | `src/main/security/fuses.ts` | TSK-M10-03 | Pending |
 | **TSK-M11-02**| Run and verify complete security penetration test suite | M11| P0 | High | `tests/security/` | TSK-M11-01 | Pending |
 | **TSK-M11-03**| Implement and verify Playwright Electron E2E test suite | M11| P0 | High | `tests/e2e/` | TSK-M11-02 | Pending |
