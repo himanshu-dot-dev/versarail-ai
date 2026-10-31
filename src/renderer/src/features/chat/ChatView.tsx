@@ -6,6 +6,7 @@ import ToolActivityStream from './ToolActivityStream'
 import FileChangeBanner from './FileChangeBanner'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
+import TerminalPanel from '../terminal/TerminalPanel'
 
 interface ChatMessageItem {
   id: string
@@ -22,6 +23,7 @@ export const ChatView: React.FC = () => {
   const [conversationId, setConversationId] = useState('conv-default')
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false)
   const [failoverNotice, setFailoverNotice] = useState<{
     from: string
     to: string
@@ -311,6 +313,19 @@ export const ChatView: React.FC = () => {
           )}
 
           <button
+            onClick={() => setIsTerminalOpen((prev) => !prev)}
+            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border border-outline-variant/20 ${
+              isTerminalOpen
+                ? 'bg-primary-container text-on-primary-container border-primary/40'
+                : 'bg-surface-container hover:bg-surface-container-high text-on-surface'
+            }`}
+            title="Toggle Developer Interactive Terminal"
+          >
+            <Icon name="terminal" size={14} />
+            <span>Terminal</span>
+          </button>
+
+          <button
             onClick={() => setActiveView('ai-providers')}
             className="flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-colors border border-outline-variant/20"
             title="Configure Models"
@@ -405,6 +420,13 @@ export const ChatView: React.FC = () => {
           >
             <Icon name="close" size={14} />
           </button>
+        </div>
+      )}
+
+      {/* Developer Interactive Terminal Drawer */}
+      {isTerminalOpen && (
+        <div className="h-64 shrink-0 px-space-xl pb-2">
+          <TerminalPanel onClose={() => setIsTerminalOpen(false)} />
         </div>
       )}
 

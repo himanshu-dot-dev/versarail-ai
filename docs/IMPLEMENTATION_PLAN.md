@@ -2,8 +2,8 @@
 
 *Date of Planning: October 2026*  
 *Architecture Version: 1.0.0-PROPOSAL*  
-*Execution Status: Active Build — Milestones 0 through 8 COMPLETED (114/114 Tests Passing, Zero Type Errors, Clean Production Build)*  
-*Next Active Milestone: Milestone 9 (Dual Terminal: Interactive User Terminal & Agent Command Runner)*
+*Execution Status: Active Build — Milestones 0 through 9 COMPLETED (121/121 Tests Passing, Zero Type Errors, Clean Production Build)*  
+*Next Active Milestone: Milestone 10 (Context Management, Observability & Privacy Controls)*
 
 ---
 
@@ -150,7 +150,7 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 
 ---
 
-### Milestone 9: Dual Terminal: Interactive User Terminal & Agent Command Runner [NEXT UP]
+### Milestone 9: Dual Terminal: Interactive User Terminal & Agent Command Runner [COMPLETED]
 * **Objective:** Provide an interactive xterm.js terminal for the developer and a separate, structured, authorized command runner for the agent.
 * **Prerequisites:** Milestone 8 complete.
 * **Tasks:**
@@ -161,10 +161,11 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
   - Redact secret patterns from command stdout/stderr.
 * **Tests:** `tests/security/subprocess-lifecycle.test.ts`.
 * **Acceptance Criteria:** Developer uses interactive terminal normally; agent commands require approval; runaway commands terminated cleanly; secrets redacted.
+* **Status:** 100% Completed.
 
 ---
 
-### Milestone 10: Context Management, Observability & Privacy Controls
+### Milestone 10: Context Management, Observability & Privacy Controls [NEXT UP]
 * **Objective:** Enhance agent context window management, token budgeting, and developer privacy controls.
 * **Prerequisites:** Milestone 9 complete.
 * **Tasks:**
