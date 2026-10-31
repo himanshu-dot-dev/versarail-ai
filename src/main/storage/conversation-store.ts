@@ -48,6 +48,10 @@ export class ConversationStore {
     return ConversationStore.instance
   }
 
+  public static resetInstance(): void {
+    ConversationStore.instance = null
+  }
+
   public createConversation(params: {
     id?: string
     title: string

@@ -44,6 +44,11 @@ export const IPC_CHANNELS = {
   DIFF_REVIEW_PATCH: 'diff:review-patch',
   DIFF_APPLY_PATCH: 'diff:apply-patch',
 
+  // Settings & Privacy
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SAVE: 'settings:save',
+  SETTINGS_PURGE_DATA: 'settings:purge-data',
+
   // Terminal
   TERMINAL_CREATE_SESSION: 'terminal:create-session',
   TERMINAL_WRITE: 'terminal:write',

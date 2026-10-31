@@ -11,6 +11,7 @@ import {
   UnifiedDiffResultDTO,
   ApplyPatchResponseDTO
 } from '../schemas/diff.schema'
+import { PrivacySettingsDTO } from '../schemas/settings.schema'
 
 export interface FailoverEventDTO {
   runId?: string
@@ -98,6 +99,11 @@ export interface IElectronApi {
   // Diff & Patching
   reviewPatch: (request: ReviewPatchRequestDTO) => Promise<UnifiedDiffResultDTO>
   applyPatch: (request: ApplyPatchRequestDTO) => Promise<ApplyPatchResponseDTO>
+
+  // Settings & Privacy
+  getSettings: () => Promise<{ privacy: PrivacySettingsDTO }>
+  saveSettings: (settings: PrivacySettingsDTO) => Promise<{ success: boolean; error?: string }>
+  purgeData: (retentionDays?: number) => Promise<{ success: boolean; purgedConversations: number }>
 
   // Terminal
   createTerminalSession: (options?: { shell?: string }) => Promise<{ sessionId: string }>

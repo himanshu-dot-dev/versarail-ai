@@ -9,6 +9,7 @@ import { registerPermissionHandlers } from './handlers/permission-handlers'
 import { registerWorkspaceHandlers } from './handlers/workspace-handlers'
 import { registerDiffHandlers } from './handlers/diff-handlers'
 import { registerTerminalHandlers } from './handlers/terminal-handlers'
+import { registerSettingsHandlers } from './handlers/settings-handlers'
 
 export function registerIpcHandlers(): void {
   // Register modular domain handlers
@@ -18,6 +19,7 @@ export function registerIpcHandlers(): void {
   registerWorkspaceHandlers()
   registerDiffHandlers()
   registerTerminalHandlers()
+  registerSettingsHandlers()
 
   // Window Controls
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, (event: IpcMainEvent) => {

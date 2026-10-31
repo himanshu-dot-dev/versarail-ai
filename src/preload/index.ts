@@ -164,6 +164,17 @@ const electronApi: IElectronApi = {
     return ipcRenderer.invoke(IPC_CHANNELS.DIFF_APPLY_PATCH, request)
   },
 
+  // Settings & Privacy
+  getSettings: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET)
+  },
+  saveSettings: (settings: any) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SAVE, settings)
+  },
+  purgeData: (retentionDays?: number) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_PURGE_DATA, retentionDays)
+  },
+
   // Terminal
   createTerminalSession: (options?: { shell?: string }): Promise<{ sessionId: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CREATE_SESSION, options)

@@ -1,6 +1,7 @@
 import { ProviderId } from '@shared/domain/models'
 import { ConversationStore } from '../storage/conversation-store'
 import { FailoverEngine, FailoverEvent } from './failover-engine'
+import { ContextManager } from './context-manager'
 import { randomUUID } from 'crypto'
 
 export interface AgentRunOptions {
@@ -77,16 +78,26 @@ export class AgentRuntime {
       initialProvider: options.providerId
     })
 
-    // Build conversation context messages from SQLite
+    // Build conversation context messages from SQLite and budget via ContextManager
     conv = this.convStore.getConversation(options.conversationId)
-    const contextMessages = (conv?.messages || []).map((m) => ({
-      role: m.role,
+    const rawMessages = (conv?.messages || []).map((m) => ({
+      role: m.role as 'system' | 'user' | 'assistant',
       content: m.content
     }))
 
-    // Estimate prompt tokens for pre-flight context window check
-    const totalChars = contextMessages.reduce((sum, m) => sum + m.content.length, 0)
-    const estimatedPromptTokens = Math.ceil(totalChars / 3.5)
+    const contextManager = ContextManager.getInstance()
+    const privacy = contextManager.getPrivacySettings()
+
+    // Enforce privacy-allowed providers
+    const effectiveAllowed = options.allowedProviders || (privacy.allowedProviders as ProviderId[])
+
+    const budgeted = contextManager.prepareContext({
+      messages: rawMessages,
+      maxTokens: privacy.contextWindowBudgetTokens,
+      autoSummarize: privacy.autoSummarizeContext
+    })
+
+    const estimatedPromptTokens = budgeted.finalTokens
 
     let finalProvider = options.providerId
 
@@ -96,7 +107,7 @@ export class AgentRuntime {
         preferredProviderId: options.providerId,
         preferredModelId: options.modelId,
         estimatedPromptTokens,
-        allowedProviders: options.allowedProviders
+        allowedProviders: effectiveAllowed
       })
 
       if (candidates.length === 0) {
@@ -109,7 +120,7 @@ export class AgentRuntime {
       const streamResult = await this.failoverEngine.executeStreaming({
         runId,
         candidates,
-        messages: contextMessages,
+        messages: budgeted.messages,
         signal: abortController.signal,
         onToken: (chunk) => {
           options.onToken({

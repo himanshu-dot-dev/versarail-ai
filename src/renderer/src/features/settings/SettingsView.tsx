@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { useUiStore, ThemeMode } from '../../app/useUiStore'
 
@@ -24,14 +24,64 @@ export const SettingsView: React.FC = () => {
   const [terminalExecution, setTerminalExecution] = useState(false)
   const [networkRequests, setNetworkRequests] = useState(true)
 
+  // Privacy & Context Management state
+  const [allowedProviders, setAllowedProviders] = useState<string[]>([
+    'gemini',
+    'groq',
+    'cerebras',
+    'openrouter'
+  ])
+  const [auditRetentionDays, setAuditRetentionDays] = useState(30)
+  const [contextBudgetTokens, setContextBudgetTokens] = useState(32_000)
+  const [autoSummarize, setAutoSummarize] = useState(true)
+
   // Save feedback state
   const [savedToast, setSavedToast] = useState(false)
 
-  const handleSave = () => {
+  // Load persisted privacy & settings on mount
+  useEffect(() => {
+    if (window.electronApi?.getSettings) {
+      window.electronApi.getSettings().then((res) => {
+        if (res?.privacy) {
+          setAllowedProviders(res.privacy.allowedProviders || ['gemini', 'groq', 'cerebras', 'openrouter'])
+          setAuditRetentionDays(res.privacy.auditRetentionDays ?? 30)
+          setContextBudgetTokens(res.privacy.contextWindowBudgetTokens ?? 32_000)
+          setAutoSummarize(res.privacy.autoSummarizeContext ?? true)
+        }
+      }).catch(console.error)
+    }
+  }, [])
+
+  const handleSave = async () => {
+    if (window.electronApi?.saveSettings) {
+      await window.electronApi.saveSettings({
+        allowedProviders,
+        auditRetentionDays,
+        contextWindowBudgetTokens: contextBudgetTokens,
+        autoSummarizeContext: autoSummarize,
+        allowPublicCloud: true,
+        autoRedactSecrets: true
+      })
+    }
     setSavedToast(true)
     setTimeout(() => {
       setSavedToast(false)
     }, 2000)
+  }
+
+  const handlePurgeDb = async () => {
+    if (confirm('Permanently purge local SQLite conversation history? Credentials remain safe.')) {
+      if (window.electronApi?.purgeData) {
+        const res = await window.electronApi.purgeData(0)
+        alert(`Purge complete. Cleaned ${res.purgedConversations} conversations.`)
+      }
+    }
+  }
+
+  const toggleProvider = (providerId: string) => {
+    setAllowedProviders((prev) =>
+      prev.includes(providerId) ? prev.filter((p) => p !== providerId) : [...prev, providerId]
+    )
   }
 
   const handleReset = () => {
@@ -497,21 +547,104 @@ export const SettingsView: React.FC = () => {
               <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
-                    Privacy &amp; Security Architecture
+                    Privacy, Routing &amp; Data Policies
                   </h2>
                   <p className="font-body-md text-on-surface-variant text-xs">
-                    Local SQLite encryption, OS SafeStorage credentials, and secret redaction.
+                    Workspace provider access gating, context window budgeting, and retention cleanup.
                   </p>
                 </div>
                 <Icon name="shield_lock" size={24} className="text-primary" />
               </div>
 
               <div className="flex flex-col gap-space-md text-xs">
+                {/* 1. Allowed Providers Gating */}
+                <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-space-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-space-sm">
+                      <Icon name="policy" size={18} className="text-primary" />
+                      <span className="text-on-surface font-medium">Permitted Workspace AI Providers</span>
+                    </div>
+                    <span className="text-[10px] text-on-surface-variant font-mono">
+                      Restricts data egress
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant">
+                    Failover and agent prompt dispatching will only communicate with checked providers:
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[
+                      { id: 'gemini', label: 'Google Gemini' },
+                      { id: 'groq', label: 'Groq Cloud' },
+                      { id: 'cerebras', label: 'Cerebras' },
+                      { id: 'openrouter', label: 'OpenRouter' }
+                    ].map((p) => {
+                      const isAllowed = allowedProviders.includes(p.id)
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => toggleProvider(p.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${
+                            isAllowed
+                              ? 'bg-primary-container text-on-primary-container border-primary/40 font-semibold shadow-xs'
+                              : 'bg-surface-container-high text-on-surface-variant border-transparent opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <Icon name={isAllowed ? 'check' : 'close'} size={14} />
+                          <span>{p.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Context Window Budget & Auto-Summarization */}
+                <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-space-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-space-sm">
+                      <Icon name="tune" size={18} className="text-tertiary" />
+                      <span className="text-on-surface font-medium">Context Window Budget &amp; Summarization</span>
+                    </div>
+                    <span className="text-[10px] text-tertiary font-mono">
+                      {contextBudgetTokens.toLocaleString()} tokens
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant">
+                    Sets max token ceiling for conversations before historical turns are compacted:
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    {[8_000, 16_000, 32_000, 64_000, 128_000].map((b) => (
+                      <button
+                        key={b}
+                        onClick={() => setContextBudgetTokens(b)}
+                        className={`px-2.5 py-1 rounded text-xs font-mono transition-colors border ${
+                          contextBudgetTokens === b
+                            ? 'bg-tertiary-container/40 text-tertiary border-tertiary/40 font-bold'
+                            : 'bg-surface-container-high text-on-surface-variant border-transparent hover:text-on-surface'
+                        }`}
+                      >
+                        {b >= 1000 ? `${b / 1000}k` : b}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="flex items-center gap-2 pt-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoSummarize}
+                      onChange={(e) => setAutoSummarize(e.target.checked)}
+                      className="accent-primary"
+                    />
+                    <span className="text-[11px] text-on-surface">
+                      Automatically generate summary pills for older turns when budget is reached
+                    </span>
+                  </label>
+                </div>
+
+                {/* 3. Security Status Badges */}
                 <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
                   <div className="flex items-center gap-space-md">
                     <Icon name="lock" size={20} className="text-tertiary" />
                     <div className="flex flex-col">
-                      <span className="text-on-surface font-medium">OS SafeStorage Encryption</span>
+                      <span className="text-on-surface font-medium">OS SafeStorage Keyring</span>
                       <span className="text-[11px] text-on-surface-variant font-mono">
                         Windows DPAPI / macOS Keychain hardware-backed encryption
                       </span>
@@ -537,7 +670,31 @@ export const SettingsView: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between border border-error/30 mt-space-md">
+                {/* 4. Audit Log Retention & DB Purge */}
+                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+                  <div className="flex items-center gap-space-md">
+                    <Icon name="history" size={20} className="text-on-surface-variant" />
+                    <div className="flex flex-col">
+                      <span className="text-on-surface font-medium">Audit History Retention</span>
+                      <span className="text-[11px] text-on-surface-variant font-mono">
+                        Auto-clean conversation and tool call logs older than:
+                      </span>
+                    </div>
+                  </div>
+                  <select
+                    value={auditRetentionDays}
+                    onChange={(e) => setAuditRetentionDays(Number(e.target.value))}
+                    className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded text-xs font-mono border border-outline-variant/30 focus:outline-none"
+                  >
+                    <option value={7}>7 Days</option>
+                    <option value={30}>30 Days</option>
+                    <option value={90}>90 Days</option>
+                    <option value={0}>Forever (No Cleanup)</option>
+                  </select>
+                </div>
+
+                {/* 5. Purge DB Button */}
+                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between border border-error/30 mt-space-sm">
                   <div className="flex items-center gap-space-md">
                     <Icon name="delete_forever" size={20} className="text-error" />
                     <div className="flex flex-col">
@@ -548,11 +705,7 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      if (confirm('Are you sure you want to purge local conversation history?')) {
-                        alert('Local SQLite conversation cache purged.')
-                      }
-                    }}
+                    onClick={handlePurgeDb}
                     className="px-space-md py-1 rounded bg-error/20 hover:bg-error text-error hover:text-on-error font-medium transition-colors text-xs"
                   >
                     Purge DB

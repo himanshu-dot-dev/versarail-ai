@@ -28,6 +28,17 @@ export class SqliteDatabase {
     return this.instance
   }
 
+  public static resetInstance(): void {
+    if (this.instance) {
+      try {
+        this.instance.close()
+      } catch {
+        // ignore
+      }
+      this.instance = null
+    }
+  }
+
   /**
    * Directly creates an isolated instance for tests (e.g. in-memory or temp file).
    */
