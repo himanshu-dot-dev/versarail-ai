@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useUiStore, InspectorTab } from '../../app/useUiStore'
 import Icon from '../common/Icon'
+import { DiffViewer } from '../../features/changes/DiffViewer'
 
 export const InspectorPanel: React.FC = () => {
   const { inspectorTab, setInspectorTab, isInspectorOpen, toggleInspector, workspace } = useUiStore()
@@ -179,6 +180,36 @@ export const InspectorPanel: React.FC = () => {
                 <span className="text-[10px] text-tertiary font-mono">+12 / -4</span>
               </div>
               <p className="text-[11px] text-on-surface-variant">Added JWT session expiration check</p>
+            </div>
+
+            <div className="border border-outline-variant/20 rounded-lg overflow-hidden h-72 flex flex-col">
+              <DiffViewer
+                diff={{
+                  filePath: 'src/auth/authService.ts',
+                  patch: '',
+                  baselineSha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+                  newSha256: 'b2c3d4e5f60718293a4b5c6d7e8f90a1',
+                  additions: 12,
+                  deletions: 4,
+                  hasChanges: true,
+                  hunks: [
+                    {
+                      oldStart: 42,
+                      oldLines: 3,
+                      newStart: 42,
+                      newLines: 5,
+                      lines: [
+                        { type: 'context', content: '  const token = req.headers.authorization;', oldLineNumber: 42, newLineNumber: 42 },
+                        { type: 'delete', content: '  if (!token) return false;', oldLineNumber: 43 },
+                        { type: 'add', content: '  if (!token || isExpired(token)) {', newLineNumber: 43 },
+                        { type: 'add', content: '    return false;', newLineNumber: 44 },
+                        { type: 'add', content: '  }', newLineNumber: 45 },
+                        { type: 'context', content: '  return verifySignature(token);', oldLineNumber: 44, newLineNumber: 46 }
+                      ]
+                    }
+                  ]
+                }}
+              />
             </div>
           </div>
         )}

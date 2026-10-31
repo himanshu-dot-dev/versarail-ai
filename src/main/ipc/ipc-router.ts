@@ -7,6 +7,7 @@ import { registerProviderHandlers } from './handlers/provider-handlers'
 import { registerChatHandlers } from './handlers/chat-handlers'
 import { registerPermissionHandlers } from './handlers/permission-handlers'
 import { registerWorkspaceHandlers } from './handlers/workspace-handlers'
+import { registerDiffHandlers } from './handlers/diff-handlers'
 
 export function registerIpcHandlers(): void {
   // Register modular domain handlers
@@ -14,6 +15,7 @@ export function registerIpcHandlers(): void {
   registerChatHandlers()
   registerPermissionHandlers()
   registerWorkspaceHandlers()
+  registerDiffHandlers()
 
   // Window Controls
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, (event: IpcMainEvent) => {

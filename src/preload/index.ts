@@ -156,6 +156,14 @@ const electronApi: IElectronApi = {
     return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_INSPECT_FILES, relativeDir)
   },
 
+  // Diff & Patching
+  reviewPatch: (request: any) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.DIFF_REVIEW_PATCH, request)
+  },
+  applyPatch: (request: any) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.DIFF_APPLY_PATCH, request)
+  },
+
   // Terminal
   createTerminalSession: (options?: { shell?: string }): Promise<{ sessionId: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CREATE_SESSION, options)

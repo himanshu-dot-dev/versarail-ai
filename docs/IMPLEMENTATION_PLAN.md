@@ -2,8 +2,8 @@
 
 *Date of Planning: October 2026*  
 *Architecture Version: 1.0.0-PROPOSAL*  
-*Execution Status: Active Build — Milestones 0 through 7 COMPLETED (100/100 Tests Passing, Zero Type Errors, Clean Production Build)*  
-*Next Active Milestone: Milestone 8 (Diff-First Editing, Unified Diff Review & Atomic Commits)*
+*Execution Status: Active Build — Milestones 0 through 8 COMPLETED (114/114 Tests Passing, Zero Type Errors, Clean Production Build)*  
+*Next Active Milestone: Milestone 9 (Dual Terminal: Interactive User Terminal & Agent Command Runner)*
 
 ---
 
@@ -134,7 +134,7 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 
 ---
 
-### Milestone 8: Diff-First Editing, Unified Diff Review & Atomic Commits [NEXT UP]
+### Milestone 8: Diff-First Editing, Unified Diff Review & Atomic Commits [COMPLETED]
 * **Objective:** Provide a reviewable diff-first file modification workflow with conflict detection and recovery.
 * **Prerequisites:** Milestone 7 complete.
 * **Tasks:**
@@ -144,12 +144,13 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
   - Implement pre-application conflict check: re-verify disk hash before applying patch.
   - Implement `atomic-writer.ts` (temp file write + fsync + atomic rename).
   - Record applied mutations in `change-journal.ts` for rollback audit.
-* **Tests:** Unit tests for diff patching; integration test for conflict detection when disk file changes externally.
+* **Tests:** Unit tests for diff patching; integration test for conflict detection when disk file changes externally (`tests/unit/diff/`, `tests/integration/diff-conflict.test.ts`).
 * **Acceptance Criteria:** Agent cannot overwrite files blindly; user inspects diff before approving; atomic commits prevent file corruption; conflicts flagged.
+* **Status:** 100% Completed.
 
 ---
 
-### Milestone 9: Dual Terminal: Interactive User Terminal & Agent Command Runner
+### Milestone 9: Dual Terminal: Interactive User Terminal & Agent Command Runner [NEXT UP]
 * **Objective:** Provide an interactive xterm.js terminal for the developer and a separate, structured, authorized command runner for the agent.
 * **Prerequisites:** Milestone 8 complete.
 * **Tasks:**

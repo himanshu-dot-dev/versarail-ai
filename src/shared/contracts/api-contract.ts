@@ -5,6 +5,12 @@ import {
   PermissionRequestDTO,
   PermissionResponseDTO
 } from '../domain/models'
+import {
+  ReviewPatchRequestDTO,
+  ApplyPatchRequestDTO,
+  UnifiedDiffResultDTO,
+  ApplyPatchResponseDTO
+} from '../schemas/diff.schema'
 
 export interface FailoverEventDTO {
   runId?: string
@@ -88,6 +94,10 @@ export interface IElectronApi {
   selectWorkspaceFolder: () => Promise<{ canceled: boolean; path?: string }>
   getCurrentWorkspace: () => Promise<{ path: string | null; name: string | null }>
   inspectWorkspaceFiles: (relativeDir?: string) => Promise<{ files: string[]; dirs: string[] }>
+
+  // Diff & Patching
+  reviewPatch: (request: ReviewPatchRequestDTO) => Promise<UnifiedDiffResultDTO>
+  applyPatch: (request: ApplyPatchRequestDTO) => Promise<ApplyPatchResponseDTO>
 
   // Terminal
   createTerminalSession: (options?: { shell?: string }) => Promise<{ sessionId: string }>
