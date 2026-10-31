@@ -58,6 +58,10 @@ export class SecretStorageService {
     return this.instance
   }
 
+  public static resetInstance(): void {
+    this.instance = null
+  }
+
   /**
    * Checks whether the current operating system provides an acceptable secure keyring.
    * Refuses persistence if Linux returns 'basic_text' (plaintext salt fallback).
@@ -227,7 +231,7 @@ export class SecretStorageService {
    * Deletes a credential from disk and memory.
    */
   public deleteCredential(credentialId: string): boolean {
-    this.sessionStore.delete(credentialId)
+    const wasInSession = this.sessionStore.delete(credentialId)
 
     const records = this.readStorageFile()
     const filtered = records.filter((r) => r.id !== credentialId)
@@ -235,7 +239,7 @@ export class SecretStorageService {
       this.writeStorageFile(filtered)
       return true
     }
-    return false
+    return wasInSession
   }
 
   private readStorageFile(): EncryptedCredentialRecord[] {

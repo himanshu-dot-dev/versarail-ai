@@ -68,8 +68,8 @@ export function createMainWindow(): BrowserWindow {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev
-            ? "default-src 'self' 'unsafe-inline' ws: http:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com;"
-            : "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'none';"
+            ? "default-src 'self' 'unsafe-inline' ws: http:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+            : "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'none';"
         ]
       }
     })

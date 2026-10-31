@@ -34,6 +34,10 @@ export class AgentRuntime {
     return AgentRuntime.instance
   }
 
+  public static resetInstance(): void {
+    AgentRuntime.instance = null
+  }
+
   public cancelRun(runId: string): boolean {
     const controller = this.activeRuns.get(runId)
     if (controller) {

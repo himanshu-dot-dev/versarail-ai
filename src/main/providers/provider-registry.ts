@@ -31,6 +31,10 @@ export class ProviderRegistry {
     return ProviderRegistry.instance
   }
 
+  public static resetInstance(): void {
+    ProviderRegistry.instance = null
+  }
+
   public registerAdapter(adapter: IProviderAdapter): void {
     this.adapters.set(adapter.id, adapter)
   }
