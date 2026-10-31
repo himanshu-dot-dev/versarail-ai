@@ -5,11 +5,13 @@ import { SystemInfo } from '@shared/domain/models'
 import { safeStorage } from 'electron'
 import { registerProviderHandlers } from './handlers/provider-handlers'
 import { registerChatHandlers } from './handlers/chat-handlers'
+import { registerPermissionHandlers } from './handlers/permission-handlers'
 
 export function registerIpcHandlers(): void {
   // Register modular domain handlers
   registerProviderHandlers()
   registerChatHandlers()
+  registerPermissionHandlers()
 
   // Window Controls
   ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, (event: IpcMainEvent) => {

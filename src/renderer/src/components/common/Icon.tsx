@@ -19,6 +19,7 @@ import {
   Circle,
   Clock,
   Code,
+  Copy,
   CornerDownRight,
   Cpu,
   CreditCard,
@@ -130,6 +131,8 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   dock_to_left: PanelRightClose,
   attach_file: Paperclip,
   cloud_upload: UploadCloud,
+  copy: Copy,
+  content_copy: Copy,
 
   // Status & Telemetry
   check: Check,

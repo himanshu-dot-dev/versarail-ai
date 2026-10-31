@@ -266,19 +266,19 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 | **TSK-M2-02** | Implement migration runner and initial database schemas | M2 | P0 | Medium | `src/main/storage/migration-runner.ts` | TSK-M2-01 | **Completed** |
 | **TSK-M2-03** | Implement async `safeStorage` secret store with Linux check | M2 | P0 | High | `src/main/security/safe-storage.service.ts` | TSK-M2-01 | **Completed** |
 | **TSK-M2-04** | Implement centralized SecretRedactor utility | M2 | P0 | Medium | `src/main/security/secret-redactor.ts` | TSK-M2-03 | **Completed** |
-| **TSK-M3-01** | Define `IProviderAdapter` contract and capability schemas | M3 | P0 | Medium | `src/shared/contracts/provider.contract.ts` | TSK-M1-04 | Pending |
-| **TSK-M3-02** | Implement Google Gemini adapter using `@google/genai` | M3 | P0 | High | `src/main/providers/adapters/gemini-adapter.ts` | TSK-M3-01 | Pending |
-| **TSK-M3-03** | Implement Groq adapter using `groq-sdk` | M3 | P0 | High | `src/main/providers/adapters/groq-adapter.ts` | TSK-M3-01 | Pending |
-| **TSK-M3-04** | Build BYOK Provider Dashboard UI with live credential check | M3 | P0 | Medium | `src/renderer/src/features/providers/` | TSK-M3-02,03 | Pending |
-| **TSK-M4-01** | Implement streaming chat IPC channel and React stream consumer | M4 | P0 | High | `src/main/agent/`, `src/renderer/src/features/chat/` | TSK-M3-04 | Pending |
-| **TSK-M4-02** | Implement model selection UI and capability indicator badges | M4 | P0 | Medium | `src/renderer/src/features/models/` | TSK-M4-01 | Pending |
-| **TSK-M4-03** | Implement conversation persistence and sidebar history | M4 | P0 | Medium | `src/main/storage/repositories/` | TSK-M4-01 | Pending |
-| **TSK-M5-01** | Implement `error-classifier.ts` for rate limits and quotas | M5 | P0 | High | `src/main/providers/error-classifier.ts` | TSK-M4-01 | Pending |
-| **TSK-M5-02** | Implement `failover-engine.ts` with exponential backoff & cooldowns | M5 | P0 | High | `src/main/providers/failover-engine.ts` | TSK-M5-01 | Pending |
-| **TSK-M5-03** | Implement failover UI notifications and health status badges | M5 | P0 | Medium | `src/renderer/src/features/providers/` | TSK-M5-02 | Pending |
-| **TSK-M6-01** | Implement central ToolRegistry with Zod schema validation | M6 | P0 | High | `src/main/tools/tool-registry.ts` | TSK-M5-02 | Pending |
-| **TSK-M6-02** | Implement PermissionBroker with cryptographic argument hashing | M6 | P0 | High | `src/main/permissions/permission-broker.ts` | TSK-M6-01 | Pending |
-| **TSK-M6-03** | Build interactive Permission Review modal in React | M6 | P0 | Medium | `src/renderer/src/features/permissions/` | TSK-M6-02 | Pending |
+| **TSK-M3-01** | Define `IProviderAdapter` contract and capability schemas | M3 | P0 | Medium | `src/shared/contracts/provider.contract.ts` | TSK-M1-04 | **Completed** |
+| **TSK-M3-02** | Implement Google Gemini adapter using `@google/genai` | M3 | P0 | High | `src/main/providers/adapters/gemini-adapter.ts` | TSK-M3-01 | **Completed** |
+| **TSK-M3-03** | Implement Groq adapter using `groq-sdk` | M3 | P0 | High | `src/main/providers/adapters/groq-adapter.ts` | TSK-M3-01 | **Completed** |
+| **TSK-M3-04** | Build BYOK Provider Dashboard UI with live credential check | M3 | P0 | Medium | `src/renderer/src/features/providers/` | TSK-M3-02,03 | **Completed** |
+| **TSK-M4-01** | Implement streaming chat IPC channel and React stream consumer | M4 | P0 | High | `src/main/agent/`, `src/renderer/src/features/chat/` | TSK-M3-04 | **Completed** |
+| **TSK-M4-02** | Implement model selection UI and capability indicator badges | M4 | P0 | Medium | `src/renderer/src/features/models/` | TSK-M4-01 | **Completed** |
+| **TSK-M4-03** | Implement conversation persistence and sidebar history | M4 | P0 | Medium | `src/main/storage/repositories/` | TSK-M4-01 | **Completed** |
+| **TSK-M5-01** | Implement `error-classifier.ts` for rate limits and quotas | M5 | P0 | High | `src/main/providers/error-classifier.ts` | TSK-M4-01 | **Completed** |
+| **TSK-M5-02** | Implement `failover-engine.ts` with exponential backoff & cooldowns | M5 | P0 | High | `src/main/providers/failover-engine.ts` | TSK-M5-01 | **Completed** |
+| **TSK-M5-03** | Implement failover UI notifications and health status badges | M5 | P0 | Medium | `src/renderer/src/features/providers/` | TSK-M5-02 | **Completed** |
+| **TSK-M6-01** | Implement central ToolRegistry with Zod schema validation | M6 | P0 | High | `src/main/tools/tool-registry.ts` | TSK-M5-02 | **Completed** |
+| **TSK-M6-02** | Implement PermissionBroker with cryptographic argument hashing | M6 | P0 | High | `src/main/permissions/permission-broker.ts` | TSK-M6-01 | **Completed** |
+| **TSK-M6-03** | Build interactive Permission Review modal in React | M6 | P0 | Medium | `src/renderer/src/features/permissions/` | TSK-M6-02 | **Completed** |
 | **TSK-M7-01** | Implement native workspace folder picker dialog | M7 | P0 | Low | `src/main/workspace/workspace-service.ts` | TSK-M6-03 | Pending |
 | **TSK-M7-02** | Implement canonical path resolver with symlink escape defense | M7 | P0 | High | `src/main/workspace/path-canonicalizer.ts` | TSK-M7-01 | Pending |
 | **TSK-M7-03** | Implement file read and search tools with exclusion filtering | M7 | P0 | Medium | `src/main/tools/implementations/` | TSK-M7-02 | Pending |

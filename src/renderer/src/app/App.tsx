@@ -5,6 +5,7 @@ import { TitleBar } from '../components/layout/TitleBar'
 import { Sidebar } from '../components/layout/Sidebar'
 import { InspectorPanel } from '../components/layout/InspectorPanel'
 import { ChatView } from '../features/chat/ChatView'
+import { PermissionModal } from '../components/permissions/PermissionModal'
 
 const ShellContent: React.FC = () => {
   const { activeView } = useUiStore()
@@ -16,6 +17,9 @@ const ShellContent: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-surface font-body-md text-on-surface flex flex-col selection:bg-primary/20">
+      {/* Global Action Permission Approval Modal */}
+      <PermissionModal />
+
       {/* Native-style Frameless Titlebar */}
       <TitleBar />
 

@@ -247,5 +247,73 @@ export class ConversationStore {
     `)
     stmt.run(status, finalProvider || null, errorMessage || null, now, runId)
   }
+
+  public recordToolCallStart(params: {
+    id?: string
+    runId: string
+    toolName: string
+    argumentsJson: string
+  }): string {
+    const id = params.id || randomUUID()
+    const now = new Date().toISOString()
+    const stmt = this.db.prepare(`
+      INSERT INTO tool_calls (id, run_id, tool_name, arguments_json, status, created_at)
+      VALUES (?, ?, ?, ?, 'running', ?)
+    `)
+    stmt.run(id, params.runId, params.toolName, params.argumentsJson, now)
+    return id
+  }
+
+  public completeToolCall(params: {
+    id: string
+    status: 'success' | 'failed'
+    resultJson?: string
+    executionDurationMs: number
+  }): void {
+    const stmt = this.db.prepare(`
+      UPDATE tool_calls
+      SET status = ?, result_json = ?, execution_duration_ms = ?
+      WHERE id = ?
+    `)
+    stmt.run(params.status, params.resultJson || null, params.executionDurationMs, params.id)
+  }
+
+  public getToolCallsForRun(runId: string): Array<{
+    id: string
+    runId: string
+    toolName: string
+    argumentsJson: string
+    resultJson: string | null
+    status: string
+    executionDurationMs: number | null
+    createdAt: string
+  }> {
+    const stmt = this.db.prepare(`
+      SELECT id, run_id, tool_name, arguments_json, result_json, status, execution_duration_ms, created_at
+      FROM tool_calls
+      WHERE run_id = ?
+      ORDER BY created_at ASC
+    `)
+    const rows = stmt.all(runId) as Array<{
+      id: string
+      run_id: string
+      tool_name: string
+      arguments_json: string
+      result_json: string | null
+      status: string
+      execution_duration_ms: number | null
+      created_at: string
+    }>
+    return rows.map((r) => ({
+      id: r.id,
+      runId: r.run_id,
+      toolName: r.tool_name,
+      argumentsJson: r.arguments_json,
+      resultJson: r.result_json,
+      status: r.status,
+      executionDurationMs: r.execution_duration_ms,
+      createdAt: r.created_at
+    }))
+  }
 }
 
