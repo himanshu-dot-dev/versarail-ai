@@ -37,6 +37,37 @@ describe('Contract Schema Validation', () => {
         expect(parsed.error.errors[0].message).toContain('cloud metadata')
       }
     })
+
+    it('accepts edit credential payloads with id when preserving existing apiKey', () => {
+      const editPayload = {
+        id: 'cred-12345',
+        providerId: 'gemini',
+        label: 'Updated Gemini Label',
+        customEndpoint: ''
+      }
+      const parsed = SaveCredentialSchema.safeParse(editPayload)
+      expect(parsed.success).toBe(true)
+    })
+
+    it('accepts edit credential payloads with id and new apiKey', () => {
+      const editWithKey = {
+        id: 'cred-12345',
+        providerId: 'groq',
+        label: 'Updated Groq Key',
+        apiKey: 'gsk_newUpdatedKey123'
+      }
+      const parsed = SaveCredentialSchema.safeParse(editWithKey)
+      expect(parsed.success).toBe(true)
+    })
+
+    it('rejects new credential payloads without an apiKey', () => {
+      const missingKey = {
+        providerId: 'gemini',
+        label: 'New Gemini Without Key'
+      }
+      const parsed = SaveCredentialSchema.safeParse(missingKey)
+      expect(parsed.success).toBe(false)
+    })
   })
 
   describe('PermissionResponseSchema', () => {

@@ -35,7 +35,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
 
   // Fetch available models when dropdown opens
   useEffect(() => {
-    if (isModelOpen && models.length === 0 && window.electronApi?.listModels) {
+    if (isModelOpen && window.electronApi?.listModels) {
       setIsLoadingModels(true)
       window.electronApi
         .listModels()
@@ -47,7 +47,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
         .catch(console.error)
         .finally(() => setIsLoadingModels(false))
     }
-  }, [isModelOpen, models.length])
+  }, [isModelOpen])
 
   // Click outside to close model dropdown
   useEffect(() => {

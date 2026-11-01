@@ -17,6 +17,7 @@ export class ProviderRegistry {
   private static instance: ProviderRegistry | null = null
   private adapters: Map<ProviderId, IProviderAdapter> = new Map()
   private keyStates: Map<string, KeyLeaseState> = new Map()
+  private modelCooldowns: Map<string, { cooldownUntilMs: number; reason?: string }> = new Map()
 
   private constructor() {
     this.registerAdapter(new GeminiAdapter())
@@ -89,25 +90,99 @@ export class ProviderRegistry {
     }
   }
 
-  public setCooldown(credentialId: string, durationMs: number, reason?: string): void {
+  public setCooldown(credentialId: string, durationMs: number, reason?: string, modelId?: string): void {
+    const cooldownUntilMs = Date.now() + durationMs
+
+    if (modelId) {
+      this.modelCooldowns.set(`${credentialId}::${modelId}`, {
+        cooldownUntilMs,
+        reason
+      })
+    } else {
+      const state = this.keyStates.get(credentialId) || {
+        activeRequests: 0,
+        maxConcurrency: 2,
+        cooldownUntilMs: null
+      }
+      state.cooldownUntilMs = cooldownUntilMs
+      state.lastError = reason
+      this.keyStates.set(credentialId, state)
+    }
+
+    // Always maintain lastError on keyState for UI observability
     const state = this.keyStates.get(credentialId) || {
       activeRequests: 0,
       maxConcurrency: 2,
       cooldownUntilMs: null
     }
-    state.cooldownUntilMs = Date.now() + durationMs
     state.lastError = reason
     this.keyStates.set(credentialId, state)
   }
 
-  public getCooldownExpiry(credentialId: string): number | null {
+  public clearCooldown(credentialId: string, modelId?: string): void {
+    if (modelId) {
+      this.modelCooldowns.delete(`${credentialId}::${modelId}`)
+    }
     const state = this.keyStates.get(credentialId)
-    if (!state || !state.cooldownUntilMs) return null
-    if (state.cooldownUntilMs <= Date.now()) {
+    if (state) {
       state.cooldownUntilMs = null
+      state.lastError = undefined
+      this.keyStates.set(credentialId, state)
+    }
+  }
+
+  public getCooldownExpiry(credentialId: string, modelId?: string): number | null {
+    const now = Date.now()
+
+    if (modelId) {
+      // 1. Check model-scoped cooldown
+      const modelEntry = this.modelCooldowns.get(`${credentialId}::${modelId}`)
+      if (modelEntry) {
+        if (modelEntry.cooldownUntilMs <= now) {
+          this.modelCooldowns.delete(`${credentialId}::${modelId}`)
+        } else {
+          return modelEntry.cooldownUntilMs
+        }
+      }
+
+      // 2. Check credential-wide cooldown (e.g. invalid API key)
+      const state = this.keyStates.get(credentialId)
+      if (state && state.cooldownUntilMs) {
+        if (state.cooldownUntilMs <= now) {
+          state.cooldownUntilMs = null
+          return null
+        }
+        return state.cooldownUntilMs
+      }
       return null
     }
-    return state.cooldownUntilMs
+
+    // No modelId specified: check credential-wide cooldown
+    const state = this.keyStates.get(credentialId)
+    if (state && state.cooldownUntilMs) {
+      if (state.cooldownUntilMs <= now) {
+        state.cooldownUntilMs = null
+      } else {
+        return state.cooldownUntilMs
+      }
+    }
+
+    // Also check if any model cooldown is active for this credential
+    const prefix = `${credentialId}::`
+    let soonestModelCooldown: number | null = null
+    for (const [key, entry] of this.modelCooldowns.entries()) {
+      if (key.startsWith(prefix)) {
+        if (entry.cooldownUntilMs <= now) {
+          this.modelCooldowns.delete(key)
+        } else {
+          if (!soonestModelCooldown || entry.cooldownUntilMs < soonestModelCooldown) {
+            soonestModelCooldown = entry.cooldownUntilMs
+          }
+        }
+      }
+    }
+
+    return soonestModelCooldown
   }
 
   public getKeyState(credentialId: string): KeyLeaseState | undefined {

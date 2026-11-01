@@ -16,6 +16,7 @@ export const IPC_CHANNELS = {
   PROVIDERS_VALIDATE_CREDENTIAL: 'providers:validate-credential',
   PROVIDERS_TEST_CONNECTION: 'providers:test-connection',
   PROVIDERS_GET_HEALTH_STATUSES: 'providers:get-health-statuses',
+  PROVIDERS_SET_ENABLED: 'providers:set-enabled',
 
   // Models
   MODELS_LIST_AVAILABLE: 'models:list-available',

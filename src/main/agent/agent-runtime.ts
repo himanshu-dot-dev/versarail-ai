@@ -126,6 +126,8 @@ export class AgentRuntime {
         candidates,
         messages: budgeted.messages,
         signal: abortController.signal,
+        preferredProviderId: options.providerId,
+        preferredModelId: options.modelId,
         onToken: (chunk) => {
           options.onToken({
             runId,

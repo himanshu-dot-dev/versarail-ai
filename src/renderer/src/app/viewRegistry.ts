@@ -1,10 +1,7 @@
 import React from 'react'
 import { ChatView } from '../features/chat/ChatView'
-import { ProjectsView } from '../features/workspace/ProjectsView'
-import { FileExplorerView } from '../features/workspace/FileExplorerView'
 import { ProvidersView } from '../features/providers/ProvidersView'
 import { UsageQuotasView } from '../features/usage-quotas/UsageQuotasView'
-import { TaskHistoryView } from '../features/task-history/TaskHistoryView'
 import { SettingsView } from '../features/settings/SettingsView'
 
 export interface ViewDefinition {
@@ -62,13 +59,6 @@ viewRegistry.register({
   label: 'Usage & Quotas',
   icon: 'donut_large',
   component: UsageQuotasView
-})
-
-viewRegistry.register({
-  id: 'task-history',
-  label: 'Task History',
-  icon: 'history',
-  component: TaskHistoryView
 })
 
 viewRegistry.register({

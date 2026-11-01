@@ -81,8 +81,22 @@ export function registerProviderHandlers(): void {
         }
       }
 
-      const { providerId, label, apiKey, customEndpoint } = parseResult.data
-      const id = randomUUID()
+      const { id: incomingId, providerId, label, customEndpoint } = parseResult.data
+      let apiKey = parseResult.data.apiKey ? parseResult.data.apiKey.trim() : ''
+      const id = incomingId || randomUUID()
+
+      // If updating an existing credential and no new apiKey provided, retain current key
+      if (incomingId && !apiKey) {
+        const existingKey = await secretStore.getDecryptedKey(incomingId)
+        if (!existingKey) {
+          return { success: false, error: 'Cannot update: existing credential key not found' }
+        }
+        apiKey = normalizeKey(existingKey)
+      }
+
+      if (!apiKey) {
+        return { success: false, error: 'API key cannot be empty' }
+      }
 
       try {
         const { isSessionOnly } = await secretStore.saveCredential({
@@ -90,21 +104,46 @@ export function registerProviderHandlers(): void {
           providerId,
           label,
           apiKey,
-          customEndpoint
+          customEndpoint: customEndpoint || undefined
         })
 
-        // Save metadata reference in SQLite (zero secret keys here!)
-        const insertStmt = db.prepare(`
+        // Upsert metadata reference in SQLite (zero secret keys here!)
+        const upsertStmt = db.prepare(`
           INSERT INTO provider_metadata (id, provider_id, label, custom_endpoint, enabled, health_status, created_at)
           VALUES (?, ?, ?, ?, 1, 'healthy', ?)
+          ON CONFLICT(id) DO UPDATE SET
+            provider_id = excluded.provider_id,
+            label = excluded.label,
+            custom_endpoint = excluded.custom_endpoint
         `)
-        insertStmt.run(id, providerId, label, customEndpoint || null, new Date().toISOString())
+        upsertStmt.run(id, providerId, label, customEndpoint || null, new Date().toISOString())
+
+        // Clear cooldown since credentials were saved or updated
+        registry.clearCooldown(id)
 
         return { success: true, isSessionOnly }
       } catch (err) {
         console.error('[ProviderHandler] Failed to save credential:', err)
         return { success: false, error: 'Failed to securely store credential' }
       }
+    }
+  )
+
+  // 3. Set Provider Enabled / Disabled
+  ipcMain.handle(
+    IPC_CHANNELS.PROVIDERS_SET_ENABLED,
+    async (
+      event: IpcMainInvokeEvent,
+      payload: { credentialId: string; enabled: boolean }
+    ): Promise<{ success: boolean }> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.PROVIDERS_SET_ENABLED)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      const updateStmt = db.prepare('UPDATE provider_metadata SET enabled = ? WHERE id = ?')
+      updateStmt.run(payload.enabled ? 1 : 0, payload.credentialId)
+
+      return { success: true }
     }
   )
 

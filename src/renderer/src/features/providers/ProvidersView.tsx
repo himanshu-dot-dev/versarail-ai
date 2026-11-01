@@ -6,6 +6,7 @@ export const ProvidersView: React.FC = () => {
   const [providers, setProviders] = useState<ProviderMetadataDTO[]>([])
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<ProviderMetadataDTO | null>(null)
   const [newProviderId, setNewProviderId] = useState('gemini')
   const [newLabel, setNewLabel] = useState('')
   const [newKey, setNewKey] = useState('')
@@ -39,10 +40,40 @@ export const ProvidersView: React.FC = () => {
     return () => clearInterval(interval)
   }, [])
 
-  const handleToggle = (id: string) => {
+  const handleOpenAddModal = () => {
+    setEditingProvider(null)
+    setNewProviderId('gemini')
+    setNewLabel('')
+    setNewKey('')
+    setNewEndpoint('')
+    setSaveError(null)
+    setModalTestResult(null)
+    setIsAddModalOpen(true)
+  }
+
+  const handleOpenEditModal = (p: ProviderMetadataDTO) => {
+    setEditingProvider(p)
+    setNewProviderId(p.providerId)
+    setNewLabel(p.label)
+    setNewKey('')
+    setNewEndpoint(p.customEndpoint || '')
+    setSaveError(null)
+    setModalTestResult(null)
+    setIsAddModalOpen(true)
+  }
+
+  const handleToggle = async (id: string, currentEnabled: boolean) => {
+    const nextEnabled = !currentEnabled
     setProviders((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))
+      prev.map((p) => (p.id === id ? { ...p, enabled: nextEnabled } : p))
     )
+    if (window.electronApi?.setProviderEnabled) {
+      try {
+        await window.electronApi.setProviderEnabled(id, nextEnabled)
+      } catch (err) {
+        console.error('Failed to update provider enabled status:', err)
+      }
+    }
   }
 
   const handleTestConnection = async (id: string, label: string, providerId: string, customEndpoint?: string) => {
@@ -86,14 +117,15 @@ export const ProvidersView: React.FC = () => {
   }
 
   const handleTestModalConnection = async () => {
-    if (!newKey.trim()) return
+    if (!newKey.trim() && !editingProvider) return
     setIsTestingModal(true)
     setModalTestResult(null)
     try {
       if (window.electronApi?.testProviderConnection) {
         const res = await window.electronApi.testProviderConnection({
           providerId: newProviderId,
-          apiKey: newKey.trim(),
+          apiKey: newKey.trim() || undefined,
+          credentialId: !newKey.trim() && editingProvider ? editingProvider.id : undefined,
           customEndpoint: newEndpoint.trim() || undefined
         })
         setModalTestResult({
@@ -115,7 +147,7 @@ export const ProvidersView: React.FC = () => {
 
   const handleSaveProvider = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newKey.trim()) return
+    if (!editingProvider && !newKey.trim()) return
 
     setIsSaving(true)
     setSaveError(null)
@@ -123,9 +155,10 @@ export const ProvidersView: React.FC = () => {
     try {
       if (window.electronApi?.saveCredential) {
         const res = await window.electronApi.saveCredential({
+          id: editingProvider ? editingProvider.id : undefined,
           providerId: newProviderId,
-          label: newLabel || `${newProviderId.toUpperCase()} Key`,
-          apiKey: newKey.trim(),
+          label: newLabel.trim() || `${newProviderId.toUpperCase()} Key`,
+          apiKey: newKey.trim() || undefined,
           customEndpoint: newEndpoint.trim() || undefined
         })
 
@@ -143,18 +176,19 @@ export const ProvidersView: React.FC = () => {
         setProviders((prev) => [
           ...prev,
           {
-            id: `p-${Date.now()}`,
+            id: editingProvider ? editingProvider.id : `p-${Date.now()}`,
             providerId: newProviderId as any,
-            label: newLabel || `${newProviderId.toUpperCase()} Key`,
+            label: newLabel.trim() || `${newProviderId.toUpperCase()} Key`,
             enabled: true,
             isConfigured: true,
-            maskedKey: `${newKey.slice(0, 4)}••••••••${newKey.slice(-4)}`,
+            maskedKey: newKey ? `${newKey.slice(0, 4)}••••••••${newKey.slice(-4)}` : editingProvider?.maskedKey || '••••',
             healthStatus: 'healthy'
           }
         ])
       }
 
       setIsAddModalOpen(false)
+      setEditingProvider(null)
       setModalTestResult(null)
       setNewKey('')
       setNewLabel('')
@@ -189,7 +223,7 @@ export const ProvidersView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="flex items-center justify-center gap-space-sm px-space-xl py-space-md bg-primary text-on-primary font-headline-sm rounded-xl hover:opacity-90 transition-all shadow-sm font-medium self-start md:self-auto cursor-pointer"
         >
           <Icon name="add" size={18} />
@@ -249,7 +283,7 @@ export const ProvidersView: React.FC = () => {
               </span>
             </div>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleOpenAddModal}
               className="ml-space-md px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg font-medium transition-colors text-body-sm border border-outline-variant cursor-pointer"
             >
               Configure
@@ -294,7 +328,7 @@ export const ProvidersView: React.FC = () => {
               You haven't connected any AI providers yet. Add your API keys with OS-level hardware encryption to start chatting and coding.
             </p>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleOpenAddModal}
               className="mt-2 flex items-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
             >
               <Icon name="add" size={16} />
@@ -394,22 +428,31 @@ export const ProvidersView: React.FC = () => {
                   <button
                     onClick={() => handleTestConnection(p.id, p.label, p.providerId, p.customEndpoint)}
                     disabled={testingId === p.id}
-                    className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50"
+                    className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50 cursor-pointer"
                   >
                     <Icon
                       name={testingId === p.id ? 'sync' : 'bolt'}
                       size={16}
                       className={testingId === p.id ? 'animate-spin text-tertiary' : 'text-primary'}
                     />
-                    <span>{testingId === p.id ? 'Testing...' : 'Test Connection'}</span>
+                    <span>{testingId === p.id ? 'Testing...' : 'Test'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEditModal(p)}
+                    className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-1.5 border border-outline-variant cursor-pointer"
+                    title="Edit Provider Settings and API Key"
+                  >
+                    <Icon name="edit" size={15} className="text-on-surface-variant" />
+                    <span>Edit</span>
                   </button>
 
                   {/* Toggle Switch */}
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  <label className="relative inline-flex items-center cursor-pointer" title={p.enabled ? 'Click to disable provider' : 'Click to enable provider'}>
                     <input
                       type="checkbox"
                       checked={p.enabled}
-                      onChange={() => handleToggle(p.id)}
+                      onChange={() => handleToggle(p.id, p.enabled)}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
@@ -417,7 +460,7 @@ export const ProvidersView: React.FC = () => {
 
                   <button
                     onClick={() => handleDelete(p.id)}
-                    className="p-2 text-on-surface-variant hover:text-error transition-colors rounded hover:bg-surface-container-high"
+                    className="p-2 text-on-surface-variant hover:text-error transition-colors rounded hover:bg-surface-container-high cursor-pointer"
                     title="Delete Credential"
                   >
                     <Icon name="delete" size={16} />
@@ -430,18 +473,24 @@ export const ProvidersView: React.FC = () => {
       )}
     </div>
 
-      {/* Add Provider Modal */}
+      {/* Add / Edit Provider Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface-container border border-outline-variant rounded-xl p-space-xl max-w-md w-full shadow-2xl flex flex-col gap-space-lg animate-scale-in">
             <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
               <div className="flex items-center gap-space-sm">
-                <Icon name="vpn_key" size={20} className="text-primary" />
-                <h3 className="font-headline-md text-on-surface">Add AI Provider</h3>
+                <Icon name={editingProvider ? 'edit' : 'vpn_key'} size={20} className="text-primary" />
+                <h3 className="font-headline-md text-on-surface">
+                  {editingProvider ? `Edit ${editingProvider.label}` : 'Add AI Provider'}
+                </h3>
               </div>
               <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-on-surface-variant hover:text-on-surface"
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  setEditingProvider(null)
+                  setModalTestResult(null)
+                }}
+                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
               >
                 <Icon name="close" size={18} />
               </button>
@@ -474,7 +523,8 @@ export const ProvidersView: React.FC = () => {
                 <select
                   value={newProviderId}
                   onChange={(e) => setNewProviderId(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none"
+                  disabled={Boolean(editingProvider)}
+                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none disabled:opacity-75"
                 >
                   <option value="gemini">Google Gemini (Google AI Studio)</option>
                   <option value="groq">GroqCloud (LPU Inference)</option>
@@ -499,14 +549,20 @@ export const ProvidersView: React.FC = () => {
                 <label className="text-label-sm text-on-surface-variant">API Key / Secret</label>
                 <input
                   type="password"
-                  placeholder="Enter provider key..."
-                  required
+                  placeholder={
+                    editingProvider
+                      ? `Leave empty to keep existing (${editingProvider.maskedKey})`
+                      : 'Enter provider key...'
+                  }
+                  required={!editingProvider}
                   value={newKey}
                   onChange={(e) => setNewKey(e.target.value)}
                   className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
                 />
                 <span className="text-[11px] text-on-surface-variant">
-                  Key is encrypted into your local OS keychain immediately.
+                  {editingProvider
+                    ? 'Leave empty to preserve existing encrypted key, or enter a new key to update.'
+                    : 'Key is encrypted into your local OS keychain immediately.'}
                 </span>
               </div>
 
@@ -526,7 +582,7 @@ export const ProvidersView: React.FC = () => {
               <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-border-subtle">
                 <button
                   type="button"
-                  disabled={isTestingModal || !newKey.trim()}
+                  disabled={isTestingModal || (!newKey.trim() && !editingProvider)}
                   onClick={handleTestModalConnection}
                   className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50 cursor-pointer"
                 >
@@ -543,6 +599,7 @@ export const ProvidersView: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsAddModalOpen(false)
+                      setEditingProvider(null)
                       setModalTestResult(null)
                     }}
                     className="px-space-lg py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
@@ -551,11 +608,11 @@ export const ProvidersView: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSaving || !newKey.trim()}
+                    disabled={isSaving || (!editingProvider && !newKey.trim())}
                     className="px-space-xl py-space-sm rounded-lg bg-primary text-on-primary font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-space-sm shadow-sm cursor-pointer"
                   >
                     {isSaving && <Icon name="sync" size={16} className="animate-spin" />}
-                    <span>Save Credential</span>
+                    <span>{isSaving ? 'Saving...' : editingProvider ? 'Save Changes' : 'Save Credential'}</span>
                   </button>
                 </div>
               </div>

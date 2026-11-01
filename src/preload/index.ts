@@ -37,15 +37,19 @@ const electronApi: IElectronApi = {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_LIST)
   },
   saveCredential: (payload: {
+    id?: string
     providerId: string
     label: string
-    apiKey: string
+    apiKey?: string
     customEndpoint?: string
   }): Promise<{ success: boolean; error?: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_SAVE_CREDENTIAL, payload)
   },
   deleteCredential: (credentialId: string): Promise<{ success: boolean }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_DELETE_CREDENTIAL, credentialId)
+  },
+  setProviderEnabled: (credentialId: string, enabled: boolean): Promise<{ success: boolean }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_SET_ENABLED, { credentialId, enabled })
   },
   validateCredential: (credentialId: string): Promise<{ valid: boolean; error?: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.PROVIDERS_VALIDATE_CREDENTIAL, credentialId)

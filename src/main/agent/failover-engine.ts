@@ -1,6 +1,7 @@
 import { ProviderId, ModelDescriptorDTO } from '@shared/domain/models'
 import { ProviderRegistry } from '../providers/provider-registry'
 import { SecretStorageService } from '../security/safe-storage.service'
+import { SqliteDatabase } from '../storage/sqlite-database'
 import { classifyProviderError, NormalizedProviderError } from './error-classifier'
 import { InBandDetector } from '../providers/utils/in-band-detector'
 import { formatResetEta, summarizeExhaustion, ModelExhaustionRecord } from '../providers/utils/reset-eta'
@@ -40,6 +41,8 @@ export interface FailoverExecutionOptions {
   candidates: CandidateModel[]
   messages: ChatMessage[]
   signal?: AbortSignal
+  preferredProviderId?: ProviderId
+  preferredModelId?: string
   onToken: (chunk: { delta: string; isComplete: boolean }) => void
   onFailover?: (event: FailoverEvent) => void
 }
@@ -226,8 +229,26 @@ export class FailoverEngine {
     const estimatedTokens = options.estimatedPromptTokens || 0
     const rawCandidates: CandidateModel[] = []
 
+    const disabledCredIds = new Set<string>()
+    try {
+      const db = SqliteDatabase.getInstance()
+      const rows = db.prepare('SELECT id FROM provider_metadata WHERE enabled = 0').all() as Array<{ id: string }>
+      for (const row of rows) {
+        disabledCredIds.add(row.id)
+      }
+    } catch {
+      // In isolated tests without full database initialization, ignore
+    }
+
     for (const cred of configuredCreds) {
       const providerId = cred.providerId as ProviderId
+
+      // Skip disabled credentials unless explicitly requested as user's preferred provider
+      const isPreferred = cred.providerId === options.preferredProviderId
+      if (!isPreferred && disabledCredIds.has(cred.id)) {
+        continue
+      }
+
       if (options.allowedProviders && !options.allowedProviders.includes(providerId)) {
         continue
       }
@@ -297,8 +318,8 @@ export class FailoverEngine {
       if (!aIsPreferred && bIsPreferred) return 1
 
       // 2. Cooldown check
-      const aCooldown = this.registry.getCooldownExpiry(a.credentialId)
-      const bCooldown = this.registry.getCooldownExpiry(b.credentialId)
+      const aCooldown = this.registry.getCooldownExpiry(a.credentialId, a.modelId)
+      const bCooldown = this.registry.getCooldownExpiry(b.credentialId, b.modelId)
       const aInCooldown = aCooldown !== null && aCooldown > now
       const bInCooldown = bCooldown !== null && bCooldown > now
 
@@ -334,9 +355,14 @@ export class FailoverEngine {
         throw new Error('Generation cancelled by user')
       }
 
-      // Check active cooldown
-      const cooldownExpiry = this.registry.getCooldownExpiry(candidate.credentialId)
-      if (cooldownExpiry && cooldownExpiry > Date.now()) {
+      // Check if user explicitly requested this exact provider + model
+      const isUserPreferred =
+        options.preferredProviderId === candidate.providerId &&
+        options.preferredModelId === candidate.modelId
+
+      // Check active cooldown (user's explicit preference is never skipped on intentional send)
+      const cooldownExpiry = this.registry.getCooldownExpiry(candidate.credentialId, candidate.modelId)
+      if (!isUserPreferred && cooldownExpiry && cooldownExpiry > Date.now()) {
         exhaustionRecords.push({
           modelId: candidate.modelId,
           provider: candidate.providerId,
@@ -412,6 +438,7 @@ export class FailoverEngine {
 
         // Successfully completed stream
         this.registry.releaseLease(candidate.credentialId)
+        this.registry.clearCooldown(candidate.credentialId, candidate.modelId)
         onToken({ delta: '', isComplete: true })
 
         return {
@@ -432,7 +459,9 @@ export class FailoverEngine {
         const cooldownDuration = normalized.retryAfterMs || 45000
         const cooldownExpiryTime = Date.now() + cooldownDuration
 
-        this.registry.setCooldown(candidate.credentialId, cooldownDuration, normalized.clientSafeMessage)
+        // Granular cooldown: model-level unless credential fails authentication globally
+        const cooldownModelId = normalized.kind === 'authentication_failed' ? undefined : candidate.modelId
+        this.registry.setCooldown(candidate.credentialId, cooldownDuration, normalized.clientSafeMessage, cooldownModelId)
 
         exhaustionRecords.push({
           modelId: candidate.modelId,

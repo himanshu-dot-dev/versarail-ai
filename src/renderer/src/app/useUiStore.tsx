@@ -25,6 +25,15 @@ export interface ConnectedModelInfo {
   isConnected: boolean
 }
 
+export interface ConversationItem {
+  id: string
+  title: string
+  selectedModel: string
+  workspacePath?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface UiState {
   activeView: ViewId
   setActiveView: (view: ViewId) => void
@@ -51,6 +60,13 @@ export interface UiState {
 
   hasActiveRun: boolean
   setHasActiveRun: (active: boolean) => void
+
+  activeConversationId: string
+  setActiveConversationId: (id: string) => void
+  conversations: ConversationItem[]
+  loadConversations: () => Promise<void>
+  startNewChat: () => string
+  deleteConversation: (id: string) => Promise<void>
 }
 
 const UiContext = createContext<UiState | undefined>(undefined)
@@ -107,6 +123,50 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     isConnected: false
   })
   const [hasActiveRun, setHasActiveRun] = useState(false)
+  const [activeConversationId, setActiveConversationId] = useState<string>('conv-default')
+  const [conversations, setConversations] = useState<ConversationItem[]>([])
+
+  const loadConversations = async () => {
+    if (window.electronApi?.listConversations) {
+      try {
+        const list = await window.electronApi.listConversations()
+        setConversations(list || [])
+      } catch (err) {
+        console.error('[useUiStore] Failed to list conversations:', err)
+      }
+    }
+  }
+
+  const startNewChat = () => {
+    const newId = `conv-${Date.now()}`
+    setActiveConversationId(newId)
+    setActiveView('chat')
+    return newId
+  }
+
+  const deleteConversation = async (id: string) => {
+    if (window.electronApi?.deleteConversation) {
+      try {
+        await window.electronApi.deleteConversation(id)
+        const list = (await window.electronApi.listConversations()) || []
+        setConversations(list)
+        if (activeConversationId === id) {
+          if (list.length > 0) {
+            setActiveConversationId(list[0].id)
+            setActiveView('chat')
+          } else {
+            startNewChat()
+          }
+        }
+      } catch (err) {
+        console.error('[useUiStore] Failed to delete conversation:', err)
+      }
+    }
+  }
+
+  useEffect(() => {
+    loadConversations()
+  }, [])
 
   // Sync theme attribute on document root
   const setTheme = (newTheme: ThemeMode) => {
@@ -221,7 +281,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     connectedModel,
     setConnectedModel,
     hasActiveRun,
-    setHasActiveRun
+    setHasActiveRun,
+    activeConversationId,
+    setActiveConversationId,
+    conversations,
+    loadConversations,
+    startNewChat,
+    deleteConversation
   }
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>

@@ -12,13 +12,19 @@ export const InspectorPanel: React.FC = () => {
     selectWorkspaceFolder
   } = useUiStore()
   const [workspaceTree, setWorkspaceTree] = useState<{ files: string[]; dirs: string[] } | null>(null)
+  const [currentDir, setCurrentDir] = useState('.')
   const [fileFilter, setFileFilter] = useState('')
   const [copiedFile, setCopiedFile] = useState<string | null>(null)
+
+  // Reset currentDir when workspace changes
+  useEffect(() => {
+    setCurrentDir('.')
+  }, [workspace.path])
 
   useEffect(() => {
     if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
       window.electronApi
-        .inspectWorkspaceFiles('.')
+        .inspectWorkspaceFiles(currentDir)
         .then((res) => {
           if (res) setWorkspaceTree(res)
         })
@@ -26,10 +32,23 @@ export const InspectorPanel: React.FC = () => {
     } else {
       setWorkspaceTree(null)
     }
-  }, [workspace.path])
+  }, [workspace.path, currentDir])
+
+  const handleOpenDir = (dirName: string) => {
+    const next = currentDir === '.' ? dirName : `${currentDir}/${dirName}`
+    setCurrentDir(next)
+  }
+
+  const handleGoUp = () => {
+    if (currentDir === '.') return
+    const parts = currentDir.split('/')
+    parts.pop()
+    setCurrentDir(parts.length > 0 ? parts.join('/') : '.')
+  }
 
   const handleCopyFile = (fileName: string) => {
-    navigator.clipboard.writeText(fileName)
+    const fullRelative = currentDir === '.' ? fileName : `${currentDir}/${fileName}`
+    navigator.clipboard.writeText(fullRelative)
     setCopiedFile(fileName)
     setTimeout(() => setCopiedFile(null), 1500)
   }
@@ -92,10 +111,12 @@ export const InspectorPanel: React.FC = () => {
                 <div className="flex items-center justify-between px-space-sm py-1.5 rounded-lg bg-surface-container text-on-surface font-medium font-mono text-[11px] mb-1.5 border border-outline-variant">
                   <div className="flex items-center gap-1.5 truncate">
                     <Icon name="folder_open" size={15} className="text-primary shrink-0" />
-                    <span className="truncate">{workspace.name || 'workspace'}</span>
+                    <span className="truncate">
+                      {currentDir === '.' ? (workspace.name || 'workspace') : `${workspace.name}/${currentDir}`}
+                    </span>
                   </div>
                   <span className="text-[10px] text-on-surface-variant font-mono shrink-0">
-                    {workspaceTree.files.length} files
+                    {(workspaceTree.files.length + workspaceTree.dirs.length)} items
                   </span>
                 </div>
 
@@ -119,14 +140,31 @@ export const InspectorPanel: React.FC = () => {
                   )}
                 </div>
 
+                {/* Navigate Up Folder button when inside subdirectory */}
+                {currentDir !== '.' && (
+                  <div
+                    onClick={handleGoUp}
+                    className="flex items-center gap-1.5 px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-primary text-[11px] font-mono mb-1 transition-colors group"
+                    title="Go up to parent directory"
+                  >
+                    <Icon name="arrow_upward" size={13} className="group-hover:-translate-y-0.5 transition-transform" />
+                    <span>.. (Up one level)</span>
+                  </div>
+                )}
+
                 {/* Directory list */}
                 {filteredDirs.map((dir) => (
                   <div
                     key={`d-${dir}`}
-                    className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface group"
+                    onClick={() => handleOpenDir(dir)}
+                    className="flex items-center justify-between gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface group transition-colors"
+                    title={`Open folder "${dir}"`}
                   >
-                    <Icon name="folder" size={14} className="text-primary shrink-0" />
-                    <span className="font-mono text-[11px] truncate flex-1">{dir}</span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Icon name="folder" size={14} className="text-primary shrink-0" />
+                      <span className="font-mono text-[11px] truncate flex-1">{dir}</span>
+                    </div>
+                    <Icon name="chevron_right" size={13} className="text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </div>
                 ))}
 

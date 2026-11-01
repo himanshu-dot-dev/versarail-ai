@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useUiStore } from '../../app/useUiStore'
 import Icon from '../../components/common/Icon'
 
@@ -7,164 +7,158 @@ export interface WelcomeHeroProps {
 }
 
 export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
-  const { selectWorkspaceFolder, setActiveView, recentWorkspaces, openWorkspacePath } = useUiStore()
-  const [promptInput, setPromptInput] = useState('')
+  const { selectWorkspaceFolder, setActiveView, recentWorkspaces, openWorkspacePath, workspace } = useUiStore()
 
-  const examplePrompts = [
-    'Explain the structure of this project.',
-    'Create a REST API with authentication.',
-    'Review and improve the README.'
+  const quickStarters = [
+    {
+      icon: 'architecture',
+      title: 'Analyze Architecture',
+      description: 'Explain the structure of this project and key module boundaries.',
+      prompt: 'Explain the architecture and high-level structure of this codebase.'
+    },
+    {
+      icon: 'bug_report',
+      title: 'Find Bugs & Code Smells',
+      description: 'Audit code for potential bugs, security issues, or anti-patterns.',
+      prompt: 'Review this project for potential bugs, security vulnerabilities, or anti-patterns.'
+    },
+    {
+      icon: 'playlist_add_check',
+      title: 'Run Tests & Fixes',
+      description: 'Execute the project test suite and propose automated fixes.',
+      prompt: 'Check the test suite of this project, verify all tests pass, and report status.'
+    }
   ]
 
-  const handleStartPrompt = (prompt: string) => {
-    if (onStartPrompt) {
-      onStartPrompt(prompt)
-    } else {
-      setPromptInput(prompt)
-    }
-  }
-
   return (
-    <div className="flex flex-col w-full max-w-5xl mx-auto px-space-xl py-space-xl gap-space-xl select-none">
+    <div className="flex flex-col w-full max-w-4xl mx-auto px-space-md py-space-lg gap-space-xl select-none">
       {/* Welcome Center Hero Section */}
-      <div className="flex flex-col items-center text-center pt-space-xl pb-space-lg relative">
+      <div className="flex flex-col items-center text-center pt-space-lg pb-space-sm relative">
         {/* Ambient background glow */}
-        <div className="absolute w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -top-10" />
+        <div className="absolute w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none -top-6" />
 
         {/* Logo Mark */}
-        <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center mb-space-lg shadow-xl relative border border-outline-variant">
-          <Icon name="hub" size={32} className="text-primary" filled />
+        <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-space-md shadow-lg relative border border-outline-variant">
+          <Icon name="hub" size={28} className="text-primary" />
           <div
-            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-tertiary flex items-center justify-center border-2 border-surface"
-            title="Connected Gateway"
+            className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-surface"
+            title="Gateway Ready"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-on-tertiary" />
+            <span className="w-1 h-1 rounded-full bg-white" />
           </div>
         </div>
 
         {/* Headline */}
-        <h1 className="font-headline-xl text-on-surface tracking-tight mb-space-sm max-w-xl">
-          Your AI. Your keys. Your workspace.
+        <h1 className="font-headline-xl text-on-surface tracking-tight mb-space-xs text-xl md:text-2xl font-bold">
+          VersaRail AI Agent Workstation
         </h1>
 
         {/* Subtitle */}
-        <p className="font-body-lg text-on-surface-variant max-w-lg mb-space-xl">
-          Connect your preferred AI providers, maintain absolute control over local project files, and build with native desktop speed.
+        <p className="font-body-md text-on-surface-variant max-w-md text-xs mb-space-lg">
+          Local, privacy-first AI development harness. Connect BYOK models, run commands safely, and review diffs before disk mutation.
         </p>
 
-        {/* Primary Action Buttons */}
-        <div className="flex items-center gap-space-md mb-space-xl">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-space-sm mb-space-md">
           <button
             onClick={selectWorkspaceFolder}
-            className="flex items-center gap-space-sm px-space-lg py-space-md rounded-xl bg-primary text-on-primary font-headline-sm hover:opacity-90 transition-all shadow-md font-medium"
+            className="flex items-center gap-space-xs px-space-lg py-2 rounded-xl bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
           >
-            <Icon name="folder_open" size={18} className="text-on-primary" />
-            <span>Open a Folder</span>
+            <Icon name="folder_open" size={16} />
+            <span>{workspace.path ? 'Switch Project Folder' : 'Open Project Folder'}</span>
           </button>
 
           <button
             onClick={() => setActiveView('ai-providers')}
-            className="flex items-center gap-space-sm px-space-lg py-space-md rounded-xl bg-surface-container-high text-on-surface font-headline-sm hover:bg-surface-container-highest transition-all border border-outline-variant font-medium"
+            className="flex items-center gap-space-xs px-space-lg py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium transition-colors border border-outline-variant cursor-pointer"
           >
-            <Icon name="smart_toy" size={18} className="text-primary" />
-            <span>Connect an AI Provider</span>
+            <Icon name="smart_toy" size={16} className="text-primary" />
+            <span>Manage AI Providers</span>
           </button>
         </div>
 
+        {/* Recent Projects Pills */}
         {recentWorkspaces.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-space-lg max-w-xl">
-            <span className="text-[11px] text-on-surface-variant font-mono">Recent:</span>
-            {recentWorkspaces.slice(0, 4).map((p) => (
-              <button
-                key={p.path}
-                onClick={() => p.path && openWorkspacePath(p.path)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono border border-outline-variant transition-colors cursor-pointer"
-                title={p.path || p.name || ''}
-              >
-                <Icon name="folder" size={13} className="text-primary" />
-                <span className="truncate max-w-[130px]">{p.name}</span>
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-lg mb-space-sm">
+            <span className="text-[11px] text-on-surface-variant font-mono mr-1">Recent:</span>
+            {recentWorkspaces.slice(0, 4).map((p) => {
+              const isCurrent = p.path === workspace.path
+              return (
+                <button
+                  key={p.path}
+                  onClick={() => p.path && openWorkspacePath(p.path)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono border transition-colors cursor-pointer ${
+                    isCurrent
+                      ? 'bg-primary/10 text-primary border-primary/30 font-medium'
+                      : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+                  }`}
+                  title={p.path || p.name || ''}
+                >
+                  <Icon name="folder" size={12} className={isCurrent ? 'text-primary' : 'text-on-surface-variant'} />
+                  <span className="truncate max-w-[120px]">{p.name}</span>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Chat Input & Example Prompts Container */}
-      <div className="flex flex-col w-full max-w-2xl mx-auto bg-surface-container rounded-xl p-space-lg shadow-xl gap-space-md border border-outline-variant">
-        <div className="flex items-center gap-space-md">
-          <Icon name="terminal" size={20} className="text-primary" />
-          <input
-            value={promptInput}
-            onChange={(e) => setPromptInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && promptInput.trim()) {
-                handleStartPrompt(promptInput)
-              }
-            }}
-            className="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 font-body-lg focus:outline-none"
-            placeholder="What would you like to build or change?"
-            type="text"
-          />
-          <button
-            onClick={() => {
-              if (promptInput.trim()) {
-                handleStartPrompt(promptInput)
-              }
-            }}
-            className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-primary-container hover:text-on-primary-container transition-all shrink-0"
-            title="Start"
-          >
-            <Icon name="arrow_upward" size={16} />
-          </button>
-        </div>
-
-        {/* Example Prompt Pills */}
-        <div className="flex flex-wrap items-center gap-space-xs pt-space-xs">
-          <span className="text-label-sm text-on-surface-variant mr-space-xs font-mono">Try asking:</span>
-          {examplePrompts.map((prompt) => (
+      {/* Quick Starter Action Tiles */}
+      <div className="flex flex-col gap-2 max-w-2xl mx-auto w-full">
+        <span className="text-[11px] font-mono text-on-surface-variant uppercase tracking-wider text-center">
+          Suggested Prompts
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
+          {quickStarters.map((starter) => (
             <button
-              key={prompt}
-              onClick={() => handleStartPrompt(prompt)}
-              className="px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface-variant text-label-sm hover:bg-surface-container-high hover:text-on-surface transition-all border border-outline-variant"
+              key={starter.title}
+              onClick={() => onStartPrompt?.(starter.prompt)}
+              className="flex flex-col items-start p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant hover:border-primary/50 group text-left cursor-pointer"
             >
-              {prompt}
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon name={starter.icon} size={15} className="text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-semibold text-on-surface">{starter.title}</span>
+              </div>
+              <span className="text-[11px] text-on-surface-variant leading-relaxed">
+                {starter.description}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Three Compact Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-space-lg mt-space-lg pb-space-xl">
+      {/* Feature Highlights Bento Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-space-xs">
         {/* Card 1 */}
-        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-space-xs group-hover:scale-105 transition-transform">
-            <Icon name="vpn_key" size={20} className="text-primary" />
+        <div className="flex flex-col bg-surface-container/60 p-space-md rounded-xl gap-1 border border-outline-variant">
+          <div className="flex items-center gap-2 mb-1">
+            <Icon name="vpn_key" size={16} className="text-primary" />
+            <span className="text-xs font-semibold text-on-surface">BYOK Direct Key</span>
           </div>
-          <h3 className="font-headline-sm text-on-surface">Bring Your Own Key</h3>
-          <p className="font-body-md text-on-surface-variant">
-            Use your Google Gemini, Groq, Cerebras, or OpenRouter credentials directly with hardware-backed encryption.
+          <p className="text-[11px] text-on-surface-variant leading-relaxed">
+            Hardware-encrypted credentials. Your API keys are kept safe on local OS keychain.
           </p>
         </div>
 
         {/* Card 2 */}
-        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary mb-space-xs group-hover:scale-105 transition-transform">
-            <Icon name="swap_horiz" size={20} className="text-tertiary" />
+        <div className="flex flex-col bg-surface-container/60 p-space-md rounded-xl gap-1 border border-outline-variant">
+          <div className="flex items-center gap-2 mb-1">
+            <Icon name="swap_horiz" size={16} className="text-tertiary" />
+            <span className="text-xs font-semibold text-on-surface">Auto-Failover</span>
           </div>
-          <h3 className="font-headline-sm text-on-surface">Automatic Provider Fallback</h3>
-          <p className="font-body-md text-on-surface-variant">
-            Never lose conversation context. Automatically route requests to backup endpoints when rate limits or quotas occur.
+          <p className="text-[11px] text-on-surface-variant leading-relaxed">
+            Automatic dead-turn failover between Gemini, Groq, Cerebras, and local OmniRoute.
           </p>
         </div>
 
         {/* Card 3 */}
-        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
-          <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary mb-space-xs group-hover:scale-105 transition-transform">
-            <Icon name="shield_lock" size={20} className="text-secondary" />
+        <div className="flex flex-col bg-surface-container/60 p-space-md rounded-xl gap-1 border border-outline-variant">
+          <div className="flex items-center gap-2 mb-1">
+            <Icon name="shield_lock" size={16} className="text-secondary" />
+            <span className="text-xs font-semibold text-on-surface">Diff-First Safety</span>
           </div>
-          <h3 className="font-headline-sm text-on-surface">Diff-First & Local Safety</h3>
-          <p className="font-body-md text-on-surface-variant">
-            Review unified diffs before any change touches disk. Strict permission broker defends against prompt injection.
+          <p className="text-[11px] text-on-surface-variant leading-relaxed">
+            Interactive unified diff viewer with tamper-proof payload hashes before applying changes.
           </p>
         </div>
       </div>
@@ -173,4 +167,3 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
 }
 
 export default WelcomeHero
-

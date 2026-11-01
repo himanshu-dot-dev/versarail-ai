@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useUiStore } from '../../app/useUiStore'
 import WelcomeHero from '../workspace/WelcomeHero'
 import PromptComposer from './PromptComposer'
@@ -15,6 +15,67 @@ interface ChatMessageItem {
   error?: string
 }
 
+const MessageContent: React.FC<{ text: string }> = ({ text }) => {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  const parts = useMemo(() => {
+    const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g
+    const result: Array<{ type: 'text' | 'code'; content: string; lang?: string }> = []
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        result.push({ type: 'text', content: text.slice(lastIndex, match.index) })
+      }
+      result.push({ type: 'code', lang: match[1] || 'plaintext', content: match[2].trimEnd() })
+      lastIndex = match.index + match[0].length
+    }
+
+    if (lastIndex < text.length) {
+      result.push({ type: 'text', content: text.slice(lastIndex) })
+    }
+
+    return result
+  }, [text])
+
+  const handleCopyCode = (code: string, index: number) => {
+    navigator.clipboard.writeText(code)
+    setCopiedIndex(index)
+    setTimeout(() => setCopiedIndex(null), 2000)
+  }
+
+  if (parts.length === 1 && parts[0].type === 'text') {
+    return <div className="whitespace-pre-wrap">{text}</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {parts.map((part: { type: 'text' | 'code'; content: string; lang?: string }, i: number) => {
+        if (part.type === 'code') {
+          return (
+            <div key={i} className="my-1.5 rounded-lg overflow-hidden border border-outline-variant bg-surface-container-lowest font-mono text-xs">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-surface-container-high/70 border-b border-outline-variant text-[11px] text-on-surface-variant select-none">
+                <span className="font-semibold uppercase tracking-wider font-mono">{part.lang}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCode(part.content, i)}
+                  className="flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+                >
+                  <Icon name={copiedIndex === i ? 'check' : 'content_copy'} size={12} className={copiedIndex === i ? 'text-primary' : ''} />
+                  <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+              <pre className="p-3 overflow-x-auto text-on-surface leading-relaxed">{part.content}</pre>
+            </div>
+          )
+        }
+        return <div key={i} className="whitespace-pre-wrap">{part.content}</div>
+      })}
+    </div>
+  )
+}
+
 export const ChatView: React.FC = () => {
   const {
     hasActiveRun,
@@ -28,9 +89,11 @@ export const ChatView: React.FC = () => {
     closeWorkspace,
     isInspectorOpen,
     toggleInspector,
-    setInspectorTab
+    setInspectorTab,
+    activeConversationId,
+    startNewChat,
+    loadConversations
   } = useUiStore()
-  const [conversationId, setConversationId] = useState('conv-default')
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [isTerminalOpen, setIsTerminalOpen] = useState(false)
@@ -73,24 +136,39 @@ export const ChatView: React.FC = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load existing conversation on mount if available
+  // Load existing conversation on mount or when active conversation changes
   useEffect(() => {
+    setIsStreaming(false)
+    setHasActiveRun(false)
+    setActiveRunId(null)
+    setFailoverNotice(null)
+
     if (window.electronApi?.getConversation) {
-      window.electronApi.getConversation(conversationId).then((res) => {
-        if (res && res.messages.length > 0) {
-          setMessages(
-            res.messages.map((m) => ({
-              id: m.id,
-              role: m.role as 'user' | 'assistant',
-              text: m.content,
-              time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              model: m.modelId || undefined
-            }))
-          )
-        }
-      }).catch(console.error)
+      window.electronApi
+        .getConversation(activeConversationId)
+        .then((res) => {
+          if (res && res.messages && res.messages.length > 0) {
+            setMessages(
+              res.messages.map((m) => ({
+                id: m.id,
+                role: m.role as 'user' | 'assistant',
+                text: m.content,
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                model: m.modelId || undefined
+              }))
+            )
+          } else {
+            setMessages([])
+          }
+        })
+        .catch((err) => {
+          console.error('[ChatView] Failed to load conversation:', err)
+          setMessages([])
+        })
+    } else {
+      setMessages([])
     }
-  }, [conversationId])
+  }, [activeConversationId])
 
   // Setup streaming token listener
   useEffect(() => {
@@ -116,6 +194,7 @@ export const ChatView: React.FC = () => {
         }
 
         if (data.isComplete) {
+          loadConversations()
           const finalText = lastMsg.text.trim()
             ? lastMsg.text
             : (data.error ? `[Error: ${data.error}]` : '[No response received from model. Upstream provider closed connection without emitting tokens.]')
@@ -140,6 +219,7 @@ export const ChatView: React.FC = () => {
 
       if (data.isComplete || data.error) {
         setIsStreaming(false)
+        setHasActiveRun(false)
         setActiveRunId(null)
       }
     })
@@ -173,6 +253,30 @@ export const ChatView: React.FC = () => {
     const userMsgId = `msg-${Date.now()}`
     const assistantMsgId = `msg-assistant-${Date.now()}`
 
+    // Check if any provider is connected
+    if (!connectedModel.isConnected || connectedModel.name === 'No Model Connected') {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userMsgId,
+          role: 'user',
+          text,
+          time: userTime
+        },
+        {
+          id: assistantMsgId,
+          role: 'assistant',
+          text: 'No AI provider is connected yet. Please navigate to AI Providers and add an API key (e.g. Google Gemini, Groq, Cerebras, or OmniRoute) to start generating responses.',
+          time: userTime,
+          isStreaming: false,
+          error: 'No provider connected'
+        }
+      ])
+      setIsStreaming(false)
+      setHasActiveRun(false)
+      return
+    }
+
     // Optimistically add user message and streaming assistant placeholder
     setMessages((prev) => [
       ...prev,
@@ -202,12 +306,13 @@ export const ChatView: React.FC = () => {
         const modelId = connectedModel.name || (providerId === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.5-flash')
 
         const result = await window.electronApi.sendPrompt({
-          conversationId,
+          conversationId: activeConversationId,
           prompt: text,
           modelId,
           providerId,
           workspacePath: workspace.path
         })
+        loadConversations()
 
         if (!result.success) {
           setMessages((prev) => [
@@ -222,6 +327,7 @@ export const ChatView: React.FC = () => {
             }
           ])
           setIsStreaming(false)
+          setHasActiveRun(false)
         } else if (result.runId) {
           setActiveRunId(result.runId)
         }
@@ -239,6 +345,7 @@ export const ChatView: React.FC = () => {
             }
           ])
           setIsStreaming(false)
+          setHasActiveRun(false)
         }, 1000)
       }
     } catch (err: any) {
@@ -254,6 +361,7 @@ export const ChatView: React.FC = () => {
         }
       ])
       setIsStreaming(false)
+      setHasActiveRun(false)
     }
   }
 
@@ -262,6 +370,7 @@ export const ChatView: React.FC = () => {
       await window.electronApi.cancelRun(activeRunId)
     }
     setIsStreaming(false)
+    setHasActiveRun(false)
     setActiveRunId(null)
     setMessages((prev) => {
       const last = prev[prev.length - 1]
@@ -280,20 +389,10 @@ export const ChatView: React.FC = () => {
   }
 
   const handleNewChat = () => {
-    const newId = `conv-${Date.now()}`
-    setConversationId(newId)
+    startNewChat()
     setMessages([])
     setIsStreaming(false)
     setActiveRunId(null)
-  }
-
-  // If user hasn't started any run and no project is open, show WelcomeHero
-  if (!hasActiveRun && !workspace.path && messages.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col h-full overflow-y-auto">
-        <WelcomeHero />
-      </div>
-    )
   }
 
   return (
@@ -553,11 +652,17 @@ export const ChatView: React.FC = () => {
                   </div>
 
                   <div
-                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs whitespace-pre-wrap ${
+                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs ${
                       isUser ? 'bg-surface-container-lowest' : 'bg-surface-container'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
-                    {msg.text || (msg.isStreaming ? 'Thinking...' : '[No response received from model]')}
+                    {msg.text ? (
+                      <MessageContent text={msg.text} />
+                    ) : (
+                      <span className="italic text-on-surface-variant">
+                        {msg.isStreaming ? 'Thinking...' : '[No response received from model]'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

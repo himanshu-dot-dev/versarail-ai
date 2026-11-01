@@ -47,12 +47,14 @@ export interface IElectronApi {
   // Providers
   listProviders: () => Promise<ProviderMetadataDTO[]>
   saveCredential: (payload: {
+    id?: string
     providerId: string
     label: string
-    apiKey: string
+    apiKey?: string
     customEndpoint?: string
   }) => Promise<{ success: boolean; error?: string }>
   deleteCredential: (credentialId: string) => Promise<{ success: boolean }>
+  setProviderEnabled: (credentialId: string, enabled: boolean) => Promise<{ success: boolean }>
   validateCredential: (credentialId: string) => Promise<{ valid: boolean; error?: string }>
   testProviderConnection: (payload: {
     providerId: string
