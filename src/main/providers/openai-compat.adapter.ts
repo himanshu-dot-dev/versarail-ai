@@ -8,6 +8,20 @@ import {
 import { detectInBandError } from './utils/in-band-detector'
 import { repairToolArguments } from './utils/tool-repair'
 
+function sanitizeApiKey(rawApiKey: unknown): string {
+  if (!rawApiKey) return ''
+  let key = ''
+  if (typeof rawApiKey === 'object' && rawApiKey !== null && 'result' in rawApiKey) {
+    const res = (rawApiKey as { result: unknown }).result
+    key = Buffer.isBuffer(res) ? res.toString('utf-8') : String(res ?? '')
+  } else if (Buffer.isBuffer(rawApiKey)) {
+    key = (rawApiKey as Buffer).toString('utf-8')
+  } else {
+    key = typeof rawApiKey === 'string' ? rawApiKey : String(rawApiKey || '')
+  }
+  return key.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/^["']|["']$/g, '').trim()
+}
+
 export interface OpenAICompatConfig {
   id: ProviderId
   name: string
@@ -29,14 +43,22 @@ export class OpenAICompatAdapter implements IProviderAdapter {
   }
 
   protected getBaseUrl(customEndpoint?: string): string {
-    if (customEndpoint && customEndpoint.trim().length > 0) {
-      return customEndpoint.trim().replace(/\/+$/, '')
+    const endpoint = typeof customEndpoint === 'string'
+      ? customEndpoint
+      : Buffer.isBuffer(customEndpoint)
+      ? (customEndpoint as Buffer).toString('utf-8')
+      : customEndpoint ? String(customEndpoint) : ''
+
+    if (endpoint && endpoint.trim().length > 0) {
+      return endpoint.trim().replace(/\/+$/, '')
     }
     return this.defaultBaseUrl.replace(/\/+$/, '')
   }
 
-  async validateKey(apiKey: string, customEndpoint?: string): Promise<KeyValidationResult> {
-    if (!apiKey || apiKey.trim().length === 0) {
+  async validateKey(rawApiKey: string, customEndpoint?: string): Promise<KeyValidationResult> {
+    const cleanKey = sanitizeApiKey(rawApiKey)
+
+    if (!cleanKey || cleanKey.length === 0) {
       return { valid: false, latencyMs: 0, modelsCount: 0, error: 'API key is required' }
     }
 
@@ -48,7 +70,8 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${apiKey.trim()}`,
+          Authorization: `Bearer ${cleanKey}`,
+          'x-api-key': cleanKey,
           'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
         },
         signal: AbortSignal.timeout(10000)
@@ -99,7 +122,9 @@ export class OpenAICompatAdapter implements IProviderAdapter {
     }
   }
 
-  async listModels(apiKey: string, customEndpoint?: string): Promise<ModelDescriptorDTO[]> {
+  async listModels(rawApiKey: string, customEndpoint?: string): Promise<ModelDescriptorDTO[]> {
+    const cleanKey = sanitizeApiKey(rawApiKey)
+
     const baseUrl = this.getBaseUrl(customEndpoint)
     const url = `${baseUrl}/models`
 
@@ -107,19 +132,33 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${apiKey.trim()}`,
+          Authorization: `Bearer ${cleanKey}`,
+          'x-api-key': cleanKey,
           'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
         },
         signal: AbortSignal.timeout(6000)
       })
 
       if (response.ok) {
-        const body = (await response.json()) as { data?: Array<{ id: string }> }
+        const body = (await response.json()) as { data?: Array<{ id: string; [key: string]: unknown }> }
         if (Array.isArray(body?.data) && body.data.length > 0) {
-          const remoteModelIds = new Set(body.data.map((m) => m.id))
-          // Filter curated list or map dynamically
-          const matched = this.defaultModels.filter((m) => remoteModelIds.has(m.id))
-          if (matched.length > 0) return matched
+          if (this.id !== 'custom') {
+            const remoteModelIds = new Set(body.data.map((m) => m.id))
+            const matched = this.defaultModels.filter((m) => remoteModelIds.has(m.id))
+            if (matched.length > 0) return matched
+          }
+
+          // Dynamic discovery for custom gateways (e.g. OmniRoute, LocalAI)
+          return body.data.map((m) => ({
+            id: m.id,
+            providerId: this.id,
+            name: m.id.startsWith('auto/') ? `⚡ ${m.id} (Auto Switch)` : m.id,
+            contextWindow: typeof m.context_length === 'number' ? m.context_length : 128000,
+            outputLimit: typeof m.max_output_tokens === 'number' ? m.max_output_tokens : 8192,
+            supportsTools: true,
+            supportsStreaming: true,
+            isFreeTierAvailable: false
+          }))
         }
       }
     } catch {
@@ -130,6 +169,8 @@ export class OpenAICompatAdapter implements IProviderAdapter {
   }
 
   async *streamCompletion(request: ChatCompletionRequest): AsyncIterable<StreamChunk> {
+    const cleanKey = sanitizeApiKey(request.apiKey)
+
     const baseUrl = this.getBaseUrl(request.customEndpoint)
     const url = `${baseUrl}/chat/completions`
 
@@ -145,7 +186,8 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${request.apiKey.trim()}`,
+        Authorization: `Bearer ${cleanKey}`,
+        'x-api-key': cleanKey,
         'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
       },
       body: JSON.stringify(payload),
@@ -182,51 +224,62 @@ export class OpenAICompatAdapter implements IProviderAdapter {
 
           if (trimmed.startsWith('data: ')) {
             const jsonStr = trimmed.slice(6)
+            let parsed: any
             try {
-              const parsed = JSON.parse(jsonStr)
-              const choice = parsed.choices?.[0]
-              const delta = choice?.delta
-
-              if (delta?.content) {
-                // In-band anomaly check on first chunk
-                if (isFirstChunk) {
-                  isFirstChunk = false
-                  const inBandErr = detectInBandError(delta.content)
-                  if (inBandErr) {
-                    throw new Error(`In-band provider error detected: ${inBandErr}`)
-                  }
-                }
-
-                yield {
-                  textDelta: delta.content,
-                  finishReason: choice?.finish_reason
-                }
-              }
-
-              if (delta?.tool_calls) {
-                const toolCalls = delta.tool_calls.map((tc: any) => ({
-                  id: tc.id,
-                  name: tc.function?.name,
-                  arguments: tc.function?.arguments ? repairToolArguments(tc.function.arguments) : undefined
-                }))
-
-                yield {
-                  toolCallsDelta: toolCalls,
-                  finishReason: choice?.finish_reason
-                }
-              }
-
-              if (parsed.usage) {
-                yield {
-                  usage: {
-                    promptTokens: parsed.usage.prompt_tokens,
-                    completionTokens: parsed.usage.completion_tokens
-                  }
-                }
-              }
-            } catch (err: any) {
-              if (err.message?.includes('In-band provider error')) throw err
+              parsed = JSON.parse(jsonStr)
+            } catch {
               // Ignore single malformed chunk parse errors
+              continue
+            }
+
+            // Upstream provider error returned in SSE stream payload (e.g. OmniRoute, LiteLLM, OpenRouter)
+            if (parsed.error) {
+              const errMsg =
+                typeof parsed.error === 'string'
+                  ? parsed.error
+                  : parsed.error.message || JSON.stringify(parsed.error)
+              throw new Error(`Upstream ${this.name} error: ${errMsg}`)
+            }
+
+            const choice = parsed.choices?.[0]
+            const delta = choice?.delta
+
+            if (delta?.content) {
+              // In-band anomaly check on first chunk
+              if (isFirstChunk) {
+                isFirstChunk = false
+                const inBandErr = detectInBandError(delta.content)
+                if (inBandErr) {
+                  throw new Error(`In-band provider error detected: ${inBandErr}`)
+                }
+              }
+
+              yield {
+                textDelta: delta.content,
+                finishReason: choice?.finish_reason
+              }
+            }
+
+            if (delta?.tool_calls) {
+              const toolCalls = delta.tool_calls.map((tc: any) => ({
+                id: tc.id,
+                name: tc.function?.name,
+                arguments: tc.function?.arguments ? repairToolArguments(tc.function.arguments) : undefined
+              }))
+
+              yield {
+                toolCallsDelta: toolCalls,
+                finishReason: choice?.finish_reason
+              }
+            }
+
+            if (parsed.usage) {
+              yield {
+                usage: {
+                  promptTokens: parsed.usage.prompt_tokens,
+                  completionTokens: parsed.usage.completion_tokens
+                }
+              }
             }
           }
         }

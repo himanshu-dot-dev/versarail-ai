@@ -106,15 +106,16 @@ export class SecretStorageService {
   }): Promise<{ isSessionOnly: boolean }> {
     const isHardwareSafe = this.isHardwareEncryptionAvailable()
 
+    // Keep in session store for fast in-memory retrieval
+    this.sessionStore.set(params.id, {
+      apiKey: params.apiKey,
+      providerId: params.providerId,
+      label: params.label,
+      customEndpoint: params.customEndpoint,
+      createdAt: new Date().toISOString()
+    })
+
     if (!isHardwareSafe) {
-      // Keep strictly in memory for the active desktop session
-      this.sessionStore.set(params.id, {
-        apiKey: params.apiKey,
-        providerId: params.providerId,
-        label: params.label,
-        customEndpoint: params.customEndpoint,
-        createdAt: new Date().toISOString()
-      })
       return { isSessionOnly: true }
     }
 
@@ -156,7 +157,9 @@ export class SecretStorageService {
   public async getDecryptedKey(credentialId: string): Promise<string | null> {
     // Check in-memory session store first
     if (this.sessionStore.has(credentialId)) {
-      return this.sessionStore.get(credentialId)?.apiKey || null
+      const sessionKey = this.sessionStore.get(credentialId)?.apiKey
+      if (!sessionKey) return null
+      return Buffer.isBuffer(sessionKey) ? (sessionKey as Buffer).toString('utf-8') : String(sessionKey)
     }
 
     const records = this.readStorageFile()
@@ -168,14 +171,38 @@ export class SecretStorageService {
     try {
       const buffer = Buffer.from(record.encryptedApiKey, 'base64')
       const storageAny = safeStorage as unknown as Record<string, (arg: unknown) => unknown>
-      let decrypted: string
+      let decrypted: unknown
 
       if (typeof storageAny.decryptStringAsync === 'function') {
-        decrypted = (await storageAny.decryptStringAsync(buffer)) as string
+        decrypted = await storageAny.decryptStringAsync(buffer)
       } else {
         decrypted = safeStorage.decryptString(buffer)
       }
-      return decrypted
+
+      if (!decrypted) {
+        return null
+      }
+
+      let keyStr: string
+      if (typeof decrypted === 'object' && decrypted !== null && 'result' in (decrypted as any)) {
+        const res = (decrypted as any).result
+        keyStr = Buffer.isBuffer(res) ? res.toString('utf-8') : String(res ?? '')
+      } else if (Buffer.isBuffer(decrypted)) {
+        keyStr = (decrypted as Buffer).toString('utf-8')
+      } else {
+        keyStr = typeof decrypted === 'string' ? decrypted : String(decrypted)
+      }
+
+      // Cache decrypted key in sessionStore for immediate subsequent access
+      this.sessionStore.set(credentialId, {
+        apiKey: keyStr,
+        providerId: record.providerId,
+        label: record.label,
+        customEndpoint: record.customEndpoint,
+        createdAt: record.createdAt
+      })
+
+      return keyStr
     } catch (err) {
       console.error(`[SecretStorage] Failed to decrypt key for credential ${credentialId}:`, err)
       return null

@@ -28,6 +28,32 @@ export function createMainWindow(): BrowserWindow {
     mainWindow.show()
   })
 
+  // Keyboard Shortcuts: Zoom In (Ctrl+=, Ctrl++), Zoom Out (Ctrl+-), Zoom Reset (Ctrl+0)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return
+
+    const isCtrlOrCmd = input.control || input.meta
+    if (!isCtrlOrCmd) return
+
+    // Zoom In: '=' (unshifted '+'), '+' (shifted '='), or NumpadAdd
+    if (input.key === '=' || input.key === '+' || input.code === 'Equal' || input.code === 'NumpadAdd') {
+      const current = mainWindow.webContents.getZoomLevel()
+      mainWindow.webContents.setZoomLevel(Math.min(current + 0.5, 4.0))
+      event.preventDefault()
+    }
+    // Zoom Out: '-' or '_' or NumpadSubtract
+    else if (input.key === '-' || input.key === '_' || input.code === 'Minus' || input.code === 'NumpadSubtract') {
+      const current = mainWindow.webContents.getZoomLevel()
+      mainWindow.webContents.setZoomLevel(Math.max(current - 0.5, -3.0))
+      event.preventDefault()
+    }
+    // Zoom Reset: '0' or Numpad0
+    else if (input.key === '0' || input.code === 'Digit0' || input.code === 'Numpad0') {
+      mainWindow.webContents.setZoomLevel(0)
+      event.preventDefault()
+    }
+  })
+
   // Security: Deny creation of new windows & open safe external HTTPS links in OS browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     try {

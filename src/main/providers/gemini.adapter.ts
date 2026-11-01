@@ -40,12 +40,28 @@ const GEMINI_DEFAULT_MODELS: ModelDescriptorDTO[] = [
   }
 ]
 
+function sanitizeGeminiKey(rawApiKey: unknown): string {
+  if (!rawApiKey) return ''
+  let key = ''
+  if (typeof rawApiKey === 'object' && rawApiKey !== null && 'result' in rawApiKey) {
+    const res = (rawApiKey as { result: unknown }).result
+    key = Buffer.isBuffer(res) ? res.toString('utf-8') : String(res ?? '')
+  } else if (Buffer.isBuffer(rawApiKey)) {
+    key = (rawApiKey as Buffer).toString('utf-8')
+  } else {
+    key = typeof rawApiKey === 'string' ? rawApiKey : String(rawApiKey || '')
+  }
+  return key.trim()
+}
+
 export class GeminiAdapter implements IProviderAdapter {
   readonly id: ProviderId = 'gemini'
   readonly name = 'Google AI Studio'
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta'
 
-  async validateKey(apiKey: string, customEndpoint?: string): Promise<KeyValidationResult> {
+  async validateKey(rawApiKey: string, customEndpoint?: string): Promise<KeyValidationResult> {
+    const apiKey = sanitizeGeminiKey(rawApiKey)
+
     if (!apiKey || apiKey.trim().length === 0) {
       return { valid: false, latencyMs: 0, modelsCount: 0, error: 'API key is required' }
     }
@@ -113,7 +129,13 @@ export class GeminiAdapter implements IProviderAdapter {
     }
   }
 
-  async listModels(apiKey: string, customEndpoint?: string): Promise<ModelDescriptorDTO[]> {
+  async listModels(rawApiKey: string, customEndpoint?: string): Promise<ModelDescriptorDTO[]> {
+    const apiKey = typeof rawApiKey === 'string'
+      ? rawApiKey
+      : Buffer.isBuffer(rawApiKey)
+      ? (rawApiKey as Buffer).toString('utf-8')
+      : String(rawApiKey || '')
+
     const endpoint = (customEndpoint && customEndpoint.trim().length > 0) ? customEndpoint.trim() : this.baseUrl
     const url = `${endpoint}/models?key=${apiKey.trim()}`
 
@@ -142,6 +164,12 @@ export class GeminiAdapter implements IProviderAdapter {
   }
 
   async *streamCompletion(request: ChatCompletionRequest): AsyncIterable<StreamChunk> {
+    const apiKey = typeof request.apiKey === 'string'
+      ? request.apiKey
+      : Buffer.isBuffer(request.apiKey)
+      ? (request.apiKey as Buffer).toString('utf-8')
+      : String(request.apiKey || '')
+
     const endpoint = (request.customEndpoint && request.customEndpoint.trim().length > 0)
       ? request.customEndpoint.trim()
       : this.baseUrl
@@ -153,7 +181,7 @@ export class GeminiAdapter implements IProviderAdapter {
     }))
 
     const modelName = request.model.replace(/^models\//, '')
-    const url = `${endpoint}/models/${modelName}:streamGenerateContent?alt=sse&key=${request.apiKey.trim()}`
+    const url = `${endpoint}/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey.trim()}`
 
     const payload = {
       contents,

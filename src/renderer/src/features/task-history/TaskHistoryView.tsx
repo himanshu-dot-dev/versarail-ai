@@ -49,8 +49,8 @@ export const TaskHistoryView: React.FC = () => {
                 }),
                 status: 'completed',
                 filesModified: 0,
-                durationMs: 1200,
-                tokensUsed: 450
+                durationMs: 0,
+                tokensUsed: 0
               }
             })
             setTasks(records)
@@ -127,7 +127,7 @@ export const TaskHistoryView: React.FC = () => {
               {tasks.length}
             </span>
             <span className="text-label-sm text-on-surface-variant text-[11px]">
-              {tasks.length > 0 ? '+100% this week' : '-- this week'}
+              {tasks.length > 0 ? `${tasks.length} recorded` : '--'}
             </span>
           </div>
         </div>
@@ -142,7 +142,7 @@ export const TaskHistoryView: React.FC = () => {
               {tasks.length > 0 ? '100%' : '--'}
             </span>
             <span className="text-label-sm text-on-surface-variant text-[11px]">
-              {tasks.length > 0 ? '0.0% variance' : 'No runs recorded'}
+              {tasks.length > 0 ? 'Live sessions' : 'No runs recorded'}
             </span>
           </div>
         </div>

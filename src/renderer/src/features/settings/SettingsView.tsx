@@ -15,8 +15,9 @@ export const SettingsView: React.FC = () => {
   const [telemetry, setTelemetry] = useState(false)
 
   // AI Defaults state
-  const [defaultModel, setDefaultModel] = useState('gemini-2.5-flash')
-  const [codeEngine, setCodeEngine] = useState('groq-llama-3.3-70b')
+  const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string; providerId: string }>>([])
+  const [defaultModel, setDefaultModel] = useState('')
+  const [codeEngine, setCodeEngine] = useState('')
   const [temperature, setTemperature] = useState(0.7)
 
   // Permissions state
@@ -29,7 +30,8 @@ export const SettingsView: React.FC = () => {
     'gemini',
     'groq',
     'cerebras',
-    'openrouter'
+    'openrouter',
+    'custom'
   ])
   const [auditRetentionDays, setAuditRetentionDays] = useState(30)
   const [contextBudgetTokens, setContextBudgetTokens] = useState(32_000)
@@ -38,15 +40,25 @@ export const SettingsView: React.FC = () => {
   // Save feedback state
   const [savedToast, setSavedToast] = useState(false)
 
-  // Load persisted privacy & settings on mount
+  // Load persisted privacy & settings and live models on mount
   useEffect(() => {
     if (window.electronApi?.getSettings) {
       window.electronApi.getSettings().then((res) => {
         if (res?.privacy) {
-          setAllowedProviders(res.privacy.allowedProviders || ['gemini', 'groq', 'cerebras', 'openrouter'])
+          setAllowedProviders(res.privacy.allowedProviders || ['gemini', 'groq', 'cerebras', 'openrouter', 'custom'])
           setAuditRetentionDays(res.privacy.auditRetentionDays ?? 30)
           setContextBudgetTokens(res.privacy.contextWindowBudgetTokens ?? 32_000)
           setAutoSummarize(res.privacy.autoSummarizeContext ?? true)
+        }
+      }).catch(console.error)
+    }
+
+    if (window.electronApi?.listModels) {
+      window.electronApi.listModels().then((models) => {
+        if (models && models.length > 0) {
+          setAvailableModels(models.map((m) => ({ id: m.id, name: m.name || m.id, providerId: m.providerId })))
+          setDefaultModel((prev) => prev || models[0].id)
+          setCodeEngine((prev) => prev || models[0].id)
         }
       }).catch(console.error)
     }
@@ -88,8 +100,8 @@ export const SettingsView: React.FC = () => {
     setLaunchAtStartup(false)
     setHardwareAcceleration(true)
     setTelemetry(false)
-    setDefaultModel('gemini-2.5-flash')
-    setCodeEngine('groq-llama-3.3-70b')
+    setDefaultModel(availableModels.length > 0 ? availableModels[0].id : '')
+    setCodeEngine(availableModels.length > 0 ? availableModels[0].id : '')
     setTemperature(0.7)
     setAutoFileMod(false)
     setTerminalExecution(false)
@@ -303,10 +315,15 @@ export const SettingsView: React.FC = () => {
                       onChange={(e) => setDefaultModel(e.target.value)}
                       className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     >
-                      <option value="gemini-2.5-flash">Gemini 2.5 Flash (Google AI Studio)</option>
-                      <option value="gemini-2.5-pro">Gemini 2.5 Pro (Google AI Studio)</option>
-                      <option value="llama-3.3-70b">Llama 3.3 70B (GroqCloud LPU)</option>
-                      <option value="cerebras-llama">Llama 3.1 70B (Cerebras Cloud)</option>
+                      {availableModels.length > 0 ? (
+                        availableModels.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.providerId.toUpperCase()})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">No models configured - add in AI Providers</option>
+                      )}
                     </select>
                     <Icon
                       name="expand_more"
@@ -330,9 +347,15 @@ export const SettingsView: React.FC = () => {
                       onChange={(e) => setCodeEngine(e.target.value)}
                       className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     >
-                      <option value="groq-llama-3.3-70b">Groq Llama 3.3 70B (~300 t/s)</option>
-                      <option value="cerebras-llama">Cerebras Llama 3.1 70B (~1,800 t/s)</option>
-                      <option value="gemini-flash">Gemini 2.5 Flash</option>
+                      {availableModels.length > 0 ? (
+                        availableModels.map((m) => (
+                          <option key={`fast-${m.id}`} value={m.id}>
+                            {m.name} ({m.providerId.toUpperCase()})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">No models configured</option>
+                      )}
                     </select>
                     <Icon
                       name="expand_more"
@@ -576,7 +599,8 @@ export const SettingsView: React.FC = () => {
                       { id: 'gemini', label: 'Google Gemini' },
                       { id: 'groq', label: 'Groq Cloud' },
                       { id: 'cerebras', label: 'Cerebras' },
-                      { id: 'openrouter', label: 'OpenRouter' }
+                      { id: 'openrouter', label: 'OpenRouter' },
+                      { id: 'custom', label: 'Custom Gateway (OmniRoute)' }
                     ].map((p) => {
                       const isAllowed = allowedProviders.includes(p.id)
                       return (

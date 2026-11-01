@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { GeminiAdapter } from '../../../src/main/providers/gemini.adapter'
 import { GroqAdapter } from '../../../src/main/providers/groq.adapter'
+import { OpenAICompatAdapter } from '../../../src/main/providers/openai-compat.adapter'
 import { ProviderRegistry } from '../../../src/main/providers/provider-registry'
 
 describe('Provider Adapters & Registry Architecture', () => {
@@ -89,6 +90,159 @@ describe('Provider Adapters & Registry Architecture', () => {
     })
   })
 
+  describe('OpenAICompatAdapter (Custom Gateways & Dynamic Discovery)', () => {
+    it('dynamically maps remote models when defaultModels is empty', async () => {
+      const customAdapter = new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'custom-model-alpha', context_length: 64000, max_output_tokens: 4096 },
+            { id: 'custom-model-beta' }
+          ]
+        })
+      } as any)
+
+      const models = await customAdapter.listModels('sk-dummy-key')
+      expect(models.length).toBe(2)
+      expect(models[0].id).toBe('custom-model-alpha')
+      expect(models[0].contextWindow).toBe(64000)
+      expect(models[0].outputLimit).toBe(4096)
+      expect(models[1].id).toBe('custom-model-beta')
+      expect(models[1].contextWindow).toBe(128000) // fallback default
+      expect(models[1].outputLimit).toBe(8192) // fallback default
+    })
+
+    it('respects customEndpoint parameter when listing models', async () => {
+      const customAdapter = new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [{ id: 'omniroute-llama-3' }]
+        })
+      } as any)
+      global.fetch = fetchMock
+
+      await customAdapter.listModels('sk-omni-key', 'http://127.0.0.1:8080/v1')
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://127.0.0.1:8080/v1/models',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer sk-omni-key'
+          })
+        })
+      )
+    })
+
+    it('safely handles Buffer or non-string apiKey without throwing apiKey.trim error', async () => {
+      const customAdapter = new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [{ id: 'model-1' }]
+        })
+      } as any)
+
+      // Pass Buffer as key (such as returned by DPAPI safeStorage decrypt)
+      const bufferKey = Buffer.from('sk-test-buffer-key')
+      const result = await customAdapter.validateKey(bufferKey as unknown as string)
+      expect(result.valid).toBe(true)
+      expect(result.modelsCount).toBe(1)
+    })
+
+    it('unpacks Electron decryptStringAsync object payload { result: string }', async () => {
+      const customAdapter = new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [{ id: 'model-omni' }]
+        })
+      } as any)
+      global.fetch = fetchMock
+
+      // Electron 45 safeStorage.decryptStringAsync return shape
+      const electronObj = { shouldReEncrypt: false, result: 'sk-async-unwrapped-key' }
+      const result = await customAdapter.validateKey(electronObj as unknown as string)
+      expect(result.valid).toBe(true)
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:20128/v1/models',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer sk-async-unwrapped-key'
+          })
+        })
+      )
+    })
+
+    it('throws error when SSE stream contains an upstream error object payload', async () => {
+      const customAdapter = new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+
+      const sseStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new TextEncoder().encode(
+              'data: {"error":{"message":"Free usage limit reached (HTTP 429)","type":"rate_limit_error"}}\n\n'
+            )
+          )
+          controller.close()
+        }
+      })
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: sseStream
+      } as any)
+
+      const stream = customAdapter.streamCompletion(
+        {
+          model: 'auto/best-coding',
+          messages: [{ role: 'user', content: 'hi' }]
+        },
+        'sk-test'
+      )
+
+      await expect(async () => {
+        for await (const _ of stream) {
+          // should throw
+        }
+      }).rejects.toThrow('Upstream Custom Gateway error: Free usage limit reached (HTTP 429)')
+    })
+  })
+
   describe('ProviderRegistry & Concurrency Leases', () => {
     const registry = ProviderRegistry.getInstance()
 
@@ -97,6 +251,7 @@ describe('Provider Adapters & Registry Architecture', () => {
       expect(registry.getAdapter('groq')).toBeDefined()
       expect(registry.getAdapter('cerebras')).toBeDefined()
       expect(registry.getAdapter('openrouter')).toBeDefined()
+      expect(registry.getAdapter('custom')).toBeDefined()
     })
 
     it('acquires and releases concurrency leases up to limit', () => {

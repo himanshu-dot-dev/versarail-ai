@@ -9,6 +9,18 @@ import { ProviderRegistry } from '../../providers/provider-registry'
 import { formatResetEta } from '../../providers/utils/reset-eta'
 import { randomUUID } from 'crypto'
 
+function normalizeKey(key: unknown): string {
+  if (!key) return ''
+  if (typeof key === 'object' && key !== null && 'result' in key) {
+    const res = (key as { result: unknown }).result
+    return Buffer.isBuffer(res) ? res.toString('utf-8') : String(res ?? '')
+  }
+  if (Buffer.isBuffer(key)) {
+    return (key as Buffer).toString('utf-8')
+  }
+  return typeof key === 'string' ? key : String(key)
+}
+
 export function registerProviderHandlers(): void {
   const secretStore = SecretStorageService.getInstance()
   const db = SqliteDatabase.getInstance()
@@ -124,10 +136,11 @@ export function registerProviderHandlers(): void {
       }
 
       const meta = secretStore.getCredentialMetadata(credentialId)
-      const apiKey = await secretStore.getDecryptedKey(credentialId)
-      if (!meta || !apiKey) {
+      const rawApiKey = await secretStore.getDecryptedKey(credentialId)
+      if (!meta || !rawApiKey) {
         return { valid: false, latencyMs: 0, modelsCount: 0, error: 'Credential not found in secure storage' }
       }
+      const apiKey = normalizeKey(rawApiKey)
 
       const adapter = registry.getAdapter(meta.providerId as ProviderId)
       if (!adapter) {
@@ -161,14 +174,14 @@ export function registerProviderHandlers(): void {
         throw new Error('Access denied: Unauthorized IPC sender')
       }
 
-      let keyToTest = payload.apiKey
+      let keyToTest: string | undefined = payload.apiKey ? normalizeKey(payload.apiKey) : undefined
       let endpoint = payload.customEndpoint
 
       if (!keyToTest && payload.credentialId) {
         const meta = secretStore.getCredentialMetadata(payload.credentialId)
         const decryptedKey = await secretStore.getDecryptedKey(payload.credentialId)
         if (decryptedKey) {
-          keyToTest = decryptedKey
+          keyToTest = normalizeKey(decryptedKey)
           endpoint = endpoint || meta?.customEndpoint
         }
       }
@@ -212,12 +225,16 @@ export function registerProviderHandlers(): void {
         // Retrieve key if any
         const creds = secretStore.listCredentialMetadata().filter((c) => c.providerId === adapter.id)
         let key = ''
+        let customEndpoint: string | undefined
         if (creds.length > 0) {
           const decrypted = await secretStore.getDecryptedKey(creds[0].id)
-          if (decrypted) key = decrypted
+          if (decrypted) {
+            key = normalizeKey(decrypted)
+          }
+          customEndpoint = creds[0].customEndpoint
         }
 
-        const models = await adapter.listModels(key)
+        const models = await adapter.listModels(key, customEndpoint)
         allModels.push(...models)
       }
 

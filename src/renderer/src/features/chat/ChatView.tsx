@@ -72,7 +72,7 @@ export const ChatView: React.FC = () => {
             ...prev.slice(0, -1),
             {
               ...lastMsg,
-              text: lastMsg.text + (lastMsg.text ? '\n\n' : '') + `[Error: ${data.error}]`,
+              text: lastMsg.text ? `${lastMsg.text}\n\n[Error: ${data.error}]` : `[Error: ${data.error}]`,
               isStreaming: false,
               error: data.error
             }
@@ -80,10 +80,14 @@ export const ChatView: React.FC = () => {
         }
 
         if (data.isComplete) {
+          const finalText = lastMsg.text.trim()
+            ? lastMsg.text
+            : (data.error ? `[Error: ${data.error}]` : '[No response received from model. Upstream provider closed connection without emitting tokens.]')
           return [
             ...prev.slice(0, -1),
             {
               ...lastMsg,
+              text: finalText,
               isStreaming: false
             }
           ]
@@ -158,8 +162,8 @@ export const ChatView: React.FC = () => {
     try {
       if (window.electronApi?.sendPrompt) {
         // Map connected provider name to ID
-        const providerId = connectedModel.provider.toLowerCase().includes('groq') ? 'groq' : 'gemini'
-        const modelId = connectedModel.name.toLowerCase().includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash'
+        const providerId = (connectedModel.providerId as string) || (connectedModel.provider.toLowerCase().includes('groq') ? 'groq' : 'gemini')
+        const modelId = connectedModel.name || (providerId === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.5-flash')
 
         const result = await window.electronApi.sendPrompt({
           conversationId,
@@ -358,7 +362,7 @@ export const ChatView: React.FC = () => {
                       isUser ? 'bg-surface-container-lowest' : 'bg-surface-container-low'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
-                    {msg.text || (msg.isStreaming ? 'Thinking...' : '')}
+                    {msg.text || (msg.isStreaming ? 'Thinking...' : '[No response received from model]')}
                   </div>
                 </div>
               </div>

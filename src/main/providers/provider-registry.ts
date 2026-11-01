@@ -4,6 +4,7 @@ import { GeminiAdapter } from './gemini.adapter'
 import { GroqAdapter } from './groq.adapter'
 import { CerebrasAdapter } from './cerebras.adapter'
 import { OpenRouterAdapter } from './openrouter.adapter'
+import { OpenAICompatAdapter } from './openai-compat.adapter'
 
 export interface KeyLeaseState {
   activeRequests: number
@@ -22,6 +23,14 @@ export class ProviderRegistry {
     this.registerAdapter(new GroqAdapter())
     this.registerAdapter(new CerebrasAdapter())
     this.registerAdapter(new OpenRouterAdapter())
+    this.registerAdapter(
+      new OpenAICompatAdapter({
+        id: 'custom',
+        name: 'Custom OpenAI-Compatible Gateway',
+        defaultBaseUrl: 'http://localhost:20128/v1',
+        defaultModels: []
+      })
+    )
   }
 
   public static getInstance(): ProviderRegistry {

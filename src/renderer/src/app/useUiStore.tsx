@@ -21,6 +21,7 @@ export interface WorkspaceInfo {
 export interface ConnectedModelInfo {
   name: string
   provider: string
+  providerId?: string
   isConnected: boolean
 }
 
@@ -96,20 +97,40 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
 
     if (window.electronApi?.listProviders) {
-      window.electronApi.listProviders().then((providers) => {
+      window.electronApi.listProviders().then(async (providers) => {
         const active = providers?.find((p) => p.enabled)
         if (active) {
-          const modelName =
+          let modelName =
             active.providerId === 'gemini'
-              ? 'Gemini 2.5 Flash'
+              ? 'gemini-2.5-flash'
               : active.providerId === 'groq'
-              ? 'Llama 3.3 70B'
+              ? 'llama-3.3-70b-versatile'
               : active.providerId === 'cerebras'
-              ? 'Llama 3.1 70B'
-              : 'OpenRouter'
+              ? 'llama3.1-70b'
+              : active.providerId === 'custom'
+              ? 'auto/best-coding'
+              : 'openrouter'
+
+          if (window.electronApi?.listModels) {
+            try {
+              const models = await window.electronApi.listModels(active.providerId)
+              if (models && models.length > 0) {
+                if (active.providerId === 'custom') {
+                  const autoModel = models.find((m) => m.id === 'auto/gpt' || m.id === 'auto/best-coding' || m.id.startsWith('auto/'))
+                  modelName = autoModel ? autoModel.id : models[0].id
+                } else {
+                  modelName = models[0].id || models[0].name
+                }
+              }
+            } catch {
+              // Ignore failure to fetch remote models on startup
+            }
+          }
+
           setConnectedModel({
             name: modelName,
             provider: active.label,
+            providerId: active.providerId,
             isConnected: true
           })
         }

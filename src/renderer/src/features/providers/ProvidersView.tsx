@@ -15,6 +15,8 @@ export const ProvidersView: React.FC = () => {
   const [testingId, setTestingId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<{ id: string; success: boolean; msg: string } | null>(null)
   const [healthMap, setHealthMap] = useState<Record<string, { status: string; cooldownEta?: string | null; lastError?: string }>>({})
+  const [isTestingModal, setIsTestingModal] = useState(false)
+  const [modalTestResult, setModalTestResult] = useState<{ success: boolean; msg: string } | null>(null)
 
   // Fetch live credentials and health statuses on mount
   useEffect(() => {
@@ -43,14 +45,15 @@ export const ProvidersView: React.FC = () => {
     )
   }
 
-  const handleTestConnection = async (id: string, label: string, providerId: string) => {
+  const handleTestConnection = async (id: string, label: string, providerId: string, customEndpoint?: string) => {
     setTestingId(id)
     setTestResult(null)
     try {
       if (window.electronApi?.testProviderConnection) {
         const res = await window.electronApi.testProviderConnection({
           providerId,
-          credentialId: id
+          credentialId: id,
+          customEndpoint
         })
         setTestResult({
           id,
@@ -79,6 +82,34 @@ export const ProvidersView: React.FC = () => {
       })
     } finally {
       setTestingId(null)
+    }
+  }
+
+  const handleTestModalConnection = async () => {
+    if (!newKey.trim()) return
+    setIsTestingModal(true)
+    setModalTestResult(null)
+    try {
+      if (window.electronApi?.testProviderConnection) {
+        const res = await window.electronApi.testProviderConnection({
+          providerId: newProviderId,
+          apiKey: newKey.trim(),
+          customEndpoint: newEndpoint.trim() || undefined
+        })
+        setModalTestResult({
+          success: res.success,
+          msg: res.success
+            ? `Connection verified: latency ${res.latencyMs}ms (${res.modelsCount} models active)`
+            : `Test failed: ${res.error || 'Connection rejected'}`
+        })
+      }
+    } catch (err: any) {
+      setModalTestResult({
+        success: false,
+        msg: err.message || 'Connection test failed'
+      })
+    } finally {
+      setIsTestingModal(false)
     }
   }
 
@@ -124,6 +155,7 @@ export const ProvidersView: React.FC = () => {
       }
 
       setIsAddModalOpen(false)
+      setModalTestResult(null)
       setNewKey('')
       setNewLabel('')
       setNewEndpoint('')
@@ -206,14 +238,14 @@ export const ProvidersView: React.FC = () => {
             <div className="flex flex-col items-end">
               <span className="text-label-sm text-on-surface-variant">Avg Latency</span>
               <span className="font-label-md text-tertiary font-bold">
-                {providers.length > 0 ? '180ms' : '--'}
+                --
               </span>
             </div>
             <div className="h-8 w-[1px] bg-surface-container-high" />
             <div className="flex flex-col items-end">
               <span className="text-label-sm text-on-surface-variant">Success Rate</span>
               <span className="font-label-md text-on-surface font-bold">
-                {providers.length > 0 ? '100%' : '--'}
+                --
               </span>
             </div>
             <button
@@ -293,7 +325,7 @@ export const ProvidersView: React.FC = () => {
                     <div className="flex items-center gap-space-sm flex-wrap">
                       <span className="font-headline-sm text-on-surface font-semibold">{p.label}</span>
                       <span className="px-space-sm py-0.5 rounded-full bg-primary/10 text-primary text-label-sm font-mono">
-                        Cloud
+                        {p.providerId === 'custom' ? 'Local / Gateway' : 'Cloud'}
                       </span>
                       {(() => {
                         const health = healthMap[p.id]
@@ -335,7 +367,15 @@ export const ProvidersView: React.FC = () => {
                     <div className="flex items-center gap-space-md mt-1 text-body-sm text-on-surface-variant flex-wrap font-mono">
                       <span>
                         Model: <strong className="text-on-surface">
-                          {isGoogle ? 'gemini-2.5-flash' : isGroq ? 'llama-3.3-70b-versatile' : 'llama3.3-70b'}
+                          {isGoogle
+                            ? 'gemini-2.5-flash'
+                            : isGroq
+                            ? 'llama-3.3-70b-versatile'
+                            : isCerebras
+                            ? 'llama3.1-70b'
+                            : p.providerId === 'custom'
+                            ? (p.customEndpoint || 'http://localhost:20128/v1')
+                            : 'openrouter'}
                         </strong>
                       </span>
                       <span>•</span>
@@ -352,7 +392,7 @@ export const ProvidersView: React.FC = () => {
 
                 <div className="flex items-center justify-between md:justify-end gap-space-md pt-space-md md:pt-0 border-t md:border-t-0 border-surface-container-high">
                   <button
-                    onClick={() => handleTestConnection(p.id, p.label, p.providerId)}
+                    onClick={() => handleTestConnection(p.id, p.label, p.providerId, p.customEndpoint)}
                     disabled={testingId === p.id}
                     className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant/20 disabled:opacity-50"
                   >
@@ -414,6 +454,21 @@ export const ProvidersView: React.FC = () => {
                 </div>
               )}
 
+              {modalTestResult && (
+                <div
+                  className={`p-space-sm px-space-md border rounded-lg text-body-sm flex items-center justify-between font-mono animate-fade-in ${
+                    modalTestResult.success
+                      ? 'bg-tertiary-container/30 border-tertiary/40 text-tertiary'
+                      : 'bg-error-container/30 border-error/40 text-error'
+                  }`}
+                >
+                  <span>{modalTestResult.msg}</span>
+                  <button type="button" onClick={() => setModalTestResult(null)} className="hover:opacity-80">
+                    <Icon name="close" size={14} />
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-col gap-1">
                 <label className="text-label-sm text-on-surface-variant">Provider Engine</label>
                 <select
@@ -460,7 +515,7 @@ export const ProvidersView: React.FC = () => {
                   <label className="text-label-sm text-on-surface-variant">Endpoint URL</label>
                   <input
                     type="url"
-                    placeholder="https://api.my-endpoint.com/v1"
+                    placeholder="http://localhost:20128/v1"
                     value={newEndpoint}
                     onChange={(e) => setNewEndpoint(e.target.value)}
                     className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant/40 focus:ring-1 focus:ring-primary outline-none font-mono"
@@ -468,22 +523,41 @@ export const ProvidersView: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-space-md pt-space-md border-t border-surface-container-high">
+              <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-surface-container-high">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-space-lg py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors"
+                  disabled={isTestingModal || !newKey.trim()}
+                  onClick={handleTestModalConnection}
+                  className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant/20 disabled:opacity-50 cursor-pointer"
                 >
-                  Cancel
+                  <Icon
+                    name={isTestingModal ? 'sync' : 'bolt'}
+                    size={16}
+                    className={isTestingModal ? 'animate-spin text-tertiary' : 'text-primary'}
+                  />
+                  <span>{isTestingModal ? 'Testing...' : 'Test Connection'}</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving || !newKey.trim()}
-                  className="px-space-xl py-space-sm rounded-lg bg-primary text-on-primary font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-space-sm shadow-sm"
-                >
-                  {isSaving && <Icon name="sync" size={16} className="animate-spin" />}
-                  <span>Save Credential</span>
-                </button>
+
+                <div className="flex items-center gap-space-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddModalOpen(false)
+                      setModalTestResult(null)
+                    }}
+                    className="px-space-lg py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving || !newKey.trim()}
+                    className="px-space-xl py-space-sm rounded-lg bg-primary text-on-primary font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-space-sm shadow-sm cursor-pointer"
+                  >
+                    {isSaving && <Icon name="sync" size={16} className="animate-spin" />}
+                    <span>Save Credential</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

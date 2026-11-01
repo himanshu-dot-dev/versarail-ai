@@ -142,7 +142,58 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
       isFreeTierAvailable: true
     }
   ],
-  custom: []
+  custom: [
+    {
+      id: 'auto/gpt',
+      providerId: 'custom',
+      name: 'OmniRoute Auto (GPT)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'auto/best-coding',
+      providerId: 'custom',
+      name: 'OmniRoute Auto (Best Coding)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'auto/fast',
+      providerId: 'custom',
+      name: 'OmniRoute Auto (Fast)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'auto/best-reasoning',
+      providerId: 'custom',
+      name: 'OmniRoute Auto (Best Reasoning)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'auto/chat',
+      providerId: 'custom',
+      name: 'OmniRoute Auto (General Chat)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    }
+  ]
 }
 
 export class FailoverEngine {
@@ -181,7 +232,26 @@ export class FailoverEngine {
         continue
       }
 
-      const availableModels = DEFAULT_PROVIDER_MODELS[providerId] || []
+      const availableModels = [...(DEFAULT_PROVIDER_MODELS[providerId] || [])]
+
+      // Dynamic discovery / user preference injection:
+      // If user requested a model (e.g. from OmniRoute dynamic discovery or combo)
+      // that isn't in default list, add it so execution proceeds
+      if (options.preferredModelId && (providerId === options.preferredProviderId || availableModels.length === 0)) {
+        if (!availableModels.some((m) => m.id === options.preferredModelId)) {
+          availableModels.unshift({
+            id: options.preferredModelId,
+            providerId,
+            name: options.preferredModelId,
+            contextWindow: 128000,
+            outputLimit: 8192,
+            supportsTools: true,
+            supportsStreaming: true,
+            isFreeTierAvailable: false
+          })
+        }
+      }
+
       for (const m of availableModels) {
         // Pre-Flight Context Floor Filtering:
         // Skip models whose usable context cannot fit the prompt
@@ -331,6 +401,13 @@ export class FailoverEngine {
               isComplete: false
             })
           }
+        }
+
+        // If stream ended with 0 tokens or only empty whitespace
+        if (!hasStreamedFirstByte || !fullResponse.trim()) {
+          throw new Error(
+            `Upstream provider ${candidate.providerId} (${candidate.modelId}) closed stream without producing any response. Verify upstream quota, API key, and model availability.`
+          )
         }
 
         // Successfully completed stream
