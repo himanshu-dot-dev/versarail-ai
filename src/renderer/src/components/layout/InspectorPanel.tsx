@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useUiStore, InspectorTab } from '../../app/useUiStore'
 import Icon from '../common/Icon'
-import { DiffViewer } from '../../features/changes/DiffViewer'
 
 export const InspectorPanel: React.FC = () => {
   const { inspectorTab, setInspectorTab, isInspectorOpen, toggleInspector, workspace } = useUiStore()
@@ -101,116 +100,36 @@ export const InspectorPanel: React.FC = () => {
                 ))}
               </>
             ) : (
-              <>
-                <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface">
-                  <Icon name="folder_open" size={15} className="text-primary shrink-0" />
-                  <span className="font-medium font-mono text-[11px]">src</span>
-                </div>
-                <div className="flex flex-col gap-0.5 pl-4">
-                  <div className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                    <Icon name="folder" size={15} className="text-primary shrink-0" />
-                    <span className="font-mono text-[11px]">auth</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5 pl-4">
-                    <div className="flex items-center justify-between px-space-sm py-1 rounded bg-surface-container text-on-surface">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <Icon name="description" size={14} className="text-tertiary shrink-0" />
-                        <span className="truncate font-mono text-[11px]">authService.ts</span>
-                      </div>
-                      <span className="text-[10px] text-tertiary font-mono font-bold">M</span>
-                    </div>
-                    <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <Icon name="description" size={14} className="text-tertiary shrink-0" />
-                        <span className="truncate font-mono text-[11px]">authService.test.ts</span>
-                      </div>
-                      <span className="text-[10px] text-primary font-mono font-bold">N</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                    <div className="flex items-center gap-1.5">
-                      <Icon name="description" size={14} className="shrink-0" />
-                      <span className="font-mono text-[11px]">index.ts</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface mt-2">
-                  <div className="flex items-center gap-1.5">
-                    <Icon name="cloud_upload" size={14} className="shrink-0" />
-                    <span className="font-mono text-[11px]">package.json</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface">
-                  <div className="flex items-center gap-1.5">
-                    <Icon name="description" size={14} className="shrink-0" />
-                    <span className="font-mono text-[11px]">README.md</span>
-                  </div>
-                </div>
-              </>
+              <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
+                <Icon name="folder_open" size={28} className="text-outline" />
+                <span className="text-xs text-on-surface font-medium">No Workspace Opened</span>
+                <span className="text-[11px] text-on-surface-variant">
+                  Open a project folder to explore directory files.
+                </span>
+              </div>
             )}
           </div>
         )}
 
         {/* Tab 2: Activity */}
         {inspectorTab === 'activity' && (
-          <div className="flex flex-col gap-space-md font-sans">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-on-surface-variant font-mono">10:42:01 AM</span>
-              <p className="text-on-surface text-[11px]">User submitted prompt</p>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-primary font-mono">10:42:02 AM</span>
-              <p className="text-on-surface text-[11px]">Gemini 2.5 Flash initialized workflow</p>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-tertiary font-mono">10:42:03 AM</span>
-              <p className="text-on-surface text-[11px]">Tool call executed: list_directory</p>
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
+            <Icon name="bolt" size={28} className="text-outline" />
+            <span className="text-xs text-on-surface font-medium">No Activity in Session</span>
+            <span className="text-[11px] text-on-surface-variant max-w-[200px]">
+              Agent steps, tool executions, and model reasoning will stream here.
+            </span>
           </div>
         )}
 
         {/* Tab 3: Changes */}
         {inspectorTab === 'changes' && (
-          <div className="flex flex-col gap-space-md font-sans">
-            <div className="p-space-sm rounded-lg bg-surface-container border border-outline-variant/30">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-mono text-[11px] font-semibold text-on-surface">authService.ts</span>
-                <span className="text-[10px] text-tertiary font-mono">+12 / -4</span>
-              </div>
-              <p className="text-[11px] text-on-surface-variant">Added JWT session expiration check</p>
-            </div>
-
-            <div className="border border-outline-variant/20 rounded-lg overflow-hidden h-72 flex flex-col">
-              <DiffViewer
-                diff={{
-                  filePath: 'src/auth/authService.ts',
-                  patch: '',
-                  baselineSha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
-                  newSha256: 'b2c3d4e5f60718293a4b5c6d7e8f90a1',
-                  additions: 12,
-                  deletions: 4,
-                  hasChanges: true,
-                  hunks: [
-                    {
-                      oldStart: 42,
-                      oldLines: 3,
-                      newStart: 42,
-                      newLines: 5,
-                      lines: [
-                        { type: 'context', content: '  const token = req.headers.authorization;', oldLineNumber: 42, newLineNumber: 42 },
-                        { type: 'delete', content: '  if (!token) return false;', oldLineNumber: 43 },
-                        { type: 'add', content: '  if (!token || isExpired(token)) {', newLineNumber: 43 },
-                        { type: 'add', content: '    return false;', newLineNumber: 44 },
-                        { type: 'add', content: '  }', newLineNumber: 45 },
-                        { type: 'context', content: '  return verifySignature(token);', oldLineNumber: 44, newLineNumber: 46 }
-                      ]
-                    }
-                  ]
-                }}
-              />
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
+            <Icon name="difference" size={28} className="text-outline" />
+            <span className="text-xs text-on-surface font-medium">No File Changes</span>
+            <span className="text-[11px] text-on-surface-variant max-w-[200px]">
+              Proposed file edits and additions will appear here for review before touching disk.
+            </span>
           </div>
         )}
       </div>

@@ -13,15 +13,17 @@ export interface FileChangeBannerProps {
 }
 
 export const FileChangeBanner: React.FC<FileChangeBannerProps> = ({
-  summary = '2 files changed, 1 file created, 1 file modified',
-  additions = 48,
-  deletions = 12,
+  summary = '',
+  additions = 0,
+  deletions = 0,
   onAccept,
   onReject,
   onOpenDiff,
   onRetry
 }) => {
   const { setInspectorTab, setInspectorOpen } = useUiStore()
+
+  if (!summary && additions === 0 && deletions === 0) return null
 
   const handleReview = () => {
     setInspectorOpen(true)

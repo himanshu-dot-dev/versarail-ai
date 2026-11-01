@@ -3,48 +3,7 @@ import Icon from '../../components/common/Icon'
 import { ProviderMetadataDTO } from '@shared/domain/models'
 
 export const ProvidersView: React.FC = () => {
-  const [providers, setProviders] = useState<ProviderMetadataDTO[]>([
-    {
-      id: 'p-1',
-      providerId: 'gemini',
-      label: 'Google AI Studio',
-      enabled: true,
-      isConfigured: true,
-      maskedKey: 'AIza••••••••x924',
-      healthStatus: 'healthy',
-      lastValidatedAt: 'Just now'
-    },
-    {
-      id: 'p-2',
-      providerId: 'groq',
-      label: 'GroqCloud LPU',
-      enabled: true,
-      isConfigured: true,
-      maskedKey: 'gsk_••••••••k811',
-      healthStatus: 'healthy',
-      lastValidatedAt: '2 min ago'
-    },
-    {
-      id: 'p-3',
-      providerId: 'cerebras',
-      label: 'Cerebras Cloud',
-      enabled: true,
-      isConfigured: true,
-      maskedKey: 'csk_••••••••c402',
-      healthStatus: 'healthy',
-      lastValidatedAt: '10 min ago'
-    },
-    {
-      id: 'p-4',
-      providerId: 'openrouter',
-      label: 'OpenRouter Gateway',
-      enabled: false,
-      isConfigured: true,
-      maskedKey: 'sk-or••••••••r190',
-      healthStatus: 'cooldown',
-      lastValidatedAt: '1 hour ago'
-    }
-  ])
+  const [providers, setProviders] = useState<ProviderMetadataDTO[]>([])
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newProviderId, setNewProviderId] = useState('gemini')
@@ -61,9 +20,7 @@ export const ProvidersView: React.FC = () => {
   useEffect(() => {
     if (window.electronApi?.listProviders) {
       window.electronApi.listProviders().then((list) => {
-        if (list && list.length > 0) {
-          setProviders(list)
-        }
+        setProviders(list || [])
       }).catch(console.error)
     }
 
@@ -219,12 +176,28 @@ export const ProvidersView: React.FC = () => {
             <div>
               <div className="flex items-center gap-space-sm flex-wrap">
                 <span className="text-label-md text-on-surface font-semibold">Active Routing Strategy</span>
-                <span className="px-space-sm py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container text-label-sm font-mono font-medium">
-                  Dynamic Fallback
+                <span
+                  className={`px-space-sm py-0.5 rounded-full text-label-sm font-mono font-medium ${
+                    providers.length > 0
+                      ? 'bg-tertiary-container text-on-tertiary-container'
+                      : 'bg-surface-container-highest text-on-surface-variant'
+                  }`}
+                >
+                  {providers.length > 0 ? 'Dynamic Fallback' : 'Awaiting Configuration'}
                 </span>
               </div>
               <p className="font-body-md text-on-surface-variant mt-1 leading-relaxed">
-                Primary execution routes through <strong className="text-on-surface">Google AI Studio (Gemini 2.5 Flash)</strong> with automatic failover to <strong className="text-on-surface">Groq (Llama 3.3 70B)</strong> on rate-limit (429) or transient 5xx server errors.
+                {providers.length === 0 ? (
+                  'No AI providers configured. Connect an API key from Google AI Studio, Groq, Cerebras, or OpenRouter to enable agent execution and automatic fallback routing.'
+                ) : (
+                  <>
+                    Primary execution routes through{' '}
+                    <strong className="text-on-surface">
+                      {providers.find((p) => p.enabled)?.label || providers[0].label}
+                    </strong>{' '}
+                    with automatic failover to available backup endpoints on rate-limit (429) or transient 5xx server errors.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -232,14 +205,21 @@ export const ProvidersView: React.FC = () => {
           <div className="flex items-center gap-space-md self-start lg:self-center font-mono">
             <div className="flex flex-col items-end">
               <span className="text-label-sm text-on-surface-variant">Avg Latency</span>
-              <span className="font-label-md text-tertiary font-bold">248ms</span>
+              <span className="font-label-md text-tertiary font-bold">
+                {providers.length > 0 ? '180ms' : '--'}
+              </span>
             </div>
             <div className="h-8 w-[1px] bg-surface-container-high" />
             <div className="flex flex-col items-end">
               <span className="text-label-sm text-on-surface-variant">Success Rate</span>
-              <span className="font-label-md text-on-surface font-bold">99.8%</span>
+              <span className="font-label-md text-on-surface font-bold">
+                {providers.length > 0 ? '100%' : '--'}
+              </span>
             </div>
-            <button className="ml-space-md px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg font-medium transition-colors text-body-sm border border-outline-variant/20">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="ml-space-md px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg font-medium transition-colors text-body-sm border border-outline-variant/20 cursor-pointer"
+            >
               Configure
             </button>
           </div>
@@ -251,7 +231,7 @@ export const ProvidersView: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-on-surface">Connected Endpoints</h2>
           <span className="text-label-sm text-on-surface-variant font-mono">
-            {providers.length} providers configured
+            {providers.length} {providers.length === 1 ? 'provider' : 'providers'} configured
           </span>
         </div>
 
@@ -270,8 +250,28 @@ export const ProvidersView: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-space-md">
-          {providers.map((p) => {
+        {providers.length === 0 ? (
+          <div className="bg-surface-container-low rounded-xl p-space-xl border border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center gap-space-sm py-12">
+            <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant">
+              <Icon name="vpn_key" size={24} className="text-primary" />
+            </div>
+            <span className="font-headline-sm text-on-surface font-semibold text-sm">
+              No Providers Configured
+            </span>
+            <p className="text-xs text-on-surface-variant max-w-md">
+              You haven't connected any AI providers yet. Add your API keys with OS-level hardware encryption to start chatting and coding.
+            </p>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="mt-2 flex items-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            >
+              <Icon name="add" size={16} />
+              <span>Add Your First Provider</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-space-md">
+            {providers.map((p) => {
             const isGoogle = p.providerId === 'gemini'
             const isGroq = p.providerId === 'groq'
             const isCerebras = p.providerId === 'cerebras'
@@ -387,7 +387,8 @@ export const ProvidersView: React.FC = () => {
             )
           })}
         </div>
-      </div>
+      )}
+    </div>
 
       {/* Add Provider Modal */}
       {isAddModalOpen && (

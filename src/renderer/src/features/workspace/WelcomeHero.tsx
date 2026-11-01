@@ -2,8 +2,12 @@ import React, { useState } from 'react'
 import { useUiStore } from '../../app/useUiStore'
 import Icon from '../../components/common/Icon'
 
-export const WelcomeHero: React.FC = () => {
-  const { selectWorkspaceFolder, setActiveView, setHasActiveRun } = useUiStore()
+export interface WelcomeHeroProps {
+  onStartPrompt?: (prompt: string) => void
+}
+
+export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
+  const { selectWorkspaceFolder, setActiveView } = useUiStore()
   const [promptInput, setPromptInput] = useState('')
 
   const examplePrompts = [
@@ -13,8 +17,11 @@ export const WelcomeHero: React.FC = () => {
   ]
 
   const handleStartPrompt = (prompt: string) => {
-    setPromptInput(prompt)
-    setHasActiveRun(true)
+    if (onStartPrompt) {
+      onStartPrompt(prompt)
+    } else {
+      setPromptInput(prompt)
+    }
   }
 
   return (

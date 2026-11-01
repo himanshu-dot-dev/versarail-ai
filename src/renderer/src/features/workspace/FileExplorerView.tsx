@@ -12,22 +12,11 @@ interface FileItem {
   ext?: string
 }
 
-const defaultFiles: FileItem[] = [
-  { id: '1', name: 'src', path: 'src', type: 'folder', modified: 'Folder' },
-  { id: '2', name: 'docs', path: 'docs', type: 'folder', modified: 'Folder' },
-  { id: '3', name: 'tests', path: 'tests', type: 'folder', modified: 'Folder' },
-  { id: '4', name: 'package.json', path: 'package.json', type: 'file', size: '2.4 KB', modified: 'Config', ext: 'json' },
-  { id: '5', name: 'tsconfig.json', path: 'tsconfig.json', type: 'file', size: '1.1 KB', modified: 'Config', ext: 'json' },
-  { id: '6', name: 'electron.vite.config.ts', path: 'electron.vite.config.ts', type: 'file', size: '1.8 KB', modified: 'Config', ext: 'ts' },
-  { id: '7', name: 'tailwind.config.js', path: 'tailwind.config.js', type: 'file', size: '2.1 KB', modified: 'Config', ext: 'js' },
-  { id: '8', name: 'README.md', path: 'README.md', type: 'file', size: '4.2 KB', modified: 'Docs', ext: 'md' }
-]
-
 export const FileExplorerView: React.FC = () => {
-  const { workspace, setActiveView } = useUiStore()
-  const [fileList, setFileList] = useState<FileItem[]>(defaultFiles)
+  const { workspace, selectWorkspaceFolder, setActiveView } = useUiStore()
+  const [fileList, setFileList] = useState<FileItem[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(defaultFiles[3])
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
 
   useEffect(() => {
     if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
@@ -60,15 +49,27 @@ export const FileExplorerView: React.FC = () => {
             if (items.length > 0) {
               setSelectedFile(items[0])
             }
+          } else {
+            setFileList([])
+            setSelectedFile(null)
           }
         })
-        .catch(console.error)
+        .catch((err) => {
+          console.error(err)
+          setFileList([])
+          setSelectedFile(null)
+        })
+    } else {
+      setFileList([])
+      setSelectedFile(null)
     }
   }, [workspace.path])
 
   const filteredFiles = fileList.filter((f) =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const hasWorkspace = Boolean(workspace.path)
 
   return (
     <div className="flex flex-col w-full h-[calc(100vh-2.5rem)] p-space-xl gap-space-lg select-none font-sans overflow-hidden">
@@ -81,7 +82,7 @@ export const FileExplorerView: React.FC = () => {
             </span>
             <span className="text-label-sm text-on-surface-variant font-mono">/</span>
             <span className="text-label-sm text-on-surface-variant font-mono text-[11px]">
-              {workspace.name || 'versa-rail-core'}
+              {workspace.name || 'No Workspace Open'}
             </span>
           </div>
           <h1 className="font-headline-xl text-on-surface text-2xl font-bold tracking-tight">
@@ -97,7 +98,8 @@ export const FileExplorerView: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter files in workspace..."
-            className="w-full bg-surface-container text-on-surface placeholder:text-on-surface-variant pl-9 pr-3 py-1.5 rounded-lg text-xs font-body-md focus:outline-none focus:ring-1 focus:ring-primary border border-outline-variant/20"
+            disabled={!hasWorkspace}
+            className="w-full bg-surface-container text-on-surface placeholder:text-on-surface-variant pl-9 pr-3 py-1.5 rounded-lg text-xs font-body-md focus:outline-none focus:ring-1 focus:ring-primary border border-outline-variant/20 disabled:opacity-50"
           />
         </div>
       </div>
@@ -106,52 +108,79 @@ export const FileExplorerView: React.FC = () => {
       <div className="flex-1 flex gap-space-lg min-h-0">
         {/* File List */}
         <div className="flex-1 bg-surface-container-low rounded-xl border border-outline-variant/20 overflow-y-auto p-space-md flex flex-col gap-1">
-          <div className="flex items-center gap-2 px-space-md py-space-sm text-on-surface-variant font-mono text-[11px] border-b border-surface-container-high mb-1">
+          <div className="flex items-center gap-2 px-space-md py-space-sm text-on-surface-variant font-mono text-[11px] border-b border-surface-container-high mb-1 shrink-0">
             <Icon name="folder_open" size={16} className="text-primary" />
             <span className="truncate">{workspace.path || 'No Workspace Open'}</span>
           </div>
 
-          {filteredFiles.map((item) => {
-            const isSelected = selectedFile?.id === item.id
-            return (
-              <div
-                key={item.id}
-                onClick={() => setSelectedFile(item)}
-                className={`flex items-center justify-between px-space-md py-space-sm rounded-lg cursor-pointer transition-colors text-xs ${
-                  isSelected
-                    ? 'bg-primary-container text-on-primary-container font-medium'
-                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-                }`}
+          {!hasWorkspace ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm my-auto">
+              <Icon name="folder_open" size={36} className="text-outline" />
+              <span className="font-headline-sm text-on-surface font-semibold text-xs">No Workspace Open</span>
+              <p className="text-[11px] text-on-surface-variant max-w-xs">
+                Open a project folder to inspect directories and review code files with the AI agent.
+              </p>
+              <button
+                onClick={selectWorkspaceFolder}
+                className="mt-2 flex items-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
               >
-                <div className="flex items-center gap-space-sm min-w-0">
-                  <Icon
-                    name={item.type === 'folder' ? 'folder' : 'description'}
-                    size={16}
-                    className={isSelected ? 'text-on-primary-container' : item.type === 'folder' ? 'text-primary' : 'text-tertiary'}
-                  />
-                  <span className="truncate">{item.name}</span>
-                </div>
+                <Icon name="folder_open" size={16} />
+                <span>Open Folder</span>
+              </button>
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm my-auto">
+              <Icon name="search_off" size={28} className="text-outline" />
+              <span className="text-xs text-on-surface font-medium">No Files Found</span>
+              <span className="text-[11px] text-on-surface-variant">
+                {searchQuery ? 'No files match your search query.' : 'This workspace folder is currently empty.'}
+              </span>
+            </div>
+          ) : (
+            filteredFiles.map((item) => {
+              const isSelected = selectedFile?.id === item.id
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedFile(item)}
+                  className={`flex items-center justify-between px-space-md py-space-sm rounded-lg cursor-pointer transition-colors text-xs ${
+                    isSelected
+                      ? 'bg-primary-container text-on-primary-container font-medium'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                  }`}
+                >
+                  <div className="flex items-center gap-space-sm min-w-0">
+                    <Icon
+                      name={item.type === 'folder' ? 'folder' : 'description'}
+                      size={16}
+                      className={isSelected ? 'text-on-primary-container' : item.type === 'folder' ? 'text-primary' : 'text-tertiary'}
+                    />
+                    <span className="truncate">{item.name}</span>
+                  </div>
 
-                <div className="flex items-center gap-space-md font-mono text-[11px] shrink-0">
-                  {item.size && <span>{item.size}</span>}
-                  <span>{item.modified}</span>
+                  <div className="flex items-center gap-space-md font-mono text-[11px] shrink-0">
+                    {item.size && <span>{item.size}</span>}
+                    <span>{item.modified}</span>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
 
         {/* Selected File Details Pane */}
         <div className="w-80 bg-surface-container-low rounded-xl border border-outline-variant/20 p-space-lg flex flex-col gap-space-md shrink-0">
           <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high">
             <h3 className="font-headline-sm text-on-surface font-semibold text-xs">File Inspector</h3>
-            <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono text-[10px]">
-              {selectedFile?.ext?.toUpperCase() || 'NODE'}
-            </span>
+            {selectedFile && (
+              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono text-[10px]">
+                {selectedFile.ext?.toUpperCase() || 'FILE'}
+              </span>
+            )}
           </div>
 
           {selectedFile ? (
-            <div className="flex flex-col gap-space-md text-xs">
+            <div className="flex flex-col gap-space-md text-xs h-full">
               <div className="flex items-center gap-space-md p-space-md bg-surface-container rounded-lg">
                 <Icon
                   name={selectedFile.type === 'folder' ? 'folder' : 'description'}
@@ -185,15 +214,16 @@ export const FileExplorerView: React.FC = () => {
 
               <button
                 onClick={() => setActiveView('chat')}
-                className="mt-auto flex items-center justify-center gap-space-sm w-full py-2 rounded-lg bg-primary text-on-primary hover:opacity-90 transition-opacity font-medium text-xs shadow-sm"
+                className="mt-auto flex items-center justify-center gap-space-sm w-full py-2 rounded-lg bg-primary text-on-primary hover:opacity-90 transition-opacity font-medium text-xs shadow-sm cursor-pointer"
               >
                 <Icon name="chat" size={16} />
                 Ask AI Agent About File
               </button>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-on-surface-variant text-xs">
-              Select a file to inspect metadata
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-space-md text-on-surface-variant text-xs gap-2">
+              <Icon name="description" size={28} className="text-outline" />
+              <span className="text-[11px]">Select a file from the explorer to view metadata and query the agent.</span>
             </div>
           )}
         </div>

@@ -13,13 +13,9 @@ export interface ToolActivityStreamProps {
 }
 
 export const ToolActivityStream: React.FC<ToolActivityStreamProps> = ({
-  activities = [
-    { id: '1', action: 'Read', target: 'src/auth/authService.ts' },
-    { id: '2', action: 'Search', target: 'src/ for authentication references' },
-    { id: '3', action: 'Edit', target: 'src/auth/authService.ts' },
-    { id: '4', action: 'Create', target: 'src/auth/authService.test.ts' }
-  ]
+  activities = []
 }) => {
+  if (!activities || activities.length === 0) return null
   return (
     <div className="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-xs font-mono text-label-sm text-on-surface-variant border border-outline-variant/30 select-none">
       <div className="flex items-center gap-space-sm text-on-surface font-sans font-medium text-body-sm pb-1 border-b border-surface-container-high/60">

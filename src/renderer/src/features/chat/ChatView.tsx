@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useUiStore } from '../../app/useUiStore'
 import WelcomeHero from '../workspace/WelcomeHero'
-import ExecutionTimeline from './ExecutionTimeline'
-import ToolActivityStream from './ToolActivityStream'
-import FileChangeBanner from './FileChangeBanner'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
 import TerminalPanel from '../terminal/TerminalPanel'
@@ -31,21 +28,7 @@ export const ChatView: React.FC = () => {
     isSilent: boolean
     resetEta?: string | null
   } | null>(null)
-  const [messages, setMessages] = useState<ChatMessageItem[]>([
-    {
-      id: 'msg-1',
-      role: 'user',
-      text: 'Analyze this project, identify the main issues, and refactor the authentication module without changing the public API.',
-      time: '10:42 AM'
-    },
-    {
-      id: 'msg-2',
-      role: 'assistant',
-      text: "I'll inspect the project structure, review the authentication module, and propose the required changes before applying them.",
-      time: '10:42 AM',
-      model: 'Gemini 2.5 Flash'
-    }
-  ])
+  const [messages, setMessages] = useState<ChatMessageItem[]>([])
 
   const chatBottomRef = useRef<HTMLDivElement>(null)
 
@@ -338,55 +321,50 @@ export const ChatView: React.FC = () => {
 
       {/* Scrollable Conversation Area */}
       <div className="flex-1 overflow-y-auto px-space-xl py-space-xl flex flex-col gap-space-xl">
-        {messages.map((msg) => {
-          const isUser = msg.role === 'user'
+        {messages.length === 0 ? (
+          <WelcomeHero onStartPrompt={handleSendPrompt} />
+        ) : (
+          messages.map((msg) => {
+            const isUser = msg.role === 'user'
 
-          return (
-            <div
-              key={msg.id}
-              className={`flex gap-space-lg ${isUser ? 'max-w-3xl' : 'max-w-4xl'}`}
-            >
+            return (
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant/30 ${
-                  isUser ? 'bg-surface-container-high' : 'bg-primary-container text-on-primary-container shadow-sm'
-                }`}
+                key={msg.id}
+                className={`flex gap-space-lg ${isUser ? 'max-w-3xl' : 'max-w-4xl'}`}
               >
-                <Icon name={isUser ? 'person' : 'smart_toy'} size={18} />
-              </div>
-
-              <div className="flex flex-col gap-space-xs flex-1 min-w-0">
-                <div className="flex items-center gap-space-sm">
-                  <span className="font-headline-sm text-on-surface font-semibold text-xs">
-                    {isUser ? 'You' : msg.model || connectedModel.name}
-                  </span>
-                  <span className="text-[10px] text-on-surface-variant font-mono">{msg.time}</span>
-                  {!isUser && isStreaming && msg.isStreaming && (
-                    <span className="text-[10px] text-tertiary font-mono animate-pulse">
-                      Streaming...
-                    </span>
-                  )}
-                </div>
-
                 <div
-                  className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant/20 shadow-sm leading-relaxed text-xs whitespace-pre-wrap ${
-                    isUser ? 'bg-surface-container-lowest' : 'bg-surface-container-low'
-                  } ${msg.error ? 'border-error/40 text-error' : ''}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant/30 ${
+                    isUser ? 'bg-surface-container-high' : 'bg-primary-container text-on-primary-container shadow-sm'
+                  }`}
                 >
-                  {msg.text || (msg.isStreaming ? 'Thinking...' : '')}
+                  <Icon name={isUser ? 'person' : 'smart_toy'} size={18} />
                 </div>
 
-                {/* Show timeline and tool activity for the demo/sample assistant response */}
-                {!isUser && msg.id === 'msg-2' && (
-                  <div className="flex flex-col gap-space-md mt-space-sm">
-                    <ExecutionTimeline />
-                    <ToolActivityStream />
-                    <FileChangeBanner />
+                <div className="flex flex-col gap-space-xs flex-1 min-w-0">
+                  <div className="flex items-center gap-space-sm">
+                    <span className="font-headline-sm text-on-surface font-semibold text-xs">
+                      {isUser ? 'You' : msg.model || connectedModel.name}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant font-mono">{msg.time}</span>
+                    {!isUser && isStreaming && msg.isStreaming && (
+                      <span className="text-[10px] text-tertiary font-mono animate-pulse">
+                        Streaming...
+                      </span>
+                    )}
                   </div>
-                )}
+
+                  <div
+                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant/20 shadow-sm leading-relaxed text-xs whitespace-pre-wrap ${
+                      isUser ? 'bg-surface-container-lowest' : 'bg-surface-container-low'
+                    } ${msg.error ? 'border-error/40 text-error' : ''}`}
+                  >
+                    {msg.text || (msg.isStreaming ? 'Thinking...' : '')}
+                  </div>
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
         <div ref={chatBottomRef} />
       </div>
 

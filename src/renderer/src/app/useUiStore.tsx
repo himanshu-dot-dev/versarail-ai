@@ -63,11 +63,11 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     name: null
   })
   const [connectedModel, setConnectedModel] = useState<ConnectedModelInfo>({
-    name: 'Gemini 2.5 Flash',
-    provider: 'Google AI Studio',
-    isConnected: true
+    name: 'No Model Connected',
+    provider: 'None',
+    isConnected: false
   })
-  const [hasActiveRun, setHasActiveRun] = useState(true)
+  const [hasActiveRun, setHasActiveRun] = useState(false)
 
   // Sync theme attribute on document root
   const setTheme = (newTheme: ThemeMode) => {
@@ -91,6 +91,27 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       window.electronApi.getCurrentWorkspace().then((ws) => {
         if (ws && ws.path) {
           setWorkspace(ws)
+        }
+      }).catch(console.error)
+    }
+
+    if (window.electronApi?.listProviders) {
+      window.electronApi.listProviders().then((providers) => {
+        const active = providers?.find((p) => p.enabled)
+        if (active) {
+          const modelName =
+            active.providerId === 'gemini'
+              ? 'Gemini 2.5 Flash'
+              : active.providerId === 'groq'
+              ? 'Llama 3.3 70B'
+              : active.providerId === 'cerebras'
+              ? 'Llama 3.1 70B'
+              : 'OpenRouter'
+          setConnectedModel({
+            name: modelName,
+            provider: active.label,
+            isConnected: true
+          })
         }
       }).catch(console.error)
     }

@@ -14,15 +14,11 @@ export interface ExecutionTimelineProps {
 }
 
 export const ExecutionTimeline: React.FC<ExecutionTimelineProps> = ({
-  steps = [
-    { id: '1', title: '1. Inspecting project files', duration: '120ms', status: 'completed' },
-    { id: '2', title: '2. Reading authentication modules', duration: '340ms', status: 'completed' },
-    { id: '3', title: '3. Identifying potential issues', duration: '510ms', status: 'completed' },
-    { id: '4', title: '4. Preparing proposed changes', duration: '890ms', status: 'completed' },
-    { id: '5', title: '5. Waiting for approval', duration: 'Awaiting user confirmation', status: 'waiting_approval' }
-  ]
+  steps = []
 }) => {
   const [isOpen, setIsOpen] = useState(true)
+
+  if (!steps || steps.length === 0) return null
 
   const completedCount = steps.filter((s) => s.status === 'completed').length
   const awaitingCount = steps.filter((s) => s.status === 'waiting_approval').length

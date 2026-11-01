@@ -1,15 +1,41 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
+import { ProviderMetadataDTO } from '@shared/domain/models'
 
 export const UsageQuotasView: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<'today' | '7days' | '30days'>('today')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [providers, setProviders] = useState<ProviderMetadataDTO[]>([])
+  const [healthMap, setHealthMap] = useState<Record<string, { status: string; cooldownEta?: string | null }>>({})
 
-  const handleSync = () => {
+  useEffect(() => {
+    if (window.electronApi?.listProviders) {
+      window.electronApi.listProviders().then((list) => {
+        setProviders(list || [])
+      }).catch(console.error)
+    }
+
+    if (window.electronApi?.getProviderHealthStatuses) {
+      window.electronApi.getProviderHealthStatuses().then((map) => {
+        if (map) setHealthMap(map)
+      }).catch(console.error)
+    }
+  }, [])
+
+  const handleSync = async () => {
     setIsSyncing(true)
-    setTimeout(() => {
-      setIsSyncing(false)
-    }, 600)
+    try {
+      if (window.electronApi?.listProviders) {
+        const list = await window.electronApi.listProviders()
+        setProviders(list || [])
+      }
+      if (window.electronApi?.getProviderHealthStatuses) {
+        const map = await window.electronApi.getProviderHealthStatuses()
+        if (map) setHealthMap(map)
+      }
+    } finally {
+      setTimeout(() => setIsSyncing(false), 400)
+    }
   }
 
   return (
@@ -68,10 +94,9 @@ export const UsageQuotasView: React.FC = () => {
             <Icon name="dns" size={18} className="text-primary" />
           </div>
           <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">248,842</div>
+            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
             <div className="flex items-center gap-space-xs mt-1">
-              <Icon name="trending_up" size={14} className="text-tertiary" />
-              <span className="text-label-sm text-tertiary text-[10px]">+12.4% vs last period</span>
+              <span className="text-label-sm text-on-surface-variant text-[10px]">-- vs last period</span>
             </div>
           </div>
         </div>
@@ -84,10 +109,10 @@ export const UsageQuotasView: React.FC = () => {
             <Icon name="check_circle" size={18} className="text-tertiary" />
           </div>
           <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">246,109</div>
+            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
             <div className="flex items-center gap-space-xs mt-1">
               <span className="text-label-sm text-on-surface-variant font-mono text-[10px]">
-                98.9% success rate
+                -- success rate
               </span>
             </div>
           </div>
@@ -101,9 +126,9 @@ export const UsageQuotasView: React.FC = () => {
             <Icon name="error" size={18} className="text-error" />
           </div>
           <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">2,733</div>
+            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
             <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-error text-[10px]">1.1% error rate</span>
+              <span className="text-label-sm text-on-surface-variant text-[10px]">0.0% error rate</span>
             </div>
           </div>
         </div>
@@ -116,9 +141,9 @@ export const UsageQuotasView: React.FC = () => {
             <Icon name="alt_route" size={18} className="text-secondary" />
           </div>
           <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">412</div>
+            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
             <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-secondary text-[10px]">Auto-routed safely</span>
+              <span className="text-label-sm text-secondary text-[10px]">0 auto-routed</span>
             </div>
           </div>
         </div>
@@ -131,7 +156,7 @@ export const UsageQuotasView: React.FC = () => {
             <Icon name="payments" size={18} className="text-primary" />
           </div>
           <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">$142.80</div>
+            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">$0.00</div>
             <div className="flex items-center gap-space-xs mt-1">
               <span className="text-label-sm text-on-surface-variant font-mono text-[10px]">
                 BYOK Direct Rates
@@ -156,7 +181,7 @@ export const UsageQuotasView: React.FC = () => {
             </div>
             <button
               onClick={handleSync}
-              className="flex items-center gap-space-xs text-label-sm text-primary hover:underline text-xs"
+              className="flex items-center gap-space-xs text-label-sm text-primary hover:underline text-xs cursor-pointer"
             >
               <Icon name="refresh" size={14} className={isSyncing ? 'animate-spin' : ''} />
               Sync Quotas
@@ -164,116 +189,78 @@ export const UsageQuotasView: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-space-md">
-            {/* Provider 1: Gemini */}
-            <div className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-space-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
-                    <Icon name="neurology" size={20} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-space-sm">
-                      <span className="font-headline-sm text-on-surface text-xs font-semibold">
-                        Google AI Studio
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-label-sm bg-tertiary-container/30 text-tertiary font-mono text-[10px]">
-                        Healthy
-                      </span>
-                    </div>
-                    <span className="text-body-sm text-on-surface-variant font-mono text-[11px]">
-                      gemini-2.5-flash / pro
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-body-md text-on-surface text-xs">
-                    1.2M / 4.0M tokens
-                  </div>
-                  <div className="text-label-sm text-on-surface-variant text-[10px]">30% consumed</div>
-                </div>
+            {providers.length === 0 ? (
+              <div className="p-space-xl rounded-xl bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-outline-variant/30 py-10">
+                <Icon name="query_stats" size={28} className="text-outline" />
+                <span className="font-headline-sm text-on-surface font-medium text-xs">
+                  No Provider Quotas
+                </span>
+                <span className="text-[11px] text-on-surface-variant max-w-xs">
+                  Connect your API providers to monitor live token quotas, request throughput, and reset times.
+                </span>
               </div>
-              <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                <div className="bg-primary h-full rounded-full" style={{ width: '30%' }}></div>
-              </div>
-              <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono">
-                <span>Rate Limit: 1,000 RPM / 4M TPM</span>
-                <span>Tier: Pay-As-You-Go / Free Tier Tier 1</span>
-              </div>
-            </div>
+            ) : (
+              providers.map((p) => {
+                const health = healthMap[p.id]
+                const isCooldown = health?.status === 'cooldown'
+                const isQuotaExhausted = health?.status === 'quota_exhausted'
 
-            {/* Provider 2: Groq */}
-            <div className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-space-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary">
-                    <Icon name="bolt" size={20} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-space-sm">
-                      <span className="font-headline-sm text-on-surface text-xs font-semibold">
-                        GroqCloud LPU
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-label-sm bg-tertiary-container/30 text-tertiary font-mono text-[10px]">
-                        Available
-                      </span>
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-space-md">
+                        <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+                          <Icon name="dns" size={20} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-space-sm">
+                            <span className="font-headline-sm text-on-surface text-xs font-semibold">
+                              {p.label}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded text-label-sm font-mono text-[10px] ${
+                                isCooldown || isQuotaExhausted
+                                  ? 'bg-error/20 text-error'
+                                  : 'bg-tertiary-container/30 text-tertiary'
+                              }`}
+                            >
+                              {isCooldown
+                                ? `Cooldown (${health?.cooldownEta || '~45s'})`
+                                : isQuotaExhausted
+                                ? 'Quota Exhausted'
+                                : p.enabled
+                                ? 'Healthy'
+                                : 'Disabled'}
+                            </span>
+                          </div>
+                          <span className="text-body-sm text-on-surface-variant font-mono text-[11px]">
+                            {p.providerId.toUpperCase()} Endpoint
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-body-md text-on-surface text-xs">
+                          Active Key Configured
+                        </div>
+                        <div className="text-label-sm text-on-surface-variant text-[10px]">
+                          BYOK Model Rates
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-body-sm text-on-surface-variant font-mono text-[11px]">
-                      llama-3.3-70b-versatile
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-body-md text-on-surface text-xs">
-                    420K / 1.0M tokens
-                  </div>
-                  <div className="text-label-sm text-on-surface-variant text-[10px]">42% consumed</div>
-                </div>
-              </div>
-              <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                <div className="bg-secondary h-full rounded-full" style={{ width: '42%' }}></div>
-              </div>
-              <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono">
-                <span>Rate Limit: 30 RPM / 6,000 TPM</span>
-                <span>Resets in 48m</span>
-              </div>
-            </div>
-
-            {/* Provider 3: Cerebras */}
-            <div className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-space-md">
-                  <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-tertiary">
-                    <Icon name="speed" size={20} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-space-sm">
-                      <span className="font-headline-sm text-on-surface text-xs font-semibold">
-                        Cerebras Cloud
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-label-sm bg-tertiary-container/30 text-tertiary font-mono text-[10px]">
-                        Active
-                      </span>
+                    <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
+                      <div className="bg-primary h-full rounded-full" style={{ width: '0%' }}></div>
                     </div>
-                    <span className="text-body-sm text-on-surface-variant font-mono text-[11px]">
-                      llama-3.1-70b
-                    </span>
+                    <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono">
+                      <span>Rate Limit: Dynamic / Tier Default</span>
+                      <span>Hardware DPAPI Encrypted</span>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-body-md text-on-surface text-xs">
-                    180K / 500K tokens
-                  </div>
-                  <div className="text-label-sm text-on-surface-variant text-[10px]">36% consumed</div>
-                </div>
-              </div>
-              <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                <div className="bg-tertiary h-full rounded-full" style={{ width: '36%' }}></div>
-              </div>
-              <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono">
-                <span>Inference: ~1,800 tokens/sec</span>
-                <span>Direct Key Configured</span>
-              </div>
-            </div>
+                )
+              })
+            )}
           </div>
         </div>
 
@@ -287,36 +274,12 @@ export const UsageQuotasView: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-space-md text-xs">
-            <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-1 border-l-2 border-secondary">
-              <div className="flex items-center justify-between font-mono text-[10px]">
-                <span className="text-secondary font-semibold">RATE LIMIT (429)</span>
-                <span className="text-on-surface-variant">14:22:04</span>
-              </div>
-              <p className="text-on-surface text-[11px]">
-                Gemini 2.5 hit RPM quota. Dynamic router switched to <b>Groq Llama 3.3</b>.
-              </p>
-              <span className="text-[10px] text-tertiary font-mono">Failover latency: 142ms</span>
-            </div>
-
-            <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-1 border-l-2 border-primary">
-              <div className="flex items-center justify-between font-mono text-[10px]">
-                <span className="text-primary font-semibold">ROUTE RESTORED</span>
-                <span className="text-on-surface-variant">12:15:30</span>
-              </div>
-              <p className="text-on-surface text-[11px]">
-                Cooldown expired for Gemini endpoint. Primary router status: <b>Healthy</b>.
-              </p>
-              <span className="text-[10px] text-on-surface-variant font-mono">Auto health check: 200 OK</span>
-            </div>
-
-            <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-1 border-l-2 border-secondary">
-              <div className="flex items-center justify-between font-mono text-[10px]">
-                <span className="text-secondary font-semibold">TOKEN BUDGET WARNING</span>
-                <span className="text-on-surface-variant">Yesterday</span>
-              </div>
-              <p className="text-on-surface text-[11px]">
-                Local budget reached 75% threshold. No disruption to execution.
-              </p>
+            <div className="p-space-lg rounded-lg bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-outline-variant/30 py-8">
+              <Icon name="check_circle" size={24} className="text-tertiary" />
+              <span className="text-xs text-on-surface font-medium">All Endpoints Stable</span>
+              <span className="text-[11px] text-on-surface-variant max-w-xs">
+                No failover events or rate limit recoveries recorded.
+              </span>
             </div>
           </div>
         </div>
@@ -326,4 +289,3 @@ export const UsageQuotasView: React.FC = () => {
 }
 
 export default UsageQuotasView
-
