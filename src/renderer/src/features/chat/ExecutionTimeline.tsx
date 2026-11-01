@@ -24,7 +24,7 @@ export const ExecutionTimeline: React.FC<ExecutionTimelineProps> = ({
   const awaitingCount = steps.filter((s) => s.status === 'waiting_approval').length
 
   return (
-    <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col gap-space-md border border-outline-variant/30 select-none">
+    <div className="bg-surface-container rounded-xl p-space-lg flex flex-col gap-space-md border border-outline-variant select-none">
       {/* Expandable Header */}
       <div
         className="flex items-center justify-between cursor-pointer"
@@ -63,7 +63,7 @@ export const ExecutionTimeline: React.FC<ExecutionTimelineProps> = ({
                 className={`flex items-center justify-between p-space-sm rounded transition-colors ${
                   isWaiting
                     ? 'bg-primary-container/20 border border-primary-container/40'
-                    : 'bg-surface-container/50 border border-outline-variant/10'
+                    : 'bg-surface-container/50 border border-outline-variant'
                 }`}
               >
                 <div className="flex items-center gap-space-sm">
@@ -77,7 +77,7 @@ export const ExecutionTimeline: React.FC<ExecutionTimelineProps> = ({
                     <Icon name="sync" size={16} className="text-tertiary animate-spin" />
                   )}
                   {step.status === 'pending' && (
-                    <Icon name="radio_button_unchecked" size={16} className="text-outline" />
+                    <Icon name="radio_button_unchecked" size={16} className="text-on-surface-variant/40" />
                   )}
 
                   <span

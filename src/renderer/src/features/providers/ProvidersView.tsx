@@ -198,11 +198,11 @@ export const ProvidersView: React.FC = () => {
       </div>
 
       {/* Routing Strategy Summary Card */}
-      <div className="relative overflow-hidden bg-surface-container-low rounded-xl p-space-xl shadow-sm border border-outline-variant/30 select-none">
+      <div className="relative overflow-hidden bg-surface-container rounded-xl p-space-xl shadow-sm border border-outline-variant select-none">
         <div className="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-xl relative z-10">
           <div className="flex items-start gap-space-lg">
-            <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
               <Icon name="route" size={24} />
             </div>
             <div>
@@ -211,7 +211,7 @@ export const ProvidersView: React.FC = () => {
                 <span
                   className={`px-space-sm py-0.5 rounded-full text-label-sm font-mono font-medium ${
                     providers.length > 0
-                      ? 'bg-tertiary-container text-on-tertiary-container'
+                      ? 'bg-tertiary-container/30 text-tertiary'
                       : 'bg-surface-container-highest text-on-surface-variant'
                   }`}
                 >
@@ -241,7 +241,7 @@ export const ProvidersView: React.FC = () => {
                 --
               </span>
             </div>
-            <div className="h-8 w-[1px] bg-surface-container-high" />
+            <div className="h-8 w-[1px] bg-border-subtle" />
             <div className="flex flex-col items-end">
               <span className="text-label-sm text-on-surface-variant">Success Rate</span>
               <span className="font-label-md text-on-surface font-bold">
@@ -250,7 +250,7 @@ export const ProvidersView: React.FC = () => {
             </div>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="ml-space-md px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg font-medium transition-colors text-body-sm border border-outline-variant/20 cursor-pointer"
+              className="ml-space-md px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg font-medium transition-colors text-body-sm border border-outline-variant cursor-pointer"
             >
               Configure
             </button>
@@ -283,8 +283,8 @@ export const ProvidersView: React.FC = () => {
         )}
 
         {providers.length === 0 ? (
-          <div className="bg-surface-container-low rounded-xl p-space-xl border border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center gap-space-sm py-12">
-            <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant">
+          <div className="bg-surface-container rounded-xl p-space-xl border border-dashed border-outline-variant flex flex-col items-center justify-center text-center gap-space-sm py-12">
+            <div className="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
               <Icon name="vpn_key" size={24} className="text-primary" />
             </div>
             <span className="font-headline-sm text-on-surface font-semibold text-sm">
@@ -311,10 +311,10 @@ export const ProvidersView: React.FC = () => {
             return (
               <div
                 key={p.id}
-                className="bg-surface-container-low rounded-xl p-space-lg transition-all hover:bg-surface-container hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-space-lg border border-outline-variant/30"
+                className="bg-surface-container rounded-xl p-space-lg transition-all hover:bg-surface-container-high hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-space-lg border border-outline-variant"
               >
                 <div className="flex items-start md:items-center gap-space-lg min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 text-primary border border-outline-variant/20">
+                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 text-primary border border-outline-variant">
                     {isGoogle && <Icon name="auto_awesome" size={20} className="text-primary" />}
                     {isGroq && <Icon name="bolt" size={20} className="text-tertiary" />}
                     {isCerebras && <Icon name="psychology" size={20} className="text-secondary" />}
@@ -383,18 +383,18 @@ export const ProvidersView: React.FC = () => {
                       {p.lastValidatedAt && (
                         <>
                           <span>•</span>
-                          <span className="text-outline text-[11px]">{p.lastValidatedAt}</span>
+                          <span className="text-on-surface-variant text-[11px]">{p.lastValidatedAt}</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-space-md pt-space-md md:pt-0 border-t md:border-t-0 border-surface-container-high">
+                <div className="flex items-center justify-between md:justify-end gap-space-md pt-space-md md:pt-0 border-t md:border-t-0 border-border-subtle">
                   <button
                     onClick={() => handleTestConnection(p.id, p.label, p.providerId, p.customEndpoint)}
                     disabled={testingId === p.id}
-                    className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant/20 disabled:opacity-50"
+                    className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50"
                   >
                     <Icon
                       name={testingId === p.id ? 'sync' : 'bolt'}
@@ -412,7 +412,7 @@ export const ProvidersView: React.FC = () => {
                       onChange={() => handleToggle(p.id)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container" />
+                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
                   </label>
 
                   <button
@@ -433,8 +433,8 @@ export const ProvidersView: React.FC = () => {
       {/* Add Provider Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface-container-low border border-outline-variant/40 rounded-xl p-space-xl max-w-md w-full shadow-2xl flex flex-col gap-space-lg animate-scale-in">
-            <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high">
+          <div className="bg-surface-container border border-outline-variant rounded-xl p-space-xl max-w-md w-full shadow-2xl flex flex-col gap-space-lg animate-scale-in">
+            <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
               <div className="flex items-center gap-space-sm">
                 <Icon name="vpn_key" size={20} className="text-primary" />
                 <h3 className="font-headline-md text-on-surface">Add AI Provider</h3>
@@ -474,7 +474,7 @@ export const ProvidersView: React.FC = () => {
                 <select
                   value={newProviderId}
                   onChange={(e) => setNewProviderId(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant/40 focus:ring-1 focus:ring-primary outline-none"
+                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none"
                 >
                   <option value="gemini">Google Gemini (Google AI Studio)</option>
                   <option value="groq">GroqCloud (LPU Inference)</option>
@@ -491,7 +491,7 @@ export const ProvidersView: React.FC = () => {
                   placeholder="e.g. My Gemini Pro Key"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant/40 focus:ring-1 focus:ring-primary outline-none"
+                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none"
                 />
               </div>
 
@@ -503,9 +503,9 @@ export const ProvidersView: React.FC = () => {
                   required
                   value={newKey}
                   onChange={(e) => setNewKey(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant/40 focus:ring-1 focus:ring-primary outline-none font-mono"
+                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
                 />
-                <span className="text-[11px] text-outline">
+                <span className="text-[11px] text-on-surface-variant">
                   Key is encrypted into your local OS keychain immediately.
                 </span>
               </div>
@@ -518,17 +518,17 @@ export const ProvidersView: React.FC = () => {
                     placeholder="http://localhost:20128/v1"
                     value={newEndpoint}
                     onChange={(e) => setNewEndpoint(e.target.value)}
-                    className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant/40 focus:ring-1 focus:ring-primary outline-none font-mono"
+                    className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-surface-container-high">
+              <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-border-subtle">
                 <button
                   type="button"
                   disabled={isTestingModal || !newKey.trim()}
                   onClick={handleTestModalConnection}
-                  className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant/20 disabled:opacity-50 cursor-pointer"
+                  className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50 cursor-pointer"
                 >
                   <Icon
                     name={isTestingModal ? 'sync' : 'bolt'}

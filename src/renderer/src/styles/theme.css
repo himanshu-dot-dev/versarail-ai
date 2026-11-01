@@ -1,82 +1,83 @@
-/* VersaRail AI Design Tokens & Color Schemes */
+/* VersaRail AI Design Tokens & Color Schemes - Benchmarked against Linear & Cursor */
 
 :root,
 [data-theme="versarail-dark"],
 [data-theme="dark"] {
-  /* Surfaces & Backgrounds */
-  --color-surface: #13131b;
-  --color-surface-dim: #13131b;
-  --color-surface-bright: #393841;
-  --color-surface-container-lowest: #0d0d15;
-  --color-surface-container-low: #1b1b23;
-  --color-surface-container: #1f1f27;
-  --color-surface-container-high: #292932;
-  --color-surface-container-highest: #34343d;
+  /* Surfaces & Elevation Ladder (Deep Charcoal & Slate) */
+  --color-surface: #090a0f;
+  --color-surface-dim: #090a0f;
+  --color-surface-bright: #262938;
+  --color-surface-container-lowest: #0d0e14;
+  --color-surface-container-low: #10121a;
+  --color-surface-container: #14151f;
+  --color-surface-container-high: #1a1c29;
+  --color-surface-container-highest: #222536;
 
-  /* Typography & Foreground */
-  --color-on-surface: #e4e1ed;
-  --color-on-surface-variant: #c7c4d7;
-  --color-inverse-surface: #e4e1ed;
-  --color-inverse-on-surface: #303038;
+  /* Typography & Foreground (High Legibility Off-White) */
+  --color-on-surface: #f3f4f6;
+  --color-on-surface-variant: #9ca3af;
+  --color-inverse-surface: #f3f4f6;
+  --color-inverse-on-surface: #1e1e28;
 
-  /* Outlines & Borders */
-  --color-outline: #908fa0;
-  --color-outline-variant: #464554;
-  --color-border-subtle: #212631;
+  /* Outlines & Borders (Moonlight Hairlines - Never Stark White) */
+  --color-outline: rgba(255, 255, 255, 0.12);
+  --color-outline-variant: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
 
-  /* Primary Interactive Accents (Electric Violet) */
-  --color-primary: #c0c1ff;
-  --color-on-primary: #1000a9;
-  --color-primary-container: #8083ff;
-  --color-on-primary-container: #0d0096;
-  --color-inverse-primary: #494bd6;
+  /* Primary Interactive Accents (Refined Linear Indigo) */
+  --color-primary: #4f46e5;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #6366f1;
+  --color-on-primary-container: #ffffff;
+  --color-inverse-primary: #818cf8;
 
-  /* Secondary Accents (Soft Indigo) */
-  --color-secondary: #bdc2ff;
-  --color-on-secondary: #131e8c;
-  --color-secondary-container: #2f3aa3;
-  --color-on-secondary-container: #a8afff;
+  /* Secondary Accents (Refined Indigo-Slate) */
+  --color-secondary: #6366f1;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: rgba(99, 102, 241, 0.15);
+  --color-on-secondary-container: #c7d2fe;
 
-  /* Tertiary Accents (Cyan Telemetry) */
-  --color-tertiary: #4cd7f6;
-  --color-on-tertiary: #003640;
-  --color-tertiary-container: #009eb9;
-  --color-on-tertiary-container: #002f38;
+  /* Tertiary Accents (Clean Cyan Telemetry) */
+  --color-tertiary: #38bdf8;
+  --color-on-tertiary: #082f49;
+  --color-tertiary-container: rgba(56, 189, 248, 0.15);
+  --color-on-tertiary-container: #bae6fd;
 
   /* Error & Alerts */
-  --color-error: #ffb4ab;
-  --color-on-error: #690005;
-  --color-error-container: #93000a;
-  --color-on-error-container: #ffdad6;
+  --color-error: #f87171;
+  --color-on-error: #ffffff;
+  --color-error-container: rgba(239, 68, 68, 0.15);
+  --color-on-error-container: #fca5a5;
 
   /* Whole Canvas Background */
-  --color-background: #13131b;
-  --color-on-background: #e4e1ed;
+  --color-background: #090a0f;
+  --color-on-background: #f3f4f6;
 }
 
-/* Light Theme Scheme */
+/* Light Theme Scheme (Refined Executive Slate) */
 [data-theme="light"] {
   --color-surface: #f8fafc;
   --color-surface-dim: #f1f5f9;
   --color-surface-bright: #ffffff;
-  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-lowest: #f1f5f9;
   --color-surface-container-low: #f8fafc;
-  --color-surface-container: #f1f5f9;
-  --color-surface-container-high: #e2e8f0;
-  --color-surface-container-highest: #cbd5e1;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #f1f5f9;
+  --color-surface-container-highest: #e2e8f0;
 
   --color-on-surface: #0f172a;
   --color-on-surface-variant: #475569;
   --color-inverse-surface: #1e293b;
   --color-inverse-on-surface: #f8fafc;
 
+  /* Outlines & Borders (Refined Slate Boundaries) */
   --color-outline: #94a3b8;
-  --color-outline-variant: #cbd5e1;
-  --color-border-subtle: #e2e8f0;
+  --color-outline-variant: rgba(0, 0, 0, 0.08);
+  --color-border-subtle: rgba(0, 0, 0, 0.06);
 
   --color-primary: #4f46e5;
   --color-on-primary: #ffffff;
-  --color-primary-container: #6366f1;
+  --color-primary-container: #4338ca;
   --color-on-primary-container: #ffffff;
   --color-inverse-primary: #c7d2fe;
 
@@ -87,7 +88,7 @@
 
   --color-tertiary: #0284c7;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #bae6fd;
+  --color-tertiary-container: #e0f2fe;
   --color-on-tertiary-container: #0369a1;
 
   --color-error: #ef4444;
@@ -98,4 +99,3 @@
   --color-background: #f8fafc;
   --color-on-background: #0f172a;
 }
-

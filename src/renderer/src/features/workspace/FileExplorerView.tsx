@@ -107,15 +107,15 @@ export const FileExplorerView: React.FC = () => {
       {/* Explorer Workspace Split */}
       <div className="flex-1 flex gap-space-lg min-h-0">
         {/* File List */}
-        <div className="flex-1 bg-surface-container-low rounded-xl border border-outline-variant/20 overflow-y-auto p-space-md flex flex-col gap-1">
-          <div className="flex items-center gap-2 px-space-md py-space-sm text-on-surface-variant font-mono text-[11px] border-b border-surface-container-high mb-1 shrink-0">
+        <div className="flex-1 bg-surface-container rounded-xl border border-outline-variant overflow-y-auto p-space-md flex flex-col gap-1">
+          <div className="flex items-center gap-2 px-space-md py-space-sm text-on-surface-variant font-mono text-[11px] border-b border-border-subtle mb-1 shrink-0">
             <Icon name="folder_open" size={16} className="text-primary" />
             <span className="truncate">{workspace.path || 'No Workspace Open'}</span>
           </div>
 
           {!hasWorkspace ? (
             <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm my-auto">
-              <Icon name="folder_open" size={36} className="text-outline" />
+              <Icon name="folder_open" size={36} className="text-on-surface-variant/60" />
               <span className="font-headline-sm text-on-surface font-semibold text-xs">No Workspace Open</span>
               <p className="text-[11px] text-on-surface-variant max-w-xs">
                 Open a project folder to inspect directories and review code files with the AI agent.
@@ -130,7 +130,7 @@ export const FileExplorerView: React.FC = () => {
             </div>
           ) : filteredFiles.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm my-auto">
-              <Icon name="search_off" size={28} className="text-outline" />
+              <Icon name="search_off" size={28} className="text-on-surface-variant/60" />
               <span className="text-xs text-on-surface font-medium">No Files Found</span>
               <span className="text-[11px] text-on-surface-variant">
                 {searchQuery ? 'No files match your search query.' : 'This workspace folder is currently empty.'}
@@ -145,20 +145,20 @@ export const FileExplorerView: React.FC = () => {
                   onClick={() => setSelectedFile(item)}
                   className={`flex items-center justify-between px-space-md py-space-sm rounded-lg cursor-pointer transition-colors text-xs ${
                     isSelected
-                      ? 'bg-primary-container text-on-primary-container font-medium'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                      ? 'bg-primary/10 text-on-surface dark:bg-white/[0.08] dark:text-on-surface font-semibold border-l-2 border-primary pl-[14px]'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                   }`}
                 >
                   <div className="flex items-center gap-space-sm min-w-0">
                     <Icon
                       name={item.type === 'folder' ? 'folder' : 'description'}
                       size={16}
-                      className={isSelected ? 'text-on-primary-container' : item.type === 'folder' ? 'text-primary' : 'text-tertiary'}
+                      className={isSelected ? 'text-primary' : item.type === 'folder' ? 'text-primary' : 'text-tertiary'}
                     />
                     <span className="truncate">{item.name}</span>
                   </div>
 
-                  <div className="flex items-center gap-space-md font-mono text-[11px] shrink-0">
+                  <div className="flex items-center gap-space-md font-mono text-[11px] shrink-0 text-on-surface-variant">
                     {item.size && <span>{item.size}</span>}
                     <span>{item.modified}</span>
                   </div>
@@ -169,11 +169,11 @@ export const FileExplorerView: React.FC = () => {
         </div>
 
         {/* Selected File Details Pane */}
-        <div className="w-80 bg-surface-container-low rounded-xl border border-outline-variant/20 p-space-lg flex flex-col gap-space-md shrink-0">
-          <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high">
+        <div className="w-80 bg-surface-container rounded-xl border border-outline-variant p-space-lg flex flex-col gap-space-md shrink-0">
+          <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
             <h3 className="font-headline-sm text-on-surface font-semibold text-xs">File Inspector</h3>
             {selectedFile && (
-              <span className="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono text-[10px]">
+              <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-mono text-[10px]">
                 {selectedFile.ext?.toUpperCase() || 'FILE'}
               </span>
             )}
@@ -196,12 +196,12 @@ export const FileExplorerView: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1 font-mono text-[11px]">
-                <div className="flex justify-between py-1 border-b border-surface-container-high/60">
+                <div className="flex justify-between py-1 border-b border-border-subtle">
                   <span className="text-on-surface-variant">Type</span>
                   <span className="text-on-surface uppercase">{selectedFile.type}</span>
                 </div>
                 {selectedFile.size && (
-                  <div className="flex justify-between py-1 border-b border-surface-container-high/60">
+                  <div className="flex justify-between py-1 border-b border-border-subtle">
                     <span className="text-on-surface-variant">Size</span>
                     <span className="text-on-surface">{selectedFile.size}</span>
                   </div>
@@ -222,7 +222,7 @@ export const FileExplorerView: React.FC = () => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-space-md text-on-surface-variant text-xs gap-2">
-              <Icon name="description" size={28} className="text-outline" />
+              <Icon name="description" size={28} className="text-on-surface-variant/60" />
               <span className="text-[11px]">Select a file from the explorer to view metadata and query the agent.</span>
             </div>
           )}

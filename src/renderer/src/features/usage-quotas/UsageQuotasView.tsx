@@ -61,7 +61,7 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Time Filter Selector */}
-        <div className="flex items-center bg-surface-container-low p-space-xs rounded-xl self-start md:self-auto border border-outline-variant/20">
+        <div className="flex items-center bg-surface-container-low p-space-xs rounded-xl self-start md:self-auto border border-border-subtle">
           {(
             [
               { id: 'today', label: 'Today' },
@@ -87,7 +87,7 @@ export const UsageQuotasView: React.FC = () => {
       {/* Summary Metric Cards (Bento Grid) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
         {/* Total Requests */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-outline-variant/20">
+        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all pointer-events-none"></div>
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant text-[11px]">Total Requests</span>
@@ -102,7 +102,7 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Successful */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-outline-variant/20">
+        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-tertiary/5 rounded-full blur-xl group-hover:bg-tertiary/10 transition-all pointer-events-none"></div>
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant text-[11px]">Successful</span>
@@ -119,7 +119,7 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Failed */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-outline-variant/20">
+        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-error/5 rounded-full blur-xl group-hover:bg-error/10 transition-all pointer-events-none"></div>
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant text-[11px]">Failed</span>
@@ -134,7 +134,7 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Fallback Events */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-outline-variant/20">
+        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-secondary/5 rounded-full blur-xl group-hover:bg-secondary/10 transition-all pointer-events-none"></div>
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant text-[11px]">Fallback Events</span>
@@ -149,7 +149,7 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Estimated Cost */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all sm:col-span-2 lg:col-span-1 border border-outline-variant/20">
+        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all sm:col-span-2 lg:col-span-1 border border-border-subtle">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary-container/20 rounded-full blur-xl group-hover:bg-primary-container/30 transition-all pointer-events-none"></div>
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant text-[11px]">Estimated Cost</span>
@@ -169,7 +169,7 @@ export const UsageQuotasView: React.FC = () => {
       {/* Main Content Layout (Split: Usage Breakdown + Telemetry Graph) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-xl">
         {/* Per-Provider Usage Breakdown (2 Columns Wide) */}
-        <div className="lg:col-span-2 bg-surface-container-low rounded-xl p-space-xl flex flex-col gap-space-lg border border-outline-variant/20">
+        <div className="lg:col-span-2 bg-surface-container-low rounded-xl p-space-xl flex flex-col gap-space-lg border border-border-subtle">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-headline-md text-on-surface font-semibold text-sm">
@@ -190,8 +190,8 @@ export const UsageQuotasView: React.FC = () => {
 
           <div className="flex flex-col gap-space-md">
             {providers.length === 0 ? (
-              <div className="p-space-xl rounded-xl bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-outline-variant/30 py-10">
-                <Icon name="query_stats" size={28} className="text-outline" />
+              <div className="p-space-xl rounded-xl bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-border-subtle py-10">
+                <Icon name="query_stats" size={28} className="text-on-surface-variant/60" />
                 <span className="font-headline-sm text-on-surface font-medium text-xs">
                   No Provider Quotas
                 </span>
@@ -265,8 +265,8 @@ export const UsageQuotasView: React.FC = () => {
         </div>
 
         {/* Right Side: Failover & Route Telemetry Panel */}
-        <div className="bg-surface-container-low rounded-xl p-space-xl flex flex-col gap-space-md border border-outline-variant/20">
-          <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high">
+        <div className="bg-surface-container-low rounded-xl p-space-xl flex flex-col gap-space-md border border-border-subtle">
+          <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
             <h3 className="font-headline-sm text-on-surface font-semibold text-xs">
               Recent Failover Events
             </h3>
@@ -274,7 +274,7 @@ export const UsageQuotasView: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-space-md text-xs">
-            <div className="p-space-lg rounded-lg bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-outline-variant/30 py-8">
+            <div className="p-space-lg rounded-lg bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-border-subtle py-8">
               <Icon name="check_circle" size={24} className="text-tertiary" />
               <span className="text-xs text-on-surface font-medium">All Endpoints Stable</span>
               <span className="text-[11px] text-on-surface-variant max-w-xs">

@@ -32,30 +32,30 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-surface-container-lowest overflow-hidden select-none font-sans border-l border-outline-variant/20">
+    <div className="flex-1 flex flex-col h-full bg-surface-container-lowest overflow-hidden select-none font-sans border-l border-border-subtle">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-space-md py-space-sm border-b border-surface-container-high bg-surface-container-low shrink-0">
+      <div className="flex items-center justify-between px-space-md py-space-sm border-b border-border-subtle bg-surface-container shrink-0">
         <div className="flex items-center gap-space-sm min-w-0">
           <Icon name="description" size={16} className="text-primary shrink-0" />
           <span className="font-mono text-xs font-semibold text-on-surface truncate">
             {diff.filePath}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-surface-container text-tertiary font-mono text-[10px] font-bold">
+          <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-tertiary font-mono text-[10px] font-bold">
             +{diff.additions}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-surface-container text-error font-mono text-[10px] font-bold">
+          <span className="px-1.5 py-0.5 rounded bg-surface-container-high text-error font-mono text-[10px] font-bold">
             -{diff.deletions}
           </span>
         </div>
 
         <div className="flex items-center gap-space-sm">
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-surface-container rounded-lg p-0.5 border border-outline-variant/30 text-[11px]">
+          <div className="flex items-center bg-surface-container-lowest rounded-lg p-0.5 border border-outline-variant text-[11px]">
             <button
               onClick={() => setViewMode('unified')}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
                 viewMode === 'unified'
-                  ? 'bg-primary-container text-on-primary-container shadow-xs'
+                  ? 'bg-primary text-on-primary shadow-xs'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -65,7 +65,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
               onClick={() => setViewMode('split')}
               className={`px-2 py-0.5 rounded font-medium transition-colors ${
                 viewMode === 'split'
-                  ? 'bg-primary-container text-on-primary-container shadow-xs'
+                  ? 'bg-primary text-on-primary shadow-xs'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -100,7 +100,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
       )}
 
       {/* Baseline Metadata Chip Bar */}
-      <div className="flex items-center justify-between px-space-md py-1 bg-surface-container-high/40 border-b border-surface-container-high text-[10px] font-mono text-on-surface-variant shrink-0">
+      <div className="flex items-center justify-between px-space-md py-1 bg-surface-container border-b border-border-subtle text-[10px] font-mono text-on-surface-variant shrink-0">
         <span>Baseline SHA-256: {diff.baselineSha256.slice(0, 16)}...</span>
         <span>Hunks: {diff.hunks.length}</span>
       </div>
@@ -113,14 +113,14 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
           </div>
         ) : (
           diff.hunks.map((hunk, hIdx) => (
-            <div key={`hunk-${hIdx}`} className="mb-space-md border border-outline-variant/20 rounded-lg overflow-hidden">
+            <div key={`hunk-${hIdx}`} className="mb-space-md border border-outline-variant rounded-lg overflow-hidden">
               {/* Hunk Header */}
-              <div className="px-space-md py-1 bg-surface-container text-primary font-mono text-[11px] font-semibold border-b border-outline-variant/20">
+              <div className="px-space-md py-1 bg-surface-container text-primary font-mono text-[11px] font-semibold border-b border-border-subtle">
                 @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
               </div>
 
               {/* Hunk Lines */}
-              <div className="bg-surface-container-lowest divide-y divide-surface-container-high/20">
+              <div className="bg-surface-container-lowest divide-y divide-border-subtle">
                 {hunk.lines.map((line, lIdx) => {
                   const isAdd = line.type === 'add'
                   const isDelete = line.type === 'delete'

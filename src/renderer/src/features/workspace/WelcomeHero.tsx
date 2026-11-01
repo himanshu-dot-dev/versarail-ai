@@ -32,7 +32,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
         <div className="absolute w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -top-10" />
 
         {/* Logo Mark */}
-        <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center mb-space-lg shadow-xl relative border border-outline-variant/30">
+        <div className="w-16 h-16 rounded-xl bg-surface-container-high flex items-center justify-center mb-space-lg shadow-xl relative border border-outline-variant">
           <Icon name="hub" size={32} className="text-primary" filled />
           <div
             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-tertiary flex items-center justify-center border-2 border-surface"
@@ -64,7 +64,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
 
           <button
             onClick={() => setActiveView('ai-providers')}
-            className="flex items-center gap-space-sm px-space-lg py-space-md rounded-xl bg-surface-container-high text-on-surface font-headline-sm hover:bg-surface-container-highest transition-all border border-outline-variant/30 font-medium"
+            className="flex items-center gap-space-sm px-space-lg py-space-md rounded-xl bg-surface-container-high text-on-surface font-headline-sm hover:bg-surface-container-highest transition-all border border-outline-variant font-medium"
           >
             <Icon name="smart_toy" size={18} className="text-primary" />
             <span>Connect an AI Provider</span>
@@ -73,7 +73,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
       </div>
 
       {/* Chat Input & Example Prompts Container */}
-      <div className="flex flex-col w-full max-w-2xl mx-auto bg-surface-container rounded-xl p-space-lg shadow-xl gap-space-md border border-outline-variant/30">
+      <div className="flex flex-col w-full max-w-2xl mx-auto bg-surface-container rounded-xl p-space-lg shadow-xl gap-space-md border border-outline-variant">
         <div className="flex items-center gap-space-md">
           <Icon name="terminal" size={20} className="text-primary" />
           <input
@@ -84,7 +84,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
                 handleStartPrompt(promptInput)
               }
             }}
-            className="w-full bg-transparent text-on-surface placeholder:text-outline font-body-lg focus:outline-none"
+            className="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 font-body-lg focus:outline-none"
             placeholder="What would you like to build or change?"
             type="text"
           />
@@ -103,12 +103,12 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
 
         {/* Example Prompt Pills */}
         <div className="flex flex-wrap items-center gap-space-xs pt-space-xs">
-          <span className="text-label-sm text-outline mr-space-xs font-mono">Try asking:</span>
+          <span className="text-label-sm text-on-surface-variant mr-space-xs font-mono">Try asking:</span>
           {examplePrompts.map((prompt) => (
             <button
               key={prompt}
               onClick={() => handleStartPrompt(prompt)}
-              className="px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface-variant text-label-sm hover:bg-surface-container-high hover:text-on-surface transition-all border border-outline-variant/20"
+              className="px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface-variant text-label-sm hover:bg-surface-container-high hover:text-on-surface transition-all border border-outline-variant"
             >
               {prompt}
             </button>
@@ -119,7 +119,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
       {/* Three Compact Feature Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-space-lg mt-space-lg pb-space-xl">
         {/* Card 1 */}
-        <div className="flex flex-col bg-surface-container-low p-space-lg rounded-xl gap-space-sm hover:bg-surface-container transition-all group border border-outline-variant/20 shadow-sm">
+        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-space-xs group-hover:scale-105 transition-transform">
             <Icon name="vpn_key" size={20} className="text-primary" />
           </div>
@@ -130,7 +130,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
         </div>
 
         {/* Card 2 */}
-        <div className="flex flex-col bg-surface-container-low p-space-lg rounded-xl gap-space-sm hover:bg-surface-container transition-all group border border-outline-variant/20 shadow-sm">
+        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
           <div className="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary mb-space-xs group-hover:scale-105 transition-transform">
             <Icon name="swap_horiz" size={20} className="text-tertiary" />
           </div>
@@ -141,7 +141,7 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
         </div>
 
         {/* Card 3 */}
-        <div className="flex flex-col bg-surface-container-low p-space-lg rounded-xl gap-space-sm hover:bg-surface-container transition-all group border border-outline-variant/20 shadow-sm">
+        <div className="flex flex-col bg-surface-container p-space-lg rounded-xl gap-space-sm hover:bg-surface-container-high transition-all group border border-outline-variant shadow-sm">
           <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary mb-space-xs group-hover:scale-105 transition-transform">
             <Icon name="shield_lock" size={20} className="text-secondary" />
           </div>

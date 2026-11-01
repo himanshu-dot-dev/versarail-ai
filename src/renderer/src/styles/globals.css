@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  *, ::before, ::after {
+    border-color: var(--color-border-subtle);
+  }
+
   html, body {
     margin: 0;
     padding: 0;

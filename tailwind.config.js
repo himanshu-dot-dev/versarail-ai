@@ -9,47 +9,50 @@ export default {
     extend: {
       colors: {
         // Semantic VersaRail Theme Tokens mapped to CSS variables for dynamic theming
-        'surface': 'var(--color-surface, #13131b)',
-        'surface-dim': 'var(--color-surface-dim, #13131b)',
-        'surface-bright': 'var(--color-surface-bright, #393841)',
-        'surface-container-lowest': 'var(--color-surface-container-lowest, #0d0d15)',
-        'surface-container-low': 'var(--color-surface-container-low, #1b1b23)',
-        'surface-container': 'var(--color-surface-container, #1f1f27)',
-        'surface-container-high': 'var(--color-surface-container-high, #292932)',
-        'surface-container-highest': 'var(--color-surface-container-highest, #34343d)',
+        'surface': 'var(--color-surface, #090a0f)',
+        'surface-dim': 'var(--color-surface-dim, #090a0f)',
+        'surface-bright': 'var(--color-surface-bright, #262938)',
+        'surface-container-lowest': 'var(--color-surface-container-lowest, #0d0e14)',
+        'surface-container-low': 'var(--color-surface-container-low, #10121a)',
+        'surface-container': 'var(--color-surface-container, #14151f)',
+        'surface-container-high': 'var(--color-surface-container-high, #1a1c29)',
+        'surface-container-highest': 'var(--color-surface-container-highest, #222536)',
         
-        'on-surface': 'var(--color-on-surface, #e4e1ed)',
-        'on-surface-variant': 'var(--color-on-surface-variant, #c7c4d7)',
-        'inverse-surface': 'var(--color-inverse-surface, #e4e1ed)',
-        'inverse-on-surface': 'var(--color-inverse-on-surface, #303038)',
+        'on-surface': 'var(--color-on-surface, #f3f4f6)',
+        'on-surface-variant': 'var(--color-on-surface-variant, #9ca3af)',
+        'inverse-surface': 'var(--color-inverse-surface, #f3f4f6)',
+        'inverse-on-surface': 'var(--color-inverse-on-surface, #1e1e28)',
         
-        'outline': 'var(--color-outline, #908fa0)',
-        'outline-variant': 'var(--color-outline-variant, #464554)',
-        'border-subtle': 'var(--color-border-subtle, #212631)',
+        'outline': 'var(--color-outline, rgba(255, 255, 255, 0.12))',
+        'outline-variant': 'var(--color-outline-variant, rgba(255, 255, 255, 0.08))',
+        'border-subtle': 'var(--color-border-subtle, rgba(255, 255, 255, 0.06))',
 
-        'primary': 'var(--color-primary, #c0c1ff)',
-        'on-primary': 'var(--color-on-primary, #1000a9)',
-        'primary-container': 'var(--color-primary-container, #8083ff)',
-        'on-primary-container': 'var(--color-on-primary-container, #0d0096)',
-        'inverse-primary': 'var(--color-inverse-primary, #494bd6)',
+        'primary': 'var(--color-primary, #4f46e5)',
+        'on-primary': 'var(--color-on-primary, #ffffff)',
+        'primary-container': 'var(--color-primary-container, #6366f1)',
+        'on-primary-container': 'var(--color-on-primary-container, #ffffff)',
+        'inverse-primary': 'var(--color-inverse-primary, #818cf8)',
 
-        'secondary': 'var(--color-secondary, #bdc2ff)',
-        'on-secondary': 'var(--color-on-secondary, #131e8c)',
-        'secondary-container': 'var(--color-secondary-container, #2f3aa3)',
-        'on-secondary-container': 'var(--color-on-secondary-container, #a8afff)',
+        'secondary': 'var(--color-secondary, #6366f1)',
+        'on-secondary': 'var(--color-on-secondary, #ffffff)',
+        'secondary-container': 'var(--color-secondary-container, rgba(99, 102, 241, 0.15))',
+        'on-secondary-container': 'var(--color-on-secondary-container, #c7d2fe)',
 
-        'tertiary': 'var(--color-tertiary, #4cd7f6)',
-        'on-tertiary': 'var(--color-on-tertiary, #003640)',
-        'tertiary-container': 'var(--color-tertiary-container, #009eb9)',
-        'on-tertiary-container': 'var(--color-on-tertiary-container, #002f38)',
+        'tertiary': 'var(--color-tertiary, #38bdf8)',
+        'on-tertiary': 'var(--color-on-tertiary, #082f49)',
+        'tertiary-container': 'var(--color-tertiary-container, rgba(56, 189, 248, 0.15))',
+        'on-tertiary-container': 'var(--color-on-tertiary-container, #bae6fd)',
 
-        'error': 'var(--color-error, #ffb4ab)',
-        'on-error': 'var(--color-on-error, #690005)',
-        'error-container': 'var(--color-error-container, #93000a)',
-        'on-error-container': 'var(--color-on-error-container, #ffdad6)',
+        'error': 'var(--color-error, #f87171)',
+        'on-error': 'var(--color-on-error, #ffffff)',
+        'error-container': 'var(--color-error-container, rgba(239, 68, 68, 0.15))',
+        'on-error-container': 'var(--color-on-error-container, #fca5a5)',
 
-        'background': 'var(--color-background, #13131b)',
-        'on-background': 'var(--color-on-background, #e4e1ed)'
+        'background': 'var(--color-background, #090a0f)',
+        'on-background': 'var(--color-on-background, #f3f4f6)'
+      },
+      borderColor: {
+        DEFAULT: 'var(--color-border-subtle, rgba(255, 255, 255, 0.06))'
       },
       spacing: {
         'space-xs': '0.25rem',  // 4px
@@ -88,4 +91,3 @@ export default {
   },
   plugins: []
 }
-

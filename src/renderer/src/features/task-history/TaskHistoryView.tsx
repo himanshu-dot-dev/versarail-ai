@@ -117,7 +117,7 @@ export const TaskHistoryView: React.FC = () => {
 
       {/* Quick Stats Bento Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
-        <div className="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant/20">
+        <div className="bg-surface-container p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant">
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant uppercase text-[11px]">Total Executions</span>
             <Icon name="bolt" size={20} className="text-primary" />
@@ -132,7 +132,7 @@ export const TaskHistoryView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant/20">
+        <div className="bg-surface-container p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant">
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant uppercase text-[11px]">Success Rate</span>
             <Icon name="check_circle" size={20} className="text-tertiary" />
@@ -147,7 +147,7 @@ export const TaskHistoryView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant/20">
+        <div className="bg-surface-container p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant">
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant uppercase text-[11px]">Files Modified</span>
             <Icon name="code" size={20} className="text-secondary" />
@@ -158,7 +158,7 @@ export const TaskHistoryView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-low p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant/20">
+        <div className="bg-surface-container p-space-lg rounded-xl flex flex-col justify-between shadow-sm relative overflow-hidden border border-outline-variant">
           <div className="flex items-center justify-between mb-space-md">
             <span className="text-label-sm text-on-surface-variant uppercase text-[11px]">Pending Approvals</span>
             <Icon name="pending_actions" size={20} className="text-tertiary" />
@@ -171,7 +171,7 @@ export const TaskHistoryView: React.FC = () => {
       </div>
 
       {/* Search & Filter Controls */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md bg-surface-container-low p-space-md rounded-xl shadow-sm border border-outline-variant/20">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md bg-surface-container p-space-md rounded-xl shadow-sm border border-outline-variant">
         {/* Search Bar */}
         <div className="flex-1 relative flex items-center">
           <Icon name="search" size={18} className="absolute left-space-md text-on-surface-variant" />
@@ -242,11 +242,11 @@ export const TaskHistoryView: React.FC = () => {
       </div>
 
       {/* Structured Table Container */}
-      <div className="bg-surface-container-low rounded-xl overflow-hidden shadow-sm border border-outline-variant/20">
+      <div className="bg-surface-container rounded-xl overflow-hidden shadow-sm border border-outline-variant">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-surface-container/50 border-b border-surface-container-high text-on-surface-variant font-mono uppercase text-[11px]">
+              <tr className="bg-surface-container-high/50 border-b border-border-subtle text-on-surface-variant font-mono uppercase text-[11px]">
                 <th className="py-space-md px-space-lg font-medium">Task ID &amp; Title</th>
                 <th className="py-space-md px-space-lg font-medium">Project</th>
                 <th className="py-space-md px-space-lg font-medium">Provider &amp; Model</th>
@@ -255,12 +255,12 @@ export const TaskHistoryView: React.FC = () => {
                 <th className="py-space-md px-space-lg font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-container-high/40">
+            <tbody className="divide-y divide-border-subtle">
               {filteredHistory.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-on-surface-variant">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <Icon name="history" size={32} className="text-outline" />
+                      <Icon name="history" size={32} className="text-on-surface-variant/60" />
                       <span className="font-headline-sm text-on-surface font-semibold text-xs">
                         No Task History Recorded
                       </span>
@@ -352,8 +352,8 @@ export const TaskHistoryView: React.FC = () => {
       {/* Detail Modal */}
       {selectedTask && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-surface-container-low border border-outline-variant/40 rounded-xl w-full max-w-xl p-space-xl shadow-2xl flex flex-col gap-space-md">
-            <div className="flex items-center justify-between border-b border-surface-container-high pb-space-sm">
+          <div className="bg-surface-container border border-outline-variant rounded-xl w-full max-w-xl p-space-xl shadow-2xl flex flex-col gap-space-md">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-space-sm">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-tertiary font-bold">{selectedTask.id}</span>
                 <h3 className="font-headline-sm font-semibold text-on-surface">{selectedTask.title}</h3>

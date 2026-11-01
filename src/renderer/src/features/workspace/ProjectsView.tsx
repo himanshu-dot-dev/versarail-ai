@@ -134,8 +134,8 @@ export const ProjectsView: React.FC = () => {
       </div>
 
       {/* Recent Projects List */}
-      <div className="bg-surface-container-low rounded-xl p-space-xl border border-outline-variant/20 shadow-sm flex flex-col gap-space-md">
-        <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high">
+      <div className="bg-surface-container rounded-xl p-space-xl border border-outline-variant shadow-sm flex flex-col gap-space-md">
+        <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
           <h2 className="font-headline-md text-on-surface font-semibold text-sm">
             Recent Workspaces
           </h2>
@@ -145,8 +145,8 @@ export const ProjectsView: React.FC = () => {
         </div>
 
         {projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm py-12 border border-dashed border-outline-variant/30 rounded-xl">
-            <Icon name="folder_open" size={32} className="text-outline" />
+          <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-space-sm py-12 border border-dashed border-outline-variant rounded-xl">
+            <Icon name="folder_open" size={32} className="text-on-surface-variant/60" />
             <span className="font-headline-sm text-on-surface font-semibold text-xs">No Recent Workspaces</span>
             <p className="text-[11px] text-on-surface-variant max-w-sm">
               Open a local code repository to manage per-project permissions and start agent sessions.
@@ -165,7 +165,7 @@ export const ProjectsView: React.FC = () => {
               <div
                 key={proj.id}
                 onClick={() => handleSwitchProject(proj)}
-                className="flex items-center justify-between p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all cursor-pointer group border border-outline-variant/10"
+                className="flex items-center justify-between p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer group border border-outline-variant"
               >
                 <div className="flex items-center gap-space-md min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">

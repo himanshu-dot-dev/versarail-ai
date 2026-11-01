@@ -12,7 +12,7 @@ export function createMainWindow(): BrowserWindow {
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
     title: 'VersaRail AI',
-    backgroundColor: '#13131b',
+    backgroundColor: '#090a0f',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,

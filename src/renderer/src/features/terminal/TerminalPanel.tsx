@@ -121,18 +121,17 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-surface-container-lowest border-t border-outline-variant/30 select-none overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-surface-container-lowest border-t border-border-subtle select-none overflow-hidden">
       {/* Terminal Titlebar */}
-      <div className="flex items-center justify-between px-space-md py-1 bg-surface-container-low border-b border-surface-container-high shrink-0 text-xs">
+      <div className="flex items-center justify-between px-space-md py-1 bg-surface-container border-b border-border-subtle shrink-0 text-xs">
         <div className="flex items-center gap-space-sm">
           <Icon name="terminal" size={14} className="text-primary shrink-0" />
           <span className="font-mono text-[11px] font-semibold text-on-surface">
             Developer Interactive Shell
           </span>
           <span
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? 'bg-tertiary' : 'bg-on-surface-variant'
-            }`}
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-tertiary' : 'bg-on-surface-variant'
+              }`}
             title={isConnected ? 'Connected' : 'Disconnected'}
           />
           <span className="text-[10px] text-on-surface-variant font-mono hidden sm:inline">

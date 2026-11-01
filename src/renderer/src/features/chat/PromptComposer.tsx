@@ -121,8 +121,8 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
   const isAutoModeActive = connectedModel.name.startsWith('auto/')
 
   return (
-    <div className="p-space-xl bg-surface-dim border-t border-surface-container-high/60 shrink-0 relative">
-      <div className="max-w-4xl mx-auto flex flex-col gap-space-md bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/30 shadow-lg relative">
+    <div className="p-space-xl bg-surface-dim border-t border-border-subtle shrink-0 relative">
+      <div className="max-w-4xl mx-auto flex flex-col gap-space-md bg-surface-container p-space-md rounded-xl border border-outline-variant shadow-lg relative">
         <textarea
           ref={textareaRef}
           value={prompt}
@@ -134,7 +134,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
           rows={2}
         />
 
-        <div className="flex items-center justify-between pt-space-xs border-t border-surface-container-high/40">
+        <div className="flex items-center justify-between pt-space-xs border-t border-border-subtle">
           <div className="flex items-center gap-space-sm flex-wrap">
             {/* Attachment Button */}
             <button
@@ -162,7 +162,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                 className={`flex items-center gap-space-xs px-space-md py-space-xs rounded text-label-md transition-colors border cursor-pointer ${
                   isAutoModeActive
                     ? 'bg-primary-container/30 border-primary/40 text-primary hover:bg-primary-container/50'
-                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high border-outline-variant/20'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high border-outline-variant'
                 }`}
                 title="Click to switch model or enable OmniRoute Auto-Switch"
               >
@@ -179,9 +179,9 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
 
               {/* Floating Model Selection Popover */}
               {isModelOpen && (
-                <div className="absolute bottom-full mb-2 left-0 w-80 md:w-96 max-h-[460px] bg-surface-container-low border border-outline-variant/30 rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-fade-in font-sans">
+                <div className="absolute bottom-full mb-2 left-0 w-80 md:w-96 max-h-[460px] bg-surface-container border border-outline-variant rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden animate-fade-in font-sans">
                   {/* Popover Header & Search */}
-                  <div className="p-space-md border-b border-surface-container-high bg-surface-container-lowest/80 flex flex-col gap-2">
+                  <div className="p-space-md border-b border-border-subtle bg-surface-container-lowest/80 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-on-surface">
                         <Icon name="hub" size={14} className="text-primary" />
@@ -206,7 +206,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                         value={modelSearch}
                         onChange={(e) => setModelSearch(e.target.value)}
                         placeholder="Filter models (e.g. auto, claude, gpt, llama)..."
-                        className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-surface-container border border-outline-variant/20 text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary/50 font-mono"
+                        className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-surface-container-high border border-outline-variant text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary/50 font-mono"
                         autoFocus
                       />
                       {modelSearch && (
@@ -312,7 +312,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                                   <div className="flex items-center gap-2 min-w-0">
                                     <span className="font-mono truncate">{m.id}</span>
                                   </div>
-                                  <span className="text-[10px] text-outline font-mono uppercase shrink-0 ml-2">
+                                  <span className="text-[10px] text-on-surface-variant font-mono uppercase shrink-0 ml-2">
                                     {m.providerId}
                                   </span>
                                 </button>
@@ -330,7 +330,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
             {/* Project Selector Dropdown Chip */}
             <div
               onClick={selectWorkspaceFolder}
-              className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-container text-on-surface text-label-md cursor-pointer hover:bg-surface-container-high transition-colors border border-outline-variant/20"
+              className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-container text-on-surface text-label-md cursor-pointer hover:bg-surface-container-high transition-colors border border-outline-variant"
               title="Click to switch workspace folder"
             >
               <Icon name="folder" size={14} className="text-primary" />

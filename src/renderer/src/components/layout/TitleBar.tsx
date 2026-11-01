@@ -27,16 +27,16 @@ export const TitleBar: React.FC = () => {
   }
 
   return (
-    <header className="h-10 w-full bg-surface-container-low z-50 flex items-center justify-between px-space-lg select-none drag-region border-b border-surface-container-high/60 shrink-0">
+    <header className="h-10 w-full bg-surface-container-lowest z-50 flex items-center justify-between px-space-lg select-none drag-region border-b border-border-subtle shrink-0">
       {/* Brand logo & title */}
       <div className="flex items-center gap-space-sm">
-        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-primary-container to-primary flex items-center justify-center shadow-sm">
-          <Icon name="hub" size={13} className="text-on-primary-container" />
+        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-500 to-primary flex items-center justify-center shadow-sm">
+          <Icon name="hub" size={13} className="text-white" />
         </div>
         <span className="font-headline-sm text-on-surface text-xs font-semibold tracking-wide">
           VersaRail AI
         </span>
-        <span className="text-[10px] text-tertiary font-mono px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/30">
+        <span className="text-[10px] text-tertiary font-mono px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant">
           DESKTOP
         </span>
       </div>
@@ -45,7 +45,7 @@ export const TitleBar: React.FC = () => {
       <div className="flex items-center gap-1 no-drag-region">
         <button
           onClick={handleMinimize}
-          className="w-8 h-8 flex items-center justify-center hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors rounded"
+          className="w-8 h-8 flex items-center justify-center hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors rounded"
           title="Minimize"
           aria-label="Minimize"
         >
@@ -54,7 +54,7 @@ export const TitleBar: React.FC = () => {
 
         <button
           onClick={handleMaximize}
-          className="w-8 h-8 flex items-center justify-center hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors rounded"
+          className="w-8 h-8 flex items-center justify-center hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors rounded"
           title={isMaximized ? 'Restore' : 'Maximize'}
           aria-label={isMaximized ? 'Restore' : 'Maximize'}
         >

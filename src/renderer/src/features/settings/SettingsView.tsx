@@ -100,20 +100,21 @@ export const SettingsView: React.FC = () => {
     setLaunchAtStartup(false)
     setHardwareAcceleration(true)
     setTelemetry(false)
-    setDefaultModel(availableModels.length > 0 ? availableModels[0].id : '')
-    setCodeEngine(availableModels.length > 0 ? availableModels[0].id : '')
     setTemperature(0.7)
     setAutoFileMod(false)
     setTerminalExecution(false)
     setNetworkRequests(true)
-    setTheme('versarail-dark')
+    setAllowedProviders(['gemini', 'groq', 'cerebras', 'openrouter', 'custom'])
+    setAuditRetentionDays(30)
+    setContextBudgetTokens(32_000)
+    setAutoSummarize(true)
     handleSave()
   }
 
   return (
     <div className="flex flex-col w-full min-h-[calc(100vh-2.5rem)] bg-surface text-on-surface select-none font-sans">
       {/* Top Header Bar for Settings Context */}
-      <div className="px-space-xl py-space-lg flex items-center justify-between bg-surface-container-lowest border-b border-surface-container-high/60">
+      <div className="px-space-xl py-space-lg flex items-center justify-between bg-surface-container-lowest border-b border-border-subtle">
         <div>
           <div className="flex items-center gap-space-sm mb-1">
             <span className="text-label-sm text-primary uppercase tracking-wider text-[11px] font-mono">
@@ -133,13 +134,13 @@ export const SettingsView: React.FC = () => {
         <div className="flex items-center gap-space-md">
           <button
             onClick={handleReset}
-            className="px-space-lg py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-colors"
+            className="px-space-lg py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant transition-colors"
           >
             Reset to Defaults
           </button>
           <button
             onClick={handleSave}
-            className="px-space-lg py-space-sm rounded-lg bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity shadow-sm flex items-center gap-1.5"
+            className="px-space-lg py-space-sm rounded-lg bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-all shadow-sm shadow-primary/25 flex items-center gap-1.5"
           >
             {savedToast ? (
               <>
@@ -156,7 +157,7 @@ export const SettingsView: React.FC = () => {
       {/* Main Settings Workspace Layout */}
       <div className="flex flex-1 w-full">
         {/* Secondary Vertical Navigation */}
-        <aside className="w-64 bg-surface-container-low p-space-md flex flex-col gap-space-xs shrink-0 select-none border-r border-surface-container-high/40">
+        <aside className="w-64 bg-surface-container-lowest p-space-md flex flex-col gap-space-xs shrink-0 select-none border-r border-border-subtle">
           <div className="text-label-sm text-on-surface-variant px-space-md py-space-sm uppercase tracking-wider text-[10px] font-mono">
             Categories
           </div>
@@ -177,14 +178,14 @@ export const SettingsView: React.FC = () => {
                   onClick={() => setActiveCategory(cat.id)}
                   className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-medium transition-all text-left ${
                     isActive
-                      ? 'bg-primary-container text-on-primary-container'
-                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                      ? 'bg-primary/10 text-on-surface dark:bg-white/[0.08] dark:text-on-surface font-semibold border-l-2 border-primary pl-[14px]'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                   }`}
                 >
                   <Icon
                     name={cat.icon}
                     size={18}
-                    className={isActive ? 'text-on-primary-container' : 'text-on-surface-variant'}
+                    className={isActive ? 'text-primary' : 'text-on-surface-variant'}
                   />
                   <span>{cat.label}</span>
                 </button>
@@ -192,7 +193,7 @@ export const SettingsView: React.FC = () => {
             })}
           </nav>
 
-          <div className="mt-auto p-space-md rounded-lg bg-surface-container-lowest flex flex-col gap-space-xs border border-outline-variant/20">
+          <div className="mt-auto p-space-md rounded-lg bg-surface-container flex flex-col gap-space-xs border border-outline-variant">
             <div className="flex items-center gap-space-sm">
               <Icon name="info" size={16} className="text-tertiary" />
               <span className="text-label-sm text-on-surface font-semibold text-xs">VersaRail Engine</span>
@@ -207,8 +208,8 @@ export const SettingsView: React.FC = () => {
         <div className="flex-1 p-space-xl overflow-y-auto max-w-4xl flex flex-col gap-space-xl">
           {/* General Section */}
           {activeCategory === 'general' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container-low p-space-xl rounded-xl border border-outline-variant/20">
-              <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
                     General Preferences
@@ -243,7 +244,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* Hardware acceleration */}
-                <div className="flex items-center justify-between py-space-sm border-t border-surface-container-high/60 pt-space-md">
+                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
                   <div className="flex flex-col">
                     <span className="font-headline-sm text-on-surface font-medium text-xs">
                       Hardware Acceleration
@@ -264,7 +265,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* Telemetry */}
-                <div className="flex items-center justify-between py-space-sm border-t border-surface-container-high/60 pt-space-md">
+                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
                   <div className="flex flex-col">
                     <span className="font-headline-sm text-on-surface font-medium text-xs">
                       Anonymous Crash Diagnostics
@@ -289,8 +290,8 @@ export const SettingsView: React.FC = () => {
 
           {/* AI Defaults Section */}
           {activeCategory === 'ai-defaults' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container-low p-space-xl rounded-xl border border-outline-variant/20">
-              <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
                     AI Model Defaults
@@ -313,7 +314,7 @@ export const SettingsView: React.FC = () => {
                     <select
                       value={defaultModel}
                       onChange={(e) => setDefaultModel(e.target.value)}
-                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs border border-outline-variant"
                     >
                       {availableModels.length > 0 ? (
                         availableModels.map((m) => (
@@ -345,7 +346,7 @@ export const SettingsView: React.FC = () => {
                     <select
                       value={codeEngine}
                       onChange={(e) => setCodeEngine(e.target.value)}
-                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs border border-outline-variant"
                     >
                       {availableModels.length > 0 ? (
                         availableModels.map((m) => (
@@ -367,7 +368,7 @@ export const SettingsView: React.FC = () => {
               </div>
 
               {/* Temperature Slider */}
-              <div className="flex flex-col gap-space-xs pt-space-md border-t border-surface-container-high/60 text-xs">
+              <div className="flex flex-col gap-space-xs pt-space-md border-t border-border-subtle text-xs">
                 <div className="flex items-center justify-between">
                   <label className="font-headline-sm text-on-surface font-medium">
                     Sampling Temperature ({temperature})
@@ -391,8 +392,8 @@ export const SettingsView: React.FC = () => {
 
           {/* Permissions Section */}
           {activeCategory === 'agent-permissions' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container-low p-space-xl rounded-xl border border-outline-variant/20">
-              <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
                     Agent Permissions &amp; Tool Safety
@@ -427,7 +428,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* Terminal Command Execution */}
-                <div className="flex items-center justify-between py-space-sm border-t border-surface-container-high/60 pt-space-md">
+                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
                   <div className="flex flex-col">
                     <span className="font-headline-sm text-on-surface font-medium text-xs">
                       Terminal Command Execution
@@ -447,14 +448,14 @@ export const SettingsView: React.FC = () => {
                   </label>
                 </div>
 
-                {/* External Network Requests */}
-                <div className="flex items-center justify-between py-space-sm border-t border-surface-container-high/60 pt-space-md">
+                {/* Network / Outbound HTTP */}
+                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
                   <div className="flex flex-col">
                     <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Direct Provider API Calls
+                      Outbound Network Requests
                     </span>
                     <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Allow Electron main process to connect directly to configured AI provider endpoints.
+                      Permit agent tools to fetch external web documentation and API endpoints.
                     </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -473,8 +474,8 @@ export const SettingsView: React.FC = () => {
 
           {/* Appearance Section */}
           {activeCategory === 'appearance' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container-low p-space-xl rounded-xl border border-outline-variant/20">
-              <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
                     Appearance &amp; Theme
@@ -492,16 +493,16 @@ export const SettingsView: React.FC = () => {
                   {/* VersaRail Dark */}
                   <div
                     onClick={() => setTheme('versarail-dark')}
-                    className={`flex flex-col gap-space-sm p-space-md rounded-xl bg-surface-container cursor-pointer transition-all border-2 ${
+                    className={`flex flex-col gap-space-sm p-space-md rounded-xl cursor-pointer transition-all border ${
                       theme === 'versarail-dark'
-                        ? 'border-primary ring-1 ring-primary/40'
-                        : 'border-transparent opacity-75 hover:opacity-100'
+                        ? 'border-primary ring-1 ring-primary/40 bg-surface-container-low'
+                        : 'border-outline-variant bg-surface-container-low/50 opacity-75 hover:opacity-100 hover:border-outline'
                     }`}
                   >
-                    <div className="h-20 rounded-lg bg-[#13131b] flex flex-col p-2 gap-1.5 border border-outline-variant/30">
-                      <div className="w-1/2 h-2.5 bg-[#252530] rounded"></div>
-                      <div className="w-3/4 h-2 bg-[#1b1b23] rounded"></div>
-                      <div className="w-1/3 h-3 bg-[#c0c1ff] rounded mt-auto"></div>
+                    <div className="h-20 rounded-lg bg-[#090a0f] flex flex-col p-2.5 gap-1.5 border border-border-subtle">
+                      <div className="w-1/2 h-2 rounded bg-zinc-700"></div>
+                      <div className="w-3/4 h-1.5 rounded bg-zinc-800"></div>
+                      <div className="w-1/3 h-2 rounded bg-primary mt-auto"></div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-headline-sm text-on-surface text-xs font-medium">
@@ -516,16 +517,16 @@ export const SettingsView: React.FC = () => {
                   {/* Light Theme */}
                   <div
                     onClick={() => setTheme('light')}
-                    className={`flex flex-col gap-space-sm p-space-md rounded-xl bg-surface-container cursor-pointer transition-all border-2 ${
+                    className={`flex flex-col gap-space-sm p-space-md rounded-xl cursor-pointer transition-all border ${
                       theme === 'light'
-                        ? 'border-primary ring-1 ring-primary/40'
-                        : 'border-transparent opacity-75 hover:opacity-100'
+                        ? 'border-primary ring-1 ring-primary/40 bg-surface-container-low'
+                        : 'border-outline-variant bg-surface-container-low/50 opacity-75 hover:opacity-100 hover:border-outline'
                     }`}
                   >
-                    <div className="h-20 rounded-lg bg-[#faf8ff] flex flex-col p-2 gap-1.5 border border-slate-300">
-                      <div className="w-1/2 h-2.5 bg-[#e4e1ed] rounded"></div>
-                      <div className="w-3/4 h-2 bg-[#d2cfda] rounded"></div>
-                      <div className="w-1/3 h-3 bg-[#494bd6] rounded mt-auto"></div>
+                    <div className="h-20 rounded-lg bg-[#f8fafc] flex flex-col p-2.5 gap-1.5 border border-slate-300">
+                      <div className="w-1/2 h-2 rounded bg-slate-300"></div>
+                      <div className="w-3/4 h-1.5 rounded bg-slate-200"></div>
+                      <div className="w-1/3 h-2 rounded bg-primary mt-auto"></div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-headline-sm text-on-surface text-xs font-medium">
@@ -540,15 +541,15 @@ export const SettingsView: React.FC = () => {
                   {/* System Sync */}
                   <div
                     onClick={() => setTheme('system')}
-                    className={`flex flex-col gap-space-sm p-space-md rounded-xl bg-surface-container cursor-pointer transition-all border-2 ${
+                    className={`flex flex-col gap-space-sm p-space-md rounded-xl cursor-pointer transition-all border ${
                       theme === 'system'
-                        ? 'border-primary ring-1 ring-primary/40'
-                        : 'border-transparent opacity-75 hover:opacity-100'
+                        ? 'border-primary ring-1 ring-primary/40 bg-surface-container-low'
+                        : 'border-outline-variant bg-surface-container-low/50 opacity-75 hover:opacity-100 hover:border-outline'
                     }`}
                   >
-                    <div className="h-20 rounded-lg bg-gradient-to-r from-[#13131b] to-[#faf8ff] flex flex-col p-2 gap-1.5 border border-outline-variant/30">
-                      <div className="w-1/2 h-2.5 bg-white/40 rounded"></div>
-                      <div className="w-3/4 h-2 bg-black/20 rounded"></div>
+                    <div className="h-20 rounded-lg bg-gradient-to-r from-[#090a0f] to-[#f8fafc] flex flex-col p-2.5 gap-1.5 border border-border-subtle">
+                      <div className="w-1/2 h-2 rounded bg-white/40"></div>
+                      <div className="w-3/4 h-1.5 rounded bg-black/20"></div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-headline-sm text-on-surface text-xs font-medium">
@@ -566,8 +567,8 @@ export const SettingsView: React.FC = () => {
 
           {/* Privacy & Security Section */}
           {activeCategory === 'privacy' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container-low p-space-xl rounded-xl border border-outline-variant/20">
-              <div className="flex items-center justify-between pb-space-md border-b border-surface-container-high">
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
                     Privacy, Routing &amp; Data Policies
@@ -581,7 +582,7 @@ export const SettingsView: React.FC = () => {
 
               <div className="flex flex-col gap-space-md text-xs">
                 {/* 1. Allowed Providers Gating */}
-                <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-space-sm">
+                <div className="p-space-md rounded-lg bg-surface-container-low border border-outline-variant flex flex-col gap-space-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-space-sm">
                       <Icon name="policy" size={18} className="text-primary" />
@@ -609,7 +610,7 @@ export const SettingsView: React.FC = () => {
                           onClick={() => toggleProvider(p.id)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${
                             isAllowed
-                              ? 'bg-primary-container text-on-primary-container border-primary/40 font-semibold shadow-xs'
+                              ? 'bg-primary text-on-primary border-primary/40 font-semibold shadow-xs'
                               : 'bg-surface-container-high text-on-surface-variant border-transparent opacity-60 hover:opacity-100'
                           }`}
                         >
@@ -622,7 +623,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* 2. Context Window Budget & Auto-Summarization */}
-                <div className="p-space-md rounded-lg bg-surface-container flex flex-col gap-space-sm">
+                <div className="p-space-md rounded-lg bg-surface-container-low border border-outline-variant flex flex-col gap-space-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-space-sm">
                       <Icon name="tune" size={18} className="text-tertiary" />
@@ -664,7 +665,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* 3. Security Status Badges */}
-                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+                <div className="p-space-md rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between">
                   <div className="flex items-center gap-space-md">
                     <Icon name="lock" size={20} className="text-tertiary" />
                     <div className="flex flex-col">
@@ -679,7 +680,7 @@ export const SettingsView: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+                <div className="p-space-md rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between">
                   <div className="flex items-center gap-space-md">
                     <Icon name="visibility_off" size={20} className="text-primary" />
                     <div className="flex flex-col">
@@ -695,7 +696,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* 4. Audit Log Retention & DB Purge */}
-                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+                <div className="p-space-md rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between">
                   <div className="flex items-center gap-space-md">
                     <Icon name="history" size={20} className="text-on-surface-variant" />
                     <div className="flex flex-col">
@@ -708,7 +709,7 @@ export const SettingsView: React.FC = () => {
                   <select
                     value={auditRetentionDays}
                     onChange={(e) => setAuditRetentionDays(Number(e.target.value))}
-                    className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded text-xs font-mono border border-outline-variant/30 focus:outline-none"
+                    className="bg-surface-container-high text-on-surface px-2.5 py-1 rounded text-xs font-mono border border-outline-variant focus:outline-none"
                   >
                     <option value={7}>7 Days</option>
                     <option value={30}>30 Days</option>
@@ -718,7 +719,7 @@ export const SettingsView: React.FC = () => {
                 </div>
 
                 {/* 5. Purge DB Button */}
-                <div className="p-space-md rounded-lg bg-surface-container flex items-center justify-between border border-error/30 mt-space-sm">
+                <div className="p-space-md rounded-lg bg-surface-container-low flex items-center justify-between border border-error/30 mt-space-sm">
                   <div className="flex items-center gap-space-md">
                     <Icon name="delete_forever" size={20} className="text-error" />
                     <div className="flex flex-col">
@@ -745,4 +746,3 @@ export const SettingsView: React.FC = () => {
 }
 
 export default SettingsView
-

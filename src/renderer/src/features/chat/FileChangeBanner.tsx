@@ -34,7 +34,7 @@ export const FileChangeBanner: React.FC<FileChangeBannerProps> = ({
   return (
     <div className="flex flex-col gap-space-sm">
       {/* File Change Summary Card */}
-      <div className="bg-surface-container p-space-md rounded-xl flex items-center justify-between border border-outline-variant/30 select-none">
+      <div className="bg-surface-container p-space-md rounded-xl flex items-center justify-between border border-outline-variant select-none">
         <div className="flex items-center gap-space-md">
           <Icon name="code_blocks" size={24} className="text-tertiary" />
           <div className="flex flex-col">
@@ -67,7 +67,7 @@ export const FileChangeBanner: React.FC<FileChangeBannerProps> = ({
 
         <button
           onClick={onReject}
-          className="flex items-center gap-space-sm px-space-xl py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant/30"
+          className="flex items-center gap-space-sm px-space-xl py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant"
         >
           <Icon name="close" size={18} />
           <span>Reject Changes</span>
@@ -75,7 +75,7 @@ export const FileChangeBanner: React.FC<FileChangeBannerProps> = ({
 
         <button
           onClick={handleReview}
-          className="flex items-center gap-space-sm px-space-lg py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant/30"
+          className="flex items-center gap-space-sm px-space-lg py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant"
         >
           <Icon name="difference" size={18} />
           <span>Open Diff</span>
@@ -83,7 +83,7 @@ export const FileChangeBanner: React.FC<FileChangeBannerProps> = ({
 
         <button
           onClick={onRetry}
-          className="flex items-center gap-space-sm px-space-lg py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant/30"
+          className="flex items-center gap-space-sm px-space-lg py-space-md rounded bg-surface-container text-on-surface font-medium text-body-md hover:bg-surface-container-high transition-colors border border-outline-variant"
         >
           <Icon name="refresh" size={18} />
           <span>Retry</span>

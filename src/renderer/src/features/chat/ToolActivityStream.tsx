@@ -17,8 +17,8 @@ export const ToolActivityStream: React.FC<ToolActivityStreamProps> = ({
 }) => {
   if (!activities || activities.length === 0) return null
   return (
-    <div className="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-xs font-mono text-label-sm text-on-surface-variant border border-outline-variant/30 select-none">
-      <div className="flex items-center gap-space-sm text-on-surface font-sans font-medium text-body-sm pb-1 border-b border-surface-container-high/60">
+    <div className="bg-surface-container rounded-xl p-space-md flex flex-col gap-space-xs font-mono text-label-sm text-on-surface-variant border border-outline-variant select-none">
+      <div className="flex items-center gap-space-sm text-on-surface font-sans font-medium text-body-sm pb-1 border-b border-border-subtle">
         <Icon name="terminal" size={14} className="text-tertiary" />
         <span>Tool Activity Stream</span>
       </div>

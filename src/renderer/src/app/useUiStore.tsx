@@ -74,11 +74,20 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const setTheme = (newTheme: ThemeMode) => {
     setThemeState(newTheme)
     localStorage.setItem('versarail_theme', newTheme)
+    const isDark =
+      newTheme === 'versarail-dark' ||
+      (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
     if (newTheme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      document.documentElement.dataset.theme = prefersDark ? 'versarail-dark' : 'light'
+      document.documentElement.dataset.theme = isDark ? 'versarail-dark' : 'light'
     } else {
       document.documentElement.dataset.theme = newTheme
+    }
+
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
   }
 

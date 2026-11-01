@@ -10,12 +10,12 @@ export const Sidebar: React.FC = () => {
   const views = viewRegistry.getAll()
 
   return (
-    <aside className="w-64 h-full bg-surface-container-lowest shrink-0 flex flex-col py-space-md border-r border-surface-container-high/60 select-none">
+    <aside className="w-64 h-full bg-surface-container-lowest shrink-0 flex flex-col py-space-md border-r border-border-subtle select-none">
       {/* Active Project Card */}
       <div className="px-space-md mb-space-md">
         <div
           onClick={selectWorkspaceFolder}
-          className="flex items-center justify-between bg-surface-container px-space-md py-space-sm rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors group border border-outline-variant/30"
+          className="flex items-center justify-between bg-surface-container px-space-md py-space-sm rounded-lg cursor-pointer hover:bg-surface-container-high transition-colors group border border-outline-variant hover:border-outline"
           title="Click to open or switch project folder"
         >
           <div className="flex items-center gap-space-sm min-w-0">
@@ -45,15 +45,15 @@ export const Sidebar: React.FC = () => {
               onClick={() => setActiveView(view.id)}
               className={`w-full flex items-center justify-between px-space-md py-2 rounded-lg transition-all text-left text-xs ${
                 isActive
-                  ? 'bg-primary-container text-on-primary-container font-medium shadow-sm'
-                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                  ? 'bg-primary/10 text-on-surface dark:bg-white/[0.08] dark:text-on-surface font-semibold shadow-none border-l-2 border-primary pl-[14px]'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
               }`}
             >
               <div className="flex items-center gap-space-md truncate">
                 <Icon
                   name={view.icon}
                   size={17}
-                  className={isActive ? 'text-on-primary-container' : 'text-on-surface-variant'}
+                  className={isActive ? 'text-primary' : 'text-on-surface-variant'}
                 />
                 <span className="truncate">{view.label}</span>
               </div>
@@ -61,7 +61,7 @@ export const Sidebar: React.FC = () => {
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                     isActive
-                      ? 'bg-on-primary-container/20 text-on-primary-container'
+                      ? 'bg-primary/20 text-primary'
                       : 'bg-surface-container-high text-on-surface-variant'
                   }`}
                 >
@@ -74,7 +74,7 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Sidebar Footer: Connected Model Telemetry & Settings */}
-      <div className="px-space-md pt-space-md border-t border-surface-container-high/80 flex items-center justify-between shrink-0">
+      <div className="px-space-md pt-space-md border-t border-border-subtle flex items-center justify-between shrink-0">
         <div
           className="flex items-center gap-space-sm min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => setActiveView('ai-providers')}
@@ -82,7 +82,7 @@ export const Sidebar: React.FC = () => {
         >
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${
-              connectedModel.isConnected ? 'bg-tertiary animate-pulse' : 'bg-error'
+              connectedModel.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-error'
             }`}
           />
           <span className="text-[11px] text-on-surface-variant truncate font-mono max-w-[150px]">
@@ -92,10 +92,10 @@ export const Sidebar: React.FC = () => {
 
         <button
           onClick={() => setActiveView('settings')}
-          className="w-7 h-7 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center shrink-0 transition-colors"
+          className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 transition-colors"
           title="Open Settings"
         >
-          <Icon name="person" size={15} className="text-primary" />
+          <Icon name="person" size={15} className="text-on-surface-variant hover:text-on-surface" />
         </button>
       </div>
     </aside>

@@ -21,7 +21,7 @@ export const InspectorPanel: React.FC = () => {
     return (
       <button
         onClick={toggleInspector}
-        className="absolute right-3 top-3 z-30 p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border border-outline-variant/30 shadow-md"
+        className="absolute right-3 top-3 z-30 p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border border-outline-variant shadow-md"
         title="Open Inspector Panel"
       >
         <Icon name="dock_to_left" size={16} />
@@ -30,9 +30,9 @@ export const InspectorPanel: React.FC = () => {
   }
 
   return (
-    <div className="w-72 bg-surface-container-lowest flex flex-col h-full border-l border-surface-container-high/60 shrink-0 select-none">
+    <div className="w-72 bg-surface-container-lowest flex flex-col h-full border-l border-border-subtle shrink-0 select-none">
       {/* Tab Switcher Header */}
-      <div className="flex items-center justify-between border-b border-surface-container-high px-space-md pt-2 pb-1">
+      <div className="flex items-center justify-between border-b border-border-subtle px-space-md pt-2 pb-1">
         <div className="flex items-center gap-space-xs flex-1">
           {(['files', 'activity', 'changes'] as InspectorTab[]).map((tab) => {
             const isActive = inspectorTab === tab
@@ -101,7 +101,7 @@ export const InspectorPanel: React.FC = () => {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
-                <Icon name="folder_open" size={28} className="text-outline" />
+                <Icon name="folder_open" size={28} className="text-on-surface-variant/60" />
                 <span className="text-xs text-on-surface font-medium">No Workspace Opened</span>
                 <span className="text-[11px] text-on-surface-variant">
                   Open a project folder to explore directory files.
@@ -114,7 +114,7 @@ export const InspectorPanel: React.FC = () => {
         {/* Tab 2: Activity */}
         {inspectorTab === 'activity' && (
           <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
-            <Icon name="bolt" size={28} className="text-outline" />
+            <Icon name="bolt" size={28} className="text-on-surface-variant/60" />
             <span className="text-xs text-on-surface font-medium">No Activity in Session</span>
             <span className="text-[11px] text-on-surface-variant max-w-[200px]">
               Agent steps, tool executions, and model reasoning will stream here.
@@ -125,7 +125,7 @@ export const InspectorPanel: React.FC = () => {
         {/* Tab 3: Changes */}
         {inspectorTab === 'changes' && (
           <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
-            <Icon name="difference" size={28} className="text-outline" />
+            <Icon name="difference" size={28} className="text-on-surface-variant/60" />
             <span className="text-xs text-on-surface font-medium">No File Changes</span>
             <span className="text-[11px] text-on-surface-variant max-w-[200px]">
               Proposed file edits and additions will appear here for review before touching disk.

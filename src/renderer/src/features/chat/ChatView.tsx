@@ -263,17 +263,17 @@ export const ChatView: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-surface relative min-w-0 overflow-hidden font-sans">
       {/* Top Context Bar / Banner */}
-      <div className="h-12 bg-surface-container-lowest flex items-center justify-between px-space-xl z-10 border-b border-surface-container-high/60 shrink-0">
+      <div className="h-12 bg-surface-container-lowest flex items-center justify-between px-space-xl z-10 border-b border-border-subtle shrink-0">
         <div className="flex items-center gap-space-md min-w-0">
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${
-              isStreaming ? 'bg-primary animate-ping' : 'bg-tertiary animate-pulse'
+              isStreaming ? 'bg-primary animate-ping' : 'bg-emerald-500 animate-pulse'
             }`}
           />
           <span className="text-headline-sm text-on-surface truncate font-medium text-xs">
             {workspace.name ? `Workspace: ${workspace.name}` : 'Agent Workspace Session'}
           </span>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono shrink-0 border border-outline-variant/20">
+          <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono shrink-0 border border-outline-variant">
             {isStreaming ? 'Generating...' : 'Ready'}
           </span>
         </div>
@@ -291,7 +291,7 @@ export const ChatView: React.FC = () => {
           ) : (
             <button
               onClick={handleNewChat}
-              className="flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-colors border border-outline-variant/20"
+              className="flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-colors border border-outline-variant"
               title="Start New Conversation"
             >
               <Icon name="add" size={14} />
@@ -301,10 +301,10 @@ export const ChatView: React.FC = () => {
 
           <button
             onClick={() => setIsTerminalOpen((prev) => !prev)}
-            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border border-outline-variant/20 ${
+            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border ${
               isTerminalOpen
-                ? 'bg-primary-container text-on-primary-container border-primary/40'
-                : 'bg-surface-container hover:bg-surface-container-high text-on-surface'
+                ? 'bg-primary text-on-primary border-primary shadow-xs'
+                : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
             }`}
             title="Toggle Developer Interactive Terminal"
           >
@@ -314,7 +314,7 @@ export const ChatView: React.FC = () => {
 
           <button
             onClick={() => setActiveView('ai-providers')}
-            className="flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-colors border border-outline-variant/20"
+            className="flex items-center gap-space-xs px-space-md py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono transition-colors border border-outline-variant"
             title="Configure Models"
           >
             <Icon name="tune" size={14} />
@@ -337,8 +337,8 @@ export const ChatView: React.FC = () => {
                 className={`flex gap-space-lg ${isUser ? 'max-w-3xl' : 'max-w-4xl'}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant/30 ${
-                    isUser ? 'bg-surface-container-high' : 'bg-primary-container text-on-primary-container shadow-sm'
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant ${
+                    isUser ? 'bg-surface-container-high' : 'bg-primary text-on-primary shadow-sm'
                   }`}
                 >
                   <Icon name={isUser ? 'person' : 'smart_toy'} size={18} />
@@ -358,8 +358,8 @@ export const ChatView: React.FC = () => {
                   </div>
 
                   <div
-                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant/20 shadow-sm leading-relaxed text-xs whitespace-pre-wrap ${
-                      isUser ? 'bg-surface-container-lowest' : 'bg-surface-container-low'
+                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs whitespace-pre-wrap ${
+                      isUser ? 'bg-surface-container-lowest' : 'bg-surface-container'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
                     {msg.text || (msg.isStreaming ? 'Thinking...' : '[No response received from model]')}
