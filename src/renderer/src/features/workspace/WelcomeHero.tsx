@@ -7,7 +7,7 @@ export interface WelcomeHeroProps {
 }
 
 export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
-  const { selectWorkspaceFolder, setActiveView } = useUiStore()
+  const { selectWorkspaceFolder, setActiveView, recentWorkspaces, openWorkspacePath } = useUiStore()
   const [promptInput, setPromptInput] = useState('')
 
   const examplePrompts = [
@@ -70,6 +70,23 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
             <span>Connect an AI Provider</span>
           </button>
         </div>
+
+        {recentWorkspaces.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-space-lg max-w-xl">
+            <span className="text-[11px] text-on-surface-variant font-mono">Recent:</span>
+            {recentWorkspaces.slice(0, 4).map((p) => (
+              <button
+                key={p.path}
+                onClick={() => p.path && openWorkspacePath(p.path)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono border border-outline-variant transition-colors cursor-pointer"
+                title={p.path || p.name || ''}
+              >
+                <Icon name="folder" size={13} className="text-primary" />
+                <span className="truncate max-w-[130px]">{p.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Chat Input & Example Prompts Container */}

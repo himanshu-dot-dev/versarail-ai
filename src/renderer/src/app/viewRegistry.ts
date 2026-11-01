@@ -51,20 +51,6 @@ viewRegistry.register({
 })
 
 viewRegistry.register({
-  id: 'projects',
-  label: 'Projects',
-  icon: 'folder',
-  component: ProjectsView
-})
-
-viewRegistry.register({
-  id: 'file-explorer',
-  label: 'File Explorer',
-  icon: 'description',
-  component: FileExplorerView
-})
-
-viewRegistry.register({
   id: 'ai-providers',
   label: 'AI Providers',
   icon: 'smart_toy',

@@ -130,5 +130,5 @@ describe('Custom Gateway (OmniRoute) End-to-End Chat Execution', () => {
     } catch {
       // If OmniRoute is not running in CI, ignore
     }
-  })
+  }, 10000)
 })

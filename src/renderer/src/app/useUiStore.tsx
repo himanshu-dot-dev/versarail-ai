@@ -42,6 +42,9 @@ export interface UiState {
   workspace: WorkspaceInfo
   setWorkspace: (ws: WorkspaceInfo) => void
   selectWorkspaceFolder: () => Promise<void>
+  recentWorkspaces: WorkspaceInfo[]
+  openWorkspacePath: (folderPath: string) => Promise<void>
+  closeWorkspace: () => void
 
   connectedModel: ConnectedModelInfo
   setConnectedModel: (model: ConnectedModelInfo) => void
@@ -63,6 +66,41 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     path: null,
     name: null
   })
+  const [recentWorkspaces, setRecentWorkspaces] = useState<WorkspaceInfo[]>(() => {
+    try {
+      const saved = localStorage.getItem('versarail_recent_workspaces')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
+
+  const saveRecentWorkspace = (ws: WorkspaceInfo) => {
+    if (!ws.path) return
+    setRecentWorkspaces((prev) => {
+      const filtered = prev.filter((p) => p.path !== ws.path)
+      const updated = [ws, ...filtered].slice(0, 8)
+      try {
+        localStorage.setItem('versarail_recent_workspaces', JSON.stringify(updated))
+      } catch {
+        // ignore storage errors
+      }
+      return updated
+    })
+  }
+
+  const openWorkspacePath = async (folderPath: string) => {
+    const parts = folderPath.split(/[/\\]/)
+    const name = parts[parts.length - 1] || folderPath
+    const newWs = { path: folderPath, name }
+    setWorkspace(newWs)
+    saveRecentWorkspace(newWs)
+    setActiveView('chat')
+  }
+
+  const closeWorkspace = () => {
+    setWorkspace({ path: null, name: null })
+  }
   const [connectedModel, setConnectedModel] = useState<ConnectedModelInfo>({
     name: 'No Model Connected',
     provider: 'None',
@@ -101,6 +139,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       window.electronApi.getCurrentWorkspace().then((ws) => {
         if (ws && ws.path) {
           setWorkspace(ws)
+          saveRecentWorkspace(ws)
         }
       }).catch(console.error)
     }
@@ -155,6 +194,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       const name = parts[parts.length - 1] || result.path
       const newWs = { path: result.path, name }
       setWorkspace(newWs)
+      saveRecentWorkspace(newWs)
       // When opening a folder, auto switch to chat view
       setActiveView('chat')
     }
@@ -175,6 +215,9 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     workspace,
     setWorkspace,
     selectWorkspaceFolder,
+    recentWorkspaces,
+    openWorkspacePath,
+    closeWorkspace,
     connectedModel,
     setConnectedModel,
     hasActiveRun,

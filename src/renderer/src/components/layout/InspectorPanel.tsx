@@ -3,8 +3,17 @@ import { useUiStore, InspectorTab } from '../../app/useUiStore'
 import Icon from '../common/Icon'
 
 export const InspectorPanel: React.FC = () => {
-  const { inspectorTab, setInspectorTab, isInspectorOpen, toggleInspector, workspace } = useUiStore()
+  const {
+    inspectorTab,
+    setInspectorTab,
+    isInspectorOpen,
+    toggleInspector,
+    workspace,
+    selectWorkspaceFolder
+  } = useUiStore()
   const [workspaceTree, setWorkspaceTree] = useState<{ files: string[]; dirs: string[] } | null>(null)
+  const [fileFilter, setFileFilter] = useState('')
+  const [copiedFile, setCopiedFile] = useState<string | null>(null)
 
   useEffect(() => {
     if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
@@ -14,8 +23,20 @@ export const InspectorPanel: React.FC = () => {
           if (res) setWorkspaceTree(res)
         })
         .catch(console.error)
+    } else {
+      setWorkspaceTree(null)
     }
   }, [workspace.path])
+
+  const handleCopyFile = (fileName: string) => {
+    navigator.clipboard.writeText(fileName)
+    setCopiedFile(fileName)
+    setTimeout(() => setCopiedFile(null), 1500)
+  }
+
+  const query = fileFilter.toLowerCase().trim()
+  const filteredDirs = workspaceTree?.dirs.filter((d) => d.toLowerCase().includes(query)) || []
+  const filteredFiles = workspaceTree?.files.filter((f) => f.toLowerCase().includes(query)) || []
 
   if (!isInspectorOpen) {
     return (
@@ -68,44 +89,97 @@ export const InspectorPanel: React.FC = () => {
           <div className="flex flex-col gap-space-xs">
             {workspaceTree && (workspaceTree.dirs.length > 0 || workspaceTree.files.length > 0) ? (
               <>
-                <div className="flex items-center gap-space-sm px-space-sm py-1 rounded bg-surface-container text-on-surface font-medium font-mono text-[11px] mb-1">
-                  <Icon name="folder_open" size={15} className="text-primary shrink-0" />
-                  <span className="truncate">{workspace.name || 'workspace'}</span>
+                <div className="flex items-center justify-between px-space-sm py-1.5 rounded-lg bg-surface-container text-on-surface font-medium font-mono text-[11px] mb-1.5 border border-outline-variant">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Icon name="folder_open" size={15} className="text-primary shrink-0" />
+                    <span className="truncate">{workspace.name || 'workspace'}</span>
+                  </div>
+                  <span className="text-[10px] text-on-surface-variant font-mono shrink-0">
+                    {workspaceTree.files.length} files
+                  </span>
                 </div>
 
-                {workspaceTree.dirs.map((dir) => (
+                {/* File Search Filter Input */}
+                <div className="relative mb-1">
+                  <Icon name="search" size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                  <input
+                    type="text"
+                    value={fileFilter}
+                    onChange={(e) => setFileFilter(e.target.value)}
+                    placeholder="Filter project files..."
+                    className="w-full bg-surface-container text-on-surface placeholder:text-on-surface-variant/60 pl-8 pr-2 py-1 rounded-lg text-[11px] font-mono focus:outline-none focus:ring-1 focus:ring-primary border border-outline-variant"
+                  />
+                  {fileFilter && (
+                    <button
+                      onClick={() => setFileFilter('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
+                    >
+                      <Icon name="close" size={11} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Directory list */}
+                {filteredDirs.map((dir) => (
                   <div
                     key={`d-${dir}`}
-                    className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface"
+                    className="flex items-center gap-space-sm px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface group"
                   >
                     <Icon name="folder" size={14} className="text-primary shrink-0" />
-                    <span className="font-mono text-[11px] truncate">{dir}</span>
+                    <span className="font-mono text-[11px] truncate flex-1">{dir}</span>
                   </div>
                 ))}
 
-                {workspaceTree.files.map((file) => (
+                {/* File list */}
+                {filteredFiles.map((file) => (
                   <div
                     key={`f-${file}`}
-                    className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface"
+                    onClick={() => handleCopyFile(file)}
+                    className="flex items-center justify-between px-space-sm py-1 rounded hover:bg-surface-container cursor-pointer text-on-surface-variant hover:text-on-surface group transition-colors"
+                    title={`Click to copy "${file}"`}
                   >
-                    <div className="flex items-center gap-1.5 truncate">
+                    <div className="flex items-center gap-1.5 truncate min-w-0">
                       <Icon
-                        name={file === 'package.json' ? 'cloud_upload' : 'description'}
+                        name={file.endsWith('.json') ? 'code' : file.endsWith('.ts') || file.endsWith('.tsx') ? 'file_code' : 'description'}
                         size={14}
                         className={file === 'package.json' ? 'text-primary shrink-0' : 'text-tertiary shrink-0'}
                       />
                       <span className="truncate font-mono text-[11px]">{file}</span>
                     </div>
+                    <span className="text-[10px] text-primary font-mono opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                      {copiedFile === file ? 'Copied!' : 'Copy'}
+                    </span>
                   </div>
                 ))}
+
+                {filteredDirs.length === 0 && filteredFiles.length === 0 && (
+                  <div className="py-6 text-center text-on-surface-variant text-[11px]">
+                    No files matching "{fileFilter}"
+                  </div>
+                )}
+
+                <button
+                  onClick={selectWorkspaceFolder}
+                  className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface text-[11px] font-mono transition-colors cursor-pointer"
+                >
+                  <Icon name="folder_open" size={13} className="text-primary" />
+                  <span>Switch Workspace Folder...</span>
+                </button>
               </>
             ) : (
               <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
                 <Icon name="folder_open" size={28} className="text-on-surface-variant/60" />
                 <span className="text-xs text-on-surface font-medium">No Workspace Opened</span>
                 <span className="text-[11px] text-on-surface-variant">
-                  Open a project folder to explore directory files.
+                  Open a project folder to inspect directory files alongside your chat.
                 </span>
+                <button
+                  onClick={selectWorkspaceFolder}
+                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                >
+                  <Icon name="folder_open" size={14} />
+                  <span>Open Folder</span>
+                </button>
               </div>
             )}
           </div>

@@ -8,12 +8,12 @@ describe('ViewRegistry Architecture', () => {
     const viewIds = views.map((v) => v.id)
 
     expect(viewIds).toContain('chat')
-    expect(viewIds).toContain('projects')
-    expect(viewIds).toContain('file-explorer')
     expect(viewIds).toContain('ai-providers')
     expect(viewIds).toContain('usage-quotas')
     expect(viewIds).toContain('task-history')
     expect(viewIds).toContain('settings')
+    expect(viewIds).not.toContain('projects')
+    expect(viewIds).not.toContain('file-explorer')
   })
 
   it('retrieves individual view definition with metadata', () => {
