@@ -7,6 +7,8 @@ import {
 } from './provider-adapter.interface'
 import { detectInBandError } from './utils/in-band-detector'
 import { repairToolArguments } from './utils/tool-repair'
+import { ThinkTagStreamFilter } from './utils/think-tags'
+import { extractRetryDelayMs } from './utils/retry-parser'
 
 function sanitizeApiKey(rawApiKey: unknown): string {
   if (!rawApiKey) return ''
@@ -27,27 +29,42 @@ export interface OpenAICompatConfig {
   name: string
   defaultBaseUrl: string
   defaultModels: ModelDescriptorDTO[]
+  keyless?: boolean
+  extraHeaders?: Record<string, string>
+  timeoutMs?: number
+  forceSingleToolCall?: boolean
+  validateUrl?: string
 }
 
 export class OpenAICompatAdapter implements IProviderAdapter {
   readonly id: ProviderId
   readonly name: string
+  readonly keyless: boolean
   protected defaultBaseUrl: string
   protected defaultModels: ModelDescriptorDTO[]
+  protected extraHeaders: Record<string, string>
+  protected timeoutMs: number
+  protected forceSingleToolCall: boolean
+  protected validateUrl?: string
 
   constructor(config: OpenAICompatConfig) {
     this.id = config.id
     this.name = config.name
+    this.keyless = config.keyless ?? false
     this.defaultBaseUrl = config.defaultBaseUrl
     this.defaultModels = config.defaultModels
+    this.extraHeaders = config.extraHeaders ?? {}
+    this.timeoutMs = config.timeoutMs ?? 60_000
+    this.forceSingleToolCall = config.forceSingleToolCall ?? false
+    this.validateUrl = config.validateUrl
   }
 
   protected getBaseUrl(customEndpoint?: string): string {
     const endpoint = typeof customEndpoint === 'string'
       ? customEndpoint
       : Buffer.isBuffer(customEndpoint)
-      ? (customEndpoint as Buffer).toString('utf-8')
-      : customEndpoint ? String(customEndpoint) : ''
+        ? (customEndpoint as Buffer).toString('utf-8')
+        : customEndpoint ? String(customEndpoint) : ''
 
     if (endpoint && endpoint.trim().length > 0) {
       return endpoint.trim().replace(/\/+$/, '')
@@ -58,23 +75,52 @@ export class OpenAICompatAdapter implements IProviderAdapter {
   async validateKey(rawApiKey: string, customEndpoint?: string): Promise<KeyValidationResult> {
     const cleanKey = sanitizeApiKey(rawApiKey)
 
+    // Keyless providers (e.g. Pollinations, Kilo Gateway) are valid without keys
+    if (this.keyless && (!cleanKey || cleanKey === 'no-key')) {
+      const baseUrl = this.getBaseUrl(customEndpoint)
+      const url = this.validateUrl || `${baseUrl}/models`
+      const startTime = performance.now()
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 VersaRail-AI-Agent-Harness/0.1.0',
+            ...this.extraHeaders
+          },
+          signal: AbortSignal.timeout(6000)
+        })
+        const latencyMs = Math.round(performance.now() - startTime)
+        if (response.ok) {
+          return { valid: true, latencyMs, modelsCount: this.defaultModels.length }
+        }
+      } catch {
+        // Fallback to true if network times out
+      }
+      return { valid: true, latencyMs: 15, modelsCount: this.defaultModels.length }
+    }
+
     if (!cleanKey || cleanKey.length === 0) {
       return { valid: false, latencyMs: 0, modelsCount: 0, error: 'API key is required' }
     }
 
     const baseUrl = this.getBaseUrl(customEndpoint)
-    const url = `${baseUrl}/models`
+    const url = this.validateUrl || `${baseUrl}/models`
     const startTime = performance.now()
 
     try {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 VersaRail-AI-Agent-Harness/0.1.0',
+        ...this.extraHeaders
+      }
+      if (!this.keyless || (cleanKey && cleanKey !== 'no-key')) {
+        headers['Authorization'] = `Bearer ${cleanKey}`
+        headers['x-api-key'] = cleanKey
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${cleanKey}`,
-          'x-api-key': cleanKey,
-          'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
-        },
-        signal: AbortSignal.timeout(10000)
+        headers,
+        signal: AbortSignal.timeout(Math.min(this.timeoutMs, 15000))
       })
 
       const latencyMs = Math.round(performance.now() - startTime)
@@ -102,7 +148,10 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       }
 
       if (response.status === 429) {
-        return { valid: false, latencyMs, modelsCount: 0, error: 'Rate limit or quota exceeded (HTTP 429)' }
+        const retryAfter = response.headers.get('retry-after')
+        const retryMs = extractRetryDelayMs(response.statusText, retryAfter)
+        const delayNotice = retryMs ? ` (resets in ~${Math.round(retryMs / 1000)}s)` : ''
+        return { valid: false, latencyMs, modelsCount: 0, error: `Rate limit or quota exceeded (HTTP 429)${delayNotice}` }
       }
 
       return {
@@ -125,22 +174,31 @@ export class OpenAICompatAdapter implements IProviderAdapter {
   async listModels(rawApiKey: string, customEndpoint?: string): Promise<ModelDescriptorDTO[]> {
     const cleanKey = sanitizeApiKey(rawApiKey)
 
+    if (this.keyless && (!cleanKey || cleanKey === 'no-key')) {
+      return this.defaultModels
+    }
+
     const baseUrl = this.getBaseUrl(customEndpoint)
     const url = `${baseUrl}/models`
 
     try {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 VersaRail-AI-Agent-Harness/0.1.0',
+        ...this.extraHeaders
+      }
+      if (!this.keyless || (cleanKey && cleanKey !== 'no-key')) {
+        headers['Authorization'] = `Bearer ${cleanKey}`
+        headers['x-api-key'] = cleanKey
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          Authorization: `Bearer ${cleanKey}`,
-          'x-api-key': cleanKey,
-          'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
-        },
+        headers,
         signal: AbortSignal.timeout(6000)
       })
 
       if (response.ok) {
-        const body = (await response.json()) as { data?: Array<{ id: string; [key: string]: unknown }> }
+        const body = (await response.json()) as { data?: Array<{ id: string;[key: string]: unknown }> }
         if (Array.isArray(body?.data) && body.data.length > 0) {
           if (this.id !== 'custom') {
             const remoteModelIds = new Set(body.data.map((m) => m.id))
@@ -174,7 +232,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
     const baseUrl = this.getBaseUrl(request.customEndpoint)
     const url = `${baseUrl}/chat/completions`
 
-    const payload = {
+    const payload: Record<string, any> = {
       model: request.model,
       messages: request.messages,
       stream: true,
@@ -182,21 +240,43 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       max_tokens: request.maxTokens
     }
 
+    if (this.forceSingleToolCall) {
+      payload.parallel_tool_calls = false
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 VersaRail-AI-Agent-Harness/0.1.0',
+      ...this.extraHeaders
+    }
+    if (!this.keyless || (cleanKey && cleanKey !== 'no-key')) {
+      headers['Authorization'] = `Bearer ${cleanKey}`
+      headers['x-api-key'] = cleanKey
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cleanKey}`,
-        'x-api-key': cleanKey,
-        'User-Agent': 'VersaRail-AI-Agent-Harness/0.1.0'
-      },
+      headers,
       body: JSON.stringify(payload),
       signal: request.signal
     })
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '')
-      throw new Error(`Upstream ${this.name} error HTTP ${response.status}: ${errText || response.statusText}`)
+      let message = errText || response.statusText
+      try {
+        const parsed = JSON.parse(errText)
+        message = parsed.error?.message || parsed.detail || parsed.title || message
+      } catch {
+        // use raw errText
+      }
+
+      // Check if upstream stated a retry delay
+      const retryAfter = response.headers.get('retry-after')
+      const delayMs = extractRetryDelayMs(message, retryAfter)
+      const delayNotice = delayMs ? ` (try again in ~${Math.round(delayMs / 1000)}s)` : ''
+
+      throw new Error(`Upstream ${this.name} error HTTP ${response.status}: ${message}${delayNotice}`)
     }
 
     if (!response.body) {
@@ -207,6 +287,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
     let isFirstChunk = true
+    const thinkFilter = new ThinkTagStreamFilter()
 
     try {
       while (true) {
@@ -220,7 +301,13 @@ export class OpenAICompatAdapter implements IProviderAdapter {
         for (const line of lines) {
           const trimmed = line.trim()
           if (!trimmed || trimmed.startsWith(':')) continue
-          if (trimmed === 'data: [DONE]') return
+          if (trimmed === 'data: [DONE]') {
+            const flushed = thinkFilter.flush()
+            if (flushed.contentDelta) {
+              yield { textDelta: flushed.contentDelta }
+            }
+            return
+          }
 
           if (trimmed.startsWith('data: ')) {
             const jsonStr = trimmed.slice(6)
@@ -232,7 +319,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
               continue
             }
 
-            // Upstream provider error returned in SSE stream payload (e.g. OmniRoute, LiteLLM, OpenRouter)
+            // Upstream provider error returned in SSE stream payload
             if (parsed.error) {
               const errMsg =
                 typeof parsed.error === 'string'
@@ -254,9 +341,13 @@ export class OpenAICompatAdapter implements IProviderAdapter {
                 }
               }
 
-              yield {
-                textDelta: delta.content,
-                finishReason: choice?.finish_reason
+              // Filter <think>...</think> tags seamlessly
+              const filtered = thinkFilter.processChunk(delta.content)
+              if (filtered.contentDelta) {
+                yield {
+                  textDelta: filtered.contentDelta,
+                  finishReason: choice?.finish_reason
+                }
               }
             }
 
@@ -284,9 +375,13 @@ export class OpenAICompatAdapter implements IProviderAdapter {
           }
         }
       }
+
+      const flushed = thinkFilter.flush()
+      if (flushed.contentDelta) {
+        yield { textDelta: flushed.contentDelta }
+      }
     } finally {
       reader.releaseLock()
     }
   }
 }
-

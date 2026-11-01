@@ -196,6 +196,182 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
       supportsStreaming: true,
       isFreeTierAvailable: false
     }
+  ],
+  nvidia: [
+    {
+      id: 'meta/llama-3.3-70b-instruct',
+      providerId: 'nvidia',
+      name: 'NVIDIA Llama 3.3 70B Instruct',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'deepseek-ai/deepseek-r1',
+      providerId: 'nvidia',
+      name: 'NVIDIA DeepSeek R1',
+      contextWindow: 131072,
+      outputLimit: 16384,
+      supportsTools: false,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  mistral: [
+    {
+      id: 'codestral-latest',
+      providerId: 'mistral',
+      name: 'Codestral 2501 (Code Engine)',
+      contextWindow: 256000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'mistral-small-latest',
+      providerId: 'mistral',
+      name: 'Mistral Small (Fast)',
+      contextWindow: 32768,
+      outputLimit: 4096,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  huggingface: [
+    {
+      id: 'meta-llama/Llama-3.3-70B-Instruct',
+      providerId: 'huggingface',
+      name: 'Hugging Face Llama 3.3 70B',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+      providerId: 'huggingface',
+      name: 'Hugging Face Qwen 2.5 Coder 32B',
+      contextWindow: 32768,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  cohere: [
+    {
+      id: 'command-r-plus-08-2024',
+      providerId: 'cohere',
+      name: 'Cohere Command R+',
+      contextWindow: 128000,
+      outputLimit: 4096,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'command-r-08-2024',
+      providerId: 'cohere',
+      name: 'Cohere Command R',
+      contextWindow: 128000,
+      outputLimit: 4096,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  deepseek: [
+    {
+      id: 'deepseek-ai/DeepSeek-V3',
+      providerId: 'deepseek',
+      name: 'DeepSeek V3 (Chat & Coding)',
+      contextWindow: 65536,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'deepseek-ai/DeepSeek-R1',
+      providerId: 'deepseek',
+      name: 'DeepSeek R1 (Reasoning)',
+      contextWindow: 65536,
+      outputLimit: 8192,
+      supportsTools: false,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  cloudflare: [
+    {
+      id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      providerId: 'cloudflare',
+      name: 'Cloudflare Llama 3.3 70B Fast',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: '@cf/qwen/qwen2.5-coder-32b-instruct',
+      providerId: 'cloudflare',
+      name: 'Cloudflare Qwen 2.5 Coder 32B',
+      contextWindow: 32768,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  pollinations: [
+    {
+      id: 'openai',
+      providerId: 'pollinations',
+      name: 'Pollinations GPT-4o (Keyless)',
+      contextWindow: 128000,
+      outputLimit: 4096,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'deepseek-r1',
+      providerId: 'pollinations',
+      name: 'Pollinations DeepSeek R1 (Keyless)',
+      contextWindow: 65536,
+      outputLimit: 8192,
+      supportsTools: false,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
+  ],
+  kilo: [
+    {
+      id: 'deepseek/deepseek-r1:free',
+      providerId: 'kilo',
+      name: 'Kilo DeepSeek R1 (Free)',
+      contextWindow: 65536,
+      outputLimit: 8192,
+      supportsTools: false,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'meta-llama/llama-3.3-70b-instruct:free',
+      providerId: 'kilo',
+      name: 'Kilo Llama 3.3 70B (Free)',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    }
   ]
 }
 
@@ -221,7 +397,35 @@ export class FailoverEngine {
    * tool capabilities, pre-flight context window requirements, and cooldown states.
    */
   public getCandidateModels(options: CandidateSelectionOptions): CandidateModel[] {
-    const configuredCreds = this.secretStore.listCredentialMetadata()
+    const configuredCreds = [...this.secretStore.listCredentialMetadata()]
+
+    // Auto-enable keyless providers (e.g. Pollinations, Kilo) if preferred or configured
+    if (
+      options.preferredProviderId === 'pollinations' &&
+      !configuredCreds.some((c) => c.providerId === 'pollinations')
+    ) {
+      configuredCreds.push({
+        id: 'pollinations-keyless',
+        providerId: 'pollinations',
+        label: 'Pollinations (Keyless Free)',
+        maskedKey: 'Keyless (Free)',
+        isSessionOnly: false,
+        createdAt: new Date().toISOString()
+      })
+    } else if (
+      options.preferredProviderId === 'kilo' &&
+      !configuredCreds.some((c) => c.providerId === 'kilo')
+    ) {
+      configuredCreds.push({
+        id: 'kilo-keyless',
+        providerId: 'kilo',
+        label: 'Kilo Gateway (Keyless Free)',
+        maskedKey: 'Keyless (Free)',
+        isSessionOnly: false,
+        createdAt: new Date().toISOString()
+      })
+    }
+
     if (configuredCreds.length === 0) {
       return []
     }
@@ -306,8 +510,16 @@ export class FailoverEngine {
       gemini: 1,
       groq: 2,
       cerebras: 3,
-      openrouter: 4,
-      custom: 5
+      nvidia: 4,
+      mistral: 5,
+      deepseek: 6,
+      cloudflare: 7,
+      cohere: 8,
+      pollinations: 9,
+      kilo: 10,
+      openrouter: 11,
+      huggingface: 12,
+      custom: 13
     }
 
     return rawCandidates.sort((a, b) => {
@@ -388,7 +600,10 @@ export class FailoverEngine {
       let fullResponse = ''
 
       try {
-        const apiKey = await this.secretStore.getDecryptedKey(candidate.credentialId)
+        let apiKey = await this.secretStore.getDecryptedKey(candidate.credentialId)
+        if (!apiKey && (candidate.providerId === 'pollinations' || candidate.providerId === 'kilo')) {
+          apiKey = 'no-key'
+        }
         if (!apiKey) {
           throw new Error(`Failed to decrypt credentials for provider "${candidate.providerId}"`)
         }

@@ -3,7 +3,21 @@ import { z } from 'zod'
 export const SaveCredentialSchema = z
   .object({
     id: z.string().optional(),
-    providerId: z.enum(['gemini', 'groq', 'cerebras', 'openrouter', 'custom']),
+    providerId: z.enum([
+      'gemini',
+      'groq',
+      'cerebras',
+      'openrouter',
+      'custom',
+      'nvidia',
+      'mistral',
+      'huggingface',
+      'cohere',
+      'deepseek',
+      'cloudflare',
+      'pollinations',
+      'kilo'
+    ]),
     label: z.string().min(1, 'Label is required').max(64, 'Label too long'),
     apiKey: z.string().max(512).optional(),
     customEndpoint: z
@@ -26,7 +40,11 @@ export const SaveCredentialSchema = z
       }, 'Access to cloud metadata endpoints is prohibited')
   })
   .refine(
-    (data) => Boolean(data.id) || (typeof data.apiKey === 'string' && data.apiKey.trim().length > 0),
+    (data) =>
+      Boolean(data.id) ||
+      data.providerId === 'pollinations' ||
+      data.providerId === 'kilo' ||
+      (typeof data.apiKey === 'string' && data.apiKey.trim().length > 0),
     { message: 'API Key cannot be empty', path: ['apiKey'] }
   )
 

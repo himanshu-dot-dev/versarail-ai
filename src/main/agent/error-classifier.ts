@@ -1,6 +1,7 @@
 import { ProviderId } from '@shared/domain/models'
 import { SecretRedactor } from '../security/secret-redactor'
 import { InBandDetector } from '../providers/utils/in-band-detector'
+import { extractRetryDelayMs } from '../providers/utils/retry-parser'
 
 export type ProviderErrorKind =
   | 'rate_limit'
@@ -73,8 +74,11 @@ export function parseRetryAfter(
     }
   }
 
-  // 2. Parse from message body regex (e.g. "try again in 2.34s", "reset in 45s", "retry in 2m30s")
+  // 2. Parse from message body regex (e.g. "try again in 2.34s", "reset in 45s", "retry in 2m30s", "try again in 1m26s")
   if (message) {
+    const extracted = extractRetryDelayMs(message)
+    if (extracted !== undefined) return extracted
+
     const minSecMatch = message.match(/(?:try again in|retry in|reset in|wait)\s*([0-9.]+)\s*(s|sec|seconds|m|min|minutes)/i)
     if (minSecMatch) {
       const val = parseFloat(minSecMatch[1])

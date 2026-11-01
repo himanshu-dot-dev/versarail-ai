@@ -5,6 +5,15 @@ import { GroqAdapter } from './groq.adapter'
 import { CerebrasAdapter } from './cerebras.adapter'
 import { OpenRouterAdapter } from './openrouter.adapter'
 import { OpenAICompatAdapter } from './openai-compat.adapter'
+import { NvidiaAdapter } from './nvidia.adapter'
+import { MistralAdapter } from './mistral.adapter'
+import { HuggingFaceAdapter } from './huggingface.adapter'
+import { CohereAdapter } from './cohere.adapter'
+import { DeepSeekAdapter } from './deepseek.adapter'
+import { CloudflareAdapter } from './cloudflare.adapter'
+import { PollinationsAdapter } from './pollinations.adapter'
+import { KiloAdapter } from './kilo.adapter'
+import { extractRetryDelayMs } from './utils/retry-parser'
 
 export interface KeyLeaseState {
   activeRequests: number
@@ -24,6 +33,14 @@ export class ProviderRegistry {
     this.registerAdapter(new GroqAdapter())
     this.registerAdapter(new CerebrasAdapter())
     this.registerAdapter(new OpenRouterAdapter())
+    this.registerAdapter(new NvidiaAdapter())
+    this.registerAdapter(new MistralAdapter())
+    this.registerAdapter(new HuggingFaceAdapter())
+    this.registerAdapter(new CohereAdapter())
+    this.registerAdapter(new DeepSeekAdapter())
+    this.registerAdapter(new CloudflareAdapter())
+    this.registerAdapter(new PollinationsAdapter())
+    this.registerAdapter(new KiloAdapter())
     this.registerAdapter(
       new OpenAICompatAdapter({
         id: 'custom',
@@ -91,7 +108,9 @@ export class ProviderRegistry {
   }
 
   public setCooldown(credentialId: string, durationMs: number, reason?: string, modelId?: string): void {
-    const cooldownUntilMs = Date.now() + durationMs
+    const statedMs = reason ? extractRetryDelayMs(reason) : undefined
+    const effectiveDurationMs = statedMs !== undefined ? statedMs : durationMs
+    const cooldownUntilMs = Date.now() + effectiveDurationMs
 
     if (modelId) {
       this.modelCooldowns.set(`${credentialId}::${modelId}`, {

@@ -117,14 +117,15 @@ export const ProvidersView: React.FC = () => {
   }
 
   const handleTestModalConnection = async () => {
-    if (!newKey.trim() && !editingProvider) return
+    const isKeyless = newProviderId === 'pollinations' || newProviderId === 'kilo'
+    if (!newKey.trim() && !editingProvider && !isKeyless) return
     setIsTestingModal(true)
     setModalTestResult(null)
     try {
       if (window.electronApi?.testProviderConnection) {
         const res = await window.electronApi.testProviderConnection({
           providerId: newProviderId,
-          apiKey: newKey.trim() || undefined,
+          apiKey: newKey.trim() || (isKeyless ? 'no-key' : undefined),
           credentialId: !newKey.trim() && editingProvider ? editingProvider.id : undefined,
           customEndpoint: newEndpoint.trim() || undefined
         })
@@ -147,7 +148,8 @@ export const ProvidersView: React.FC = () => {
 
   const handleSaveProvider = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!editingProvider && !newKey.trim()) return
+    const isKeyless = newProviderId === 'pollinations' || newProviderId === 'kilo'
+    if (!editingProvider && !newKey.trim() && !isKeyless) return
 
     setIsSaving(true)
     setSaveError(null)
@@ -158,7 +160,7 @@ export const ProvidersView: React.FC = () => {
           id: editingProvider ? editingProvider.id : undefined,
           providerId: newProviderId,
           label: newLabel.trim() || `${newProviderId.toUpperCase()} Key`,
-          apiKey: newKey.trim() || undefined,
+          apiKey: newKey.trim() || (isKeyless ? 'no-key' : undefined),
           customEndpoint: newEndpoint.trim() || undefined
         })
 
@@ -349,10 +351,19 @@ export const ProvidersView: React.FC = () => {
               >
                 <div className="flex items-start md:items-center gap-space-lg min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 text-primary border border-outline-variant">
-                    {isGoogle && <Icon name="auto_awesome" size={20} className="text-primary" />}
-                    {isGroq && <Icon name="bolt" size={20} className="text-tertiary" />}
-                    {isCerebras && <Icon name="psychology" size={20} className="text-secondary" />}
-                    {!isGoogle && !isGroq && !isCerebras && <Icon name="dns" size={20} />}
+                    {p.providerId === 'gemini' && <Icon name="auto_awesome" size={20} className="text-primary" />}
+                    {p.providerId === 'groq' && <Icon name="bolt" size={20} className="text-tertiary" />}
+                    {p.providerId === 'cerebras' && <Icon name="psychology" size={20} className="text-secondary" />}
+                    {p.providerId === 'nvidia' && <Icon name="memory" size={20} className="text-emerald-400" />}
+                    {p.providerId === 'mistral' && <Icon name="code" size={20} className="text-amber-400" />}
+                    {p.providerId === 'deepseek' && <Icon name="rocket_launch" size={20} className="text-blue-400" />}
+                    {p.providerId === 'pollinations' && <Icon name="public" size={20} className="text-purple-400" />}
+                    {p.providerId === 'kilo' && <Icon name="hub" size={20} className="text-cyan-400" />}
+                    {p.providerId === 'cloudflare' && <Icon name="cloud" size={20} className="text-orange-400" />}
+                    {p.providerId === 'cohere' && <Icon name="interests" size={20} className="text-pink-400" />}
+                    {p.providerId === 'huggingface' && <Icon name="sentiment_satisfied" size={20} className="text-yellow-400" />}
+                    {p.providerId === 'openrouter' && <Icon name="alt_route" size={20} className="text-indigo-400" />}
+                    {p.providerId === 'custom' && <Icon name="dns" size={20} className="text-on-surface" />}
                   </div>
 
                   <div className="flex flex-col min-w-0">
@@ -401,12 +412,28 @@ export const ProvidersView: React.FC = () => {
                     <div className="flex items-center gap-space-md mt-1 text-body-sm text-on-surface-variant flex-wrap font-mono">
                       <span>
                         Model: <strong className="text-on-surface">
-                          {isGoogle
+                          {p.providerId === 'gemini'
                             ? 'gemini-2.5-flash'
-                            : isGroq
+                            : p.providerId === 'groq'
                             ? 'llama-3.3-70b-versatile'
-                            : isCerebras
-                            ? 'llama3.1-70b'
+                            : p.providerId === 'cerebras'
+                            ? 'llama3.3-70b'
+                            : p.providerId === 'nvidia'
+                            ? 'meta/llama-3.3-70b-instruct'
+                            : p.providerId === 'mistral'
+                            ? 'codestral-latest'
+                            : p.providerId === 'deepseek'
+                            ? 'deepseek-ai/DeepSeek-V3'
+                            : p.providerId === 'pollinations'
+                            ? 'openai (Keyless)'
+                            : p.providerId === 'kilo'
+                            ? 'deepseek-r1:free'
+                            : p.providerId === 'cloudflare'
+                            ? 'llama-3.3-70b-fast'
+                            : p.providerId === 'cohere'
+                            ? 'command-r-plus'
+                            : p.providerId === 'huggingface'
+                            ? 'llama-3.3-70b'
                             : p.providerId === 'custom'
                             ? (p.customEndpoint || 'http://localhost:20128/v1')
                             : 'openrouter'}
@@ -518,104 +545,141 @@ export const ProvidersView: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex flex-col gap-1">
-                <label className="text-label-sm text-on-surface-variant">Provider Engine</label>
-                <select
-                  value={newProviderId}
-                  onChange={(e) => setNewProviderId(e.target.value)}
-                  disabled={Boolean(editingProvider)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none disabled:opacity-75"
-                >
-                  <option value="gemini">Google Gemini (Google AI Studio)</option>
-                  <option value="groq">GroqCloud (LPU Inference)</option>
-                  <option value="cerebras">Cerebras Cloud (CS-3 Wafer)</option>
-                  <option value="openrouter">OpenRouter Gateway</option>
-                  <option value="custom">Custom OpenAI-Compatible Endpoint</option>
-                </select>
-              </div>
+              {(() => {
+                const isKeyless = newProviderId === 'pollinations' || newProviderId === 'kilo'
+                return (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-label-sm text-on-surface-variant">Provider Engine</label>
+                      <select
+                        value={newProviderId}
+                        onChange={(e) => {
+                          const id = e.target.value
+                          setNewProviderId(id)
+                          if (id === 'pollinations') {
+                            setNewLabel('Pollinations (Keyless Free)')
+                            setNewKey('no-key')
+                          } else if (id === 'kilo') {
+                            setNewLabel('Kilo Gateway (Keyless Free)')
+                            setNewKey('no-key')
+                          } else if (newKey === 'no-key') {
+                            setNewKey('')
+                          }
+                        }}
+                        disabled={Boolean(editingProvider)}
+                        className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none disabled:opacity-75"
+                      >
+                        <optgroup label="Direct Cloud Providers">
+                          <option value="gemini">Google Gemini (Google AI Studio)</option>
+                          <option value="groq">GroqCloud (Ultra-Fast LPU)</option>
+                          <option value="cerebras">Cerebras Cloud (CS-3 Wafer)</option>
+                          <option value="nvidia">NVIDIA NIM (Microservices)</option>
+                          <option value="mistral">Mistral AI (Codestral / Large)</option>
+                          <option value="deepseek">SiliconFlow / DeepSeek</option>
+                          <option value="cloudflare">Cloudflare Workers AI</option>
+                          <option value="cohere">Cohere (Command R+)</option>
+                        </optgroup>
+                        <optgroup label="Zero-Config Free Tiers (No Card Required)">
+                          <option value="pollinations">Pollinations.ai (Keyless Free Tier)</option>
+                          <option value="kilo">Kilo Gateway (Keyless Free Tier)</option>
+                        </optgroup>
+                        <optgroup label="Aggregators & Custom Endpoints">
+                          <option value="openrouter">OpenRouter Gateway</option>
+                          <option value="huggingface">Hugging Face Router</option>
+                          <option value="custom">Custom OpenAI-Compatible Endpoint</option>
+                        </optgroup>
+                      </select>
+                    </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-label-sm text-on-surface-variant">Credential Label</label>
-                <input
-                  type="text"
-                  placeholder="e.g. My Gemini Pro Key"
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none"
-                />
-              </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-label-sm text-on-surface-variant">Credential Label</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. My Gemini Pro Key"
+                        value={newLabel}
+                        onChange={(e) => setNewLabel(e.target.value)}
+                        className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none"
+                      />
+                    </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-label-sm text-on-surface-variant">API Key / Secret</label>
-                <input
-                  type="password"
-                  placeholder={
-                    editingProvider
-                      ? `Leave empty to keep existing (${editingProvider.maskedKey})`
-                      : 'Enter provider key...'
-                  }
-                  required={!editingProvider}
-                  value={newKey}
-                  onChange={(e) => setNewKey(e.target.value)}
-                  className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
-                />
-                <span className="text-[11px] text-on-surface-variant">
-                  {editingProvider
-                    ? 'Leave empty to preserve existing encrypted key, or enter a new key to update.'
-                    : 'Key is encrypted into your local OS keychain immediately.'}
-                </span>
-              </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-label-sm text-on-surface-variant">API Key / Secret</label>
+                      <input
+                        type="password"
+                        placeholder={
+                          isKeyless
+                            ? 'No API key required (Public Keyless Tier)'
+                            : editingProvider
+                            ? `Leave empty to keep existing (${editingProvider.maskedKey})`
+                            : 'Enter provider key...'
+                        }
+                        required={!editingProvider && !isKeyless}
+                        value={isKeyless && newKey === 'no-key' ? '' : newKey}
+                        onChange={(e) => setNewKey(e.target.value)}
+                        className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
+                      />
+                      <span className="text-[11px] text-on-surface-variant">
+                        {isKeyless
+                          ? 'This provider supports keyless anonymous access. You can leave the key blank.'
+                          : editingProvider
+                          ? 'Leave empty to preserve existing encrypted key, or enter a new key to update.'
+                          : 'Key is encrypted into your local OS keychain immediately.'}
+                      </span>
+                    </div>
 
-              {newProviderId === 'custom' && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-label-sm text-on-surface-variant">Endpoint URL</label>
-                  <input
-                    type="url"
-                    placeholder="http://localhost:20128/v1"
-                    value={newEndpoint}
-                    onChange={(e) => setNewEndpoint(e.target.value)}
-                    className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
-                  />
-                </div>
-              )}
+                    {newProviderId === 'custom' && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-label-sm text-on-surface-variant">Endpoint URL</label>
+                        <input
+                          type="url"
+                          placeholder="http://localhost:20128/v1"
+                          value={newEndpoint}
+                          onChange={(e) => setNewEndpoint(e.target.value)}
+                          className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none font-mono"
+                        />
+                      </div>
+                    )}
 
-              <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-border-subtle">
-                <button
-                  type="button"
-                  disabled={isTestingModal || (!newKey.trim() && !editingProvider)}
-                  onClick={handleTestModalConnection}
-                  className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50 cursor-pointer"
-                >
-                  <Icon
-                    name={isTestingModal ? 'sync' : 'bolt'}
-                    size={16}
-                    className={isTestingModal ? 'animate-spin text-tertiary' : 'text-primary'}
-                  />
-                  <span>{isTestingModal ? 'Testing...' : 'Test Connection'}</span>
-                </button>
+                    <div className="flex items-center justify-between gap-space-md pt-space-md border-t border-border-subtle">
+                      <button
+                        type="button"
+                        disabled={isTestingModal || (!newKey.trim() && !editingProvider && !isKeyless)}
+                        onClick={handleTestModalConnection}
+                        className="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-lg text-body-sm font-medium transition-colors flex items-center gap-space-sm border border-outline-variant disabled:opacity-50 cursor-pointer"
+                      >
+                        <Icon
+                          name={isTestingModal ? 'sync' : 'bolt'}
+                          size={16}
+                          className={isTestingModal ? 'animate-spin text-tertiary' : 'text-primary'}
+                        />
+                        <span>{isTestingModal ? 'Testing...' : 'Test Connection'}</span>
+                      </button>
 
-                <div className="flex items-center gap-space-sm">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddModalOpen(false)
-                      setEditingProvider(null)
-                      setModalTestResult(null)
-                    }}
-                    className="px-space-lg py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || (!editingProvider && !newKey.trim())}
-                    className="px-space-xl py-space-sm rounded-lg bg-primary text-on-primary font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-space-sm shadow-sm cursor-pointer"
-                  >
-                    {isSaving && <Icon name="sync" size={16} className="animate-spin" />}
-                    <span>{isSaving ? 'Saving...' : editingProvider ? 'Save Changes' : 'Save Credential'}</span>
-                  </button>
-                </div>
-              </div>
+                      <div className="flex items-center gap-space-sm">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddModalOpen(false)
+                            setEditingProvider(null)
+                            setModalTestResult(null)
+                          }}
+                          className="px-space-lg py-space-sm rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSaving || (!editingProvider && !newKey.trim() && !isKeyless)}
+                          className="px-space-xl py-space-sm rounded-lg bg-primary text-on-primary font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-space-sm shadow-sm cursor-pointer"
+                        >
+                          {isSaving && <Icon name="sync" size={16} className="animate-spin" />}
+                          <span>{isSaving ? 'Saving...' : editingProvider ? 'Save Changes' : 'Save Credential'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
             </form>
           </div>
         </div>

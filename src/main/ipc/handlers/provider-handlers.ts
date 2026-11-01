@@ -95,7 +95,11 @@ export function registerProviderHandlers(): void {
       }
 
       if (!apiKey) {
-        return { success: false, error: 'API key cannot be empty' }
+        if (providerId === 'pollinations' || providerId === 'kilo') {
+          apiKey = 'no-key'
+        } else {
+          return { success: false, error: 'API key cannot be empty' }
+        }
       }
 
       try {
@@ -226,7 +230,11 @@ export function registerProviderHandlers(): void {
       }
 
       if (!keyToTest) {
-        return { success: false, latencyMs: 0, modelsCount: 0, error: 'No API key provided for connection test' }
+        if (payload.providerId === 'pollinations' || payload.providerId === 'kilo') {
+          keyToTest = 'no-key'
+        } else {
+          return { success: false, latencyMs: 0, modelsCount: 0, error: 'No API key provided for connection test' }
+        }
       }
 
       const adapter = registry.getAdapter(payload.providerId as ProviderId)
@@ -271,6 +279,8 @@ export function registerProviderHandlers(): void {
             key = normalizeKey(decrypted)
           }
           customEndpoint = creds[0].customEndpoint
+        } else if (adapter.id === 'pollinations' || adapter.id === 'kilo') {
+          key = 'no-key'
         }
 
         const models = await adapter.listModels(key, customEndpoint)

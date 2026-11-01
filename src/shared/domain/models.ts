@@ -1,4 +1,17 @@
-export type ProviderId = 'gemini' | 'groq' | 'cerebras' | 'openrouter' | 'custom'
+export type ProviderId =
+  | 'gemini'
+  | 'groq'
+  | 'cerebras'
+  | 'openrouter'
+  | 'custom'
+  | 'nvidia'
+  | 'mistral'
+  | 'huggingface'
+  | 'cohere'
+  | 'deepseek'
+  | 'cloudflare'
+  | 'pollinations'
+  | 'kilo'
 
 export interface SystemInfo {
   platform: 'win32' | 'darwin' | 'linux'
