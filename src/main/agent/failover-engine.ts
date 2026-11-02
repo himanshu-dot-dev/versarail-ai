@@ -7,6 +7,7 @@ import { InBandDetector } from '../providers/utils/in-band-detector'
 import { formatResetEta, summarizeExhaustion, ModelExhaustionRecord } from '../providers/utils/reset-eta'
 import { ChatMessage } from '../providers/provider-adapter.interface'
 import { extractInlineToolCalls } from '../tools/builtin-tool-definitions'
+import { repairToolArguments } from '../providers/utils/tool-repair'
 
 export interface CandidateModel {
   providerId: ProviderId
@@ -340,40 +341,30 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
     {
       id: 'openai',
       providerId: 'pollinations',
-      name: 'Pollinations GPT-4o (Keyless)',
+      name: 'Pollinations GPT-OSS 20B (Keyless)',
       contextWindow: 128000,
       outputLimit: 4096,
       supportsTools: true,
-      supportsStreaming: true,
-      isFreeTierAvailable: true
-    },
-    {
-      id: 'deepseek-r1',
-      providerId: 'pollinations',
-      name: 'Pollinations DeepSeek R1 (Keyless)',
-      contextWindow: 65536,
-      outputLimit: 8192,
-      supportsTools: false,
       supportsStreaming: true,
       isFreeTierAvailable: true
     }
   ],
   kilo: [
     {
-      id: 'deepseek/deepseek-r1:free',
+      id: 'kilo-auto/free',
       providerId: 'kilo',
-      name: 'Kilo DeepSeek R1 (Free)',
-      contextWindow: 65536,
+      name: 'Kilo Auto Free (Rotates Free Models)',
+      contextWindow: 256000,
       outputLimit: 8192,
-      supportsTools: false,
+      supportsTools: true,
       supportsStreaming: true,
       isFreeTierAvailable: true
     },
     {
-      id: 'meta-llama/llama-3.3-70b-instruct:free',
+      id: 'nvidia/nemotron-3.5-super-vl:free',
       providerId: 'kilo',
-      name: 'Kilo Llama 3.3 70B (Free)',
-      contextWindow: 128000,
+      name: 'NVIDIA Nemotron 3.5 Super VL (Free)',
+      contextWindow: 1000000,
       outputLimit: 8192,
       supportsTools: true,
       supportsStreaming: true,
@@ -406,31 +397,23 @@ export class FailoverEngine {
   public getCandidateModels(options: CandidateSelectionOptions): CandidateModel[] {
     const configuredCreds = [...this.secretStore.listCredentialMetadata()]
 
-    // Auto-enable keyless providers (e.g. Pollinations, Kilo) if preferred or configured
-    if (
-      options.preferredProviderId === 'pollinations' &&
-      !configuredCreds.some((c) => c.providerId === 'pollinations')
-    ) {
-      configuredCreds.push({
-        id: 'pollinations-keyless',
-        providerId: 'pollinations',
-        label: 'Pollinations (Keyless Free)',
-        maskedKey: 'Keyless (Free)',
-        isSessionOnly: false,
-        createdAt: new Date().toISOString()
-      })
-    } else if (
-      options.preferredProviderId === 'kilo' &&
-      !configuredCreds.some((c) => c.providerId === 'kilo')
-    ) {
-      configuredCreds.push({
-        id: 'kilo-keyless',
-        providerId: 'kilo',
-        label: 'Kilo Gateway (Keyless Free)',
-        maskedKey: 'Keyless (Free)',
-        isSessionOnly: false,
-        createdAt: new Date().toISOString()
-      })
+    // Auto-enable keyless providers (e.g. Kilo, Pollinations) as fallback candidates unconditionally
+    const KEYLESS_PROVIDERS: Array<{ id: ProviderId; credId: string; label: string }> = [
+      { id: 'kilo', credId: 'kilo-keyless', label: 'Kilo Gateway (Keyless Free)' },
+      { id: 'pollinations', credId: 'pollinations-keyless', label: 'Pollinations (Keyless Free)' }
+    ]
+
+    for (const kp of KEYLESS_PROVIDERS) {
+      if (!configuredCreds.some((c) => c.providerId === kp.id)) {
+        configuredCreds.push({
+          id: kp.credId,
+          providerId: kp.id,
+          label: kp.label,
+          maskedKey: 'Keyless (Free)',
+          isSessionOnly: false,
+          createdAt: new Date().toISOString()
+        })
+      }
     }
 
     if (configuredCreds.length === 0) {
@@ -522,8 +505,8 @@ export class FailoverEngine {
       deepseek: 6,
       cloudflare: 7,
       cohere: 8,
-      pollinations: 9,
-      kilo: 10,
+      kilo: 9,
+      pollinations: 10,
       openrouter: 11,
       huggingface: 12,
       custom: 13
@@ -592,7 +575,7 @@ export class FailoverEngine {
       }
 
       // Concurrency lease check
-      const hasLease = this.registry.acquireLease(candidate.credentialId)
+      const hasLease = this.registry.acquireLease(candidate.credentialId, candidate.modelId)
       if (!hasLease) {
         exhaustionRecords.push({
           modelId: candidate.modelId,
@@ -629,7 +612,7 @@ export class FailoverEngine {
           tools: options.tools
         })
 
-        const accumulatedToolCalls: Map<string, { id: string; name: string; arguments: string }> = new Map()
+        const accumulatedToolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map()
 
         for await (const chunk of stream) {
           if (signal?.aborted) {
@@ -638,15 +621,16 @@ export class FailoverEngine {
 
           if (chunk.toolCallsDelta) {
             for (const tc of chunk.toolCallsDelta) {
-              const key = tc.id || tc.name || 'call_0'
-              const existing = accumulatedToolCalls.get(key) || {
-                id: tc.id || key,
+              const idx = typeof tc.index === 'number' ? tc.index : 0
+              const existing = accumulatedToolCalls.get(idx) || {
+                id: tc.id || `call_${idx}`,
                 name: tc.name || '',
                 arguments: ''
               }
+              if (tc.id) existing.id = tc.id
               if (tc.name) existing.name = tc.name
               if (tc.arguments) existing.arguments += tc.arguments
-              accumulatedToolCalls.set(key, existing)
+              accumulatedToolCalls.set(idx, existing)
             }
             hasStreamedFirstByte = true
           }
@@ -674,7 +658,15 @@ export class FailoverEngine {
         const detectedToolCalls: Array<{ id: string; name: string; arguments: string }> = []
 
         if (accumulatedToolCalls.size > 0) {
-          detectedToolCalls.push(...Array.from(accumulatedToolCalls.values()))
+          for (const tc of accumulatedToolCalls.values()) {
+            if (tc.name) {
+              detectedToolCalls.push({
+                id: tc.id,
+                name: tc.name,
+                arguments: repairToolArguments(tc.arguments)
+              })
+            }
+          }
         } else if (inlineCalls.length > 0) {
           detectedToolCalls.push(
             ...inlineCalls.map((c) => ({
@@ -695,7 +687,8 @@ export class FailoverEngine {
         // Successfully completed stream
         this.registry.releaseLease(candidate.credentialId)
         this.registry.clearCooldown(candidate.credentialId, candidate.modelId)
-        onToken({ delta: '', isComplete: true })
+        // Only signal completion if no more tool calls need to be processed
+        onToken({ delta: '', isComplete: detectedToolCalls.length === 0 })
 
         return {
           fullResponse,
@@ -713,12 +706,22 @@ export class FailoverEngine {
         }
 
         const normalized: NormalizedProviderError = classifyProviderError(err, candidate.providerId)
-        const cooldownDuration = normalized.retryAfterMs || 45000
-        const cooldownExpiryTime = Date.now() + cooldownDuration
+
+        // Set realistic cooldowns: auth failures and quota exhaustion do not resolve in 45s
+        let cooldownDurationMs: number
+        if (normalized.kind === 'authentication_failed') {
+          cooldownDurationMs = 60 * 60 * 1000 // 1 hour
+        } else if (normalized.kind === 'quota_exhausted') {
+          cooldownDurationMs = 60 * 60 * 1000 // 1 hour
+        } else {
+          cooldownDurationMs = normalized.retryAfterMs || 45000
+        }
+
+        const cooldownExpiryTime = Date.now() + cooldownDurationMs
 
         // Granular cooldown: model-level unless credential fails authentication globally
         const cooldownModelId = normalized.kind === 'authentication_failed' ? undefined : candidate.modelId
-        this.registry.setCooldown(candidate.credentialId, cooldownDuration, normalized.clientSafeMessage, cooldownModelId)
+        this.registry.setCooldown(candidate.credentialId, cooldownDurationMs, normalized.clientSafeMessage, cooldownModelId)
 
         exhaustionRecords.push({
           modelId: candidate.modelId,

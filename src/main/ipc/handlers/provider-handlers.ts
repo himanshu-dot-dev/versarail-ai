@@ -124,6 +124,7 @@ export function registerProviderHandlers(): void {
 
         // Clear cooldown since credentials were saved or updated
         registry.clearCooldown(id)
+        registry.clearAllModelCooldowns(id)
 
         return { success: true, isSessionOnly }
       } catch (err) {

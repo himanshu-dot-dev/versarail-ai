@@ -60,7 +60,22 @@ export function registerWorkspaceHandlers(): void {
     }
   )
 
-  // 3. Inspect Workspace Files (Relative Subdirectory)
+  // 3. Set Active Workspace Path Directly
+  ipcMain.handle(
+    IPC_CHANNELS.WORKSPACE_SET,
+    async (
+      event: IpcMainInvokeEvent,
+      folderPath: string
+    ): Promise<{ path: string | null; name: string | null }> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.WORKSPACE_SET)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      return workspaceService.setWorkspace(folderPath)
+    }
+  )
+
+  // 4. Inspect Workspace Files (Relative Subdirectory)
   ipcMain.handle(
     IPC_CHANNELS.WORKSPACE_INSPECT_FILES,
     async (

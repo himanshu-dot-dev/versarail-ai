@@ -156,6 +156,9 @@ const electronApi: IElectronApi = {
   getCurrentWorkspace: (): Promise<{ path: string | null; name: string | null }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_GET_CURRENT)
   },
+  setWorkspace: (folderPath: string): Promise<{ path: string | null; name: string | null }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_SET, folderPath)
+  },
   inspectWorkspaceFiles: (relativeDir?: string): Promise<{ files: string[]; dirs: string[] }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_INSPECT_FILES, relativeDir)
   },

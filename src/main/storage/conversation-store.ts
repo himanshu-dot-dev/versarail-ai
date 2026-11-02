@@ -35,11 +35,11 @@ export interface AgentRunRecord {
 
 export class ConversationStore {
   private static instance: ConversationStore | null = null
-  private db: SqliteDatabase
-
-  private constructor() {
-    this.db = SqliteDatabase.getInstance()
+  private get db(): SqliteDatabase {
+    return SqliteDatabase.getInstance()
   }
+
+  private constructor() {}
 
   public static getInstance(): ConversationStore {
     if (!ConversationStore.instance) {

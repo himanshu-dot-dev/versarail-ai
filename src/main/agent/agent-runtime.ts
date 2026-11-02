@@ -5,6 +5,7 @@ import { ContextManager } from './context-manager'
 import { buildAgentSystemPrompt } from './system-prompt'
 import { BUILTIN_TOOL_DEFINITIONS } from '../tools/builtin-tool-definitions'
 import { ToolRegistry } from '../tools/tool-registry'
+import { WorkspaceService } from '../workspace/workspace-service'
 import { randomUUID } from 'crypto'
 
 export interface AgentRunOptions {
@@ -61,8 +62,43 @@ export class AgentRuntime {
     const abortController = new AbortController()
     this.activeRuns.set(runId, abortController)
 
-    // 1. Ensure conversation exists and persist user message
+    const contextManager = ContextManager.getInstance()
+    const privacy = contextManager.getPrivacySettings()
+
+    // Enforce privacy-allowed providers
+    const effectiveAllowed = options.allowedProviders || (privacy.allowedProviders as ProviderId[])
+
+    // Estimate initial prompt tokens to perform pre-flight candidate filtering
     let conv = this.convStore.getConversation(options.conversationId)
+    const existingRawMessages = (conv?.messages || []).map((m) => ({
+      role: m.role as 'system' | 'user' | 'assistant',
+      content: m.content
+    }))
+    const initialEstimatedTokens = contextManager.estimateMessagesTokens([
+      ...existingRawMessages,
+      { role: 'user', content: options.prompt }
+    ])
+
+    // 1. Resolve candidate models with pre-flight context floor and health ranking BEFORE writing to DB
+    const candidates = this.failoverEngine.getCandidateModels({
+      preferredProviderId: options.providerId,
+      preferredModelId: options.modelId,
+      estimatedPromptTokens: initialEstimatedTokens,
+      allowedProviders: effectiveAllowed
+    })
+
+    if (candidates.length === 0) {
+      this.activeRuns.delete(runId)
+      const errMessage = `No valid candidates configured for provider "${options.providerId}". Please check API credentials and context limits in Providers settings.`
+      options.onError({
+        runId,
+        message: errMessage,
+        isFallbackEligible: false
+      })
+      throw new Error(errMessage)
+    }
+
+    // 2. Ensure conversation exists and persist user message only after candidates are verified
     if (!conv) {
       this.convStore.createConversation({
         id: options.conversationId,
@@ -78,7 +114,7 @@ export class AgentRuntime {
       content: options.prompt
     })
 
-    // 2. Create agent run record in SQLite
+    // 3. Create agent run record in SQLite
     this.convStore.createRun({
       id: runId,
       conversationId: options.conversationId,
@@ -92,20 +128,17 @@ export class AgentRuntime {
       content: m.content
     }))
 
-    const contextManager = ContextManager.getInstance()
-    const privacy = contextManager.getPrivacySettings()
-
-    // Enforce privacy-allowed providers
-    const effectiveAllowed = options.allowedProviders || (privacy.allowedProviders as ProviderId[])
-
     const budgeted = contextManager.prepareContext({
       messages: rawMessages,
       maxTokens: privacy.contextWindowBudgetTokens,
       autoSummarize: privacy.autoSummarizeContext
     })
 
+    // Resolve active workspace either from prompt options or the native WorkspaceService
+    const effectiveWorkspace = options.workspacePath || WorkspaceService.getInstance().getWorkspaceRoot()
+
     // Prepend or refresh Agent System Prompt with active workspace context
-    const systemPrompt = buildAgentSystemPrompt(options.workspacePath)
+    const systemPrompt = buildAgentSystemPrompt(effectiveWorkspace)
     const contextMessages = [...budgeted.messages]
     if (contextMessages.length === 0 || contextMessages[0].role !== 'system') {
       contextMessages.unshift({
@@ -119,30 +152,15 @@ export class AgentRuntime {
       }
     }
 
-    const estimatedPromptTokens = budgeted.finalTokens
-
     let finalProvider = options.providerId
 
     try {
-      // 3. Resolve candidate models with pre-flight context floor and health ranking
-      const candidates = this.failoverEngine.getCandidateModels({
-        preferredProviderId: options.providerId,
-        preferredModelId: options.modelId,
-        estimatedPromptTokens,
-        allowedProviders: effectiveAllowed
-      })
-
-      if (candidates.length === 0) {
-        throw new Error(
-          `No valid candidates configured for provider "${options.providerId}". Please check API credentials and context limits in Providers settings.`
-        )
-      }
-
       // 4. Stream response using Multi-Turn Agent Tool Execution Loop
       const toolRegistry = ToolRegistry.getInstance()
       const MAX_TOOL_STEPS = 5
       let currentStep = 0
       let lastResponse = ''
+      let accumulatedDisplayResponse = ''
       let activeModelId = options.modelId
 
       while (currentStep < MAX_TOOL_STEPS) {
@@ -157,11 +175,13 @@ export class AgentRuntime {
           preferredProviderId: options.providerId,
           preferredModelId: options.modelId,
           onToken: (chunk) => {
-            options.onToken({
-              runId,
-              delta: chunk.delta,
-              isComplete: chunk.isComplete
-            })
+            if (chunk.delta) {
+              options.onToken({
+                runId,
+                delta: chunk.delta,
+                isComplete: false
+              })
+            }
           },
           onFailover: (event) => {
             options.onFailover?.(event)
@@ -174,7 +194,12 @@ export class AgentRuntime {
 
         // Check if model emitted any tool calls to execute
         if (streamResult.toolCalls && streamResult.toolCalls.length > 0) {
+          if (streamResult.fullResponse) {
+            accumulatedDisplayResponse += streamResult.fullResponse
+          }
+
           let destructiveOpsThisTurn = 0
+          let safetyTriggered = false
 
           for (const call of streamResult.toolCalls) {
             const toolObj = toolRegistry.getTool(call.name)
@@ -183,11 +208,14 @@ export class AgentRuntime {
             }
 
             if (destructiveOpsThisTurn > 3) {
+              const safetyMsg = `\n\n> ⚠️ **Safety Intervention:** AI requested more than 3 destructive write/execute operations in a single turn. Execution paused for safety.\n`
+              accumulatedDisplayResponse += safetyMsg
               options.onToken({
                 runId,
-                delta: `\n\n> ⚠️ **Safety Intervention:** AI requested more than 3 destructive write/execute operations in a single turn. Execution paused for safety.\n`,
+                delta: safetyMsg,
                 isComplete: false
               })
+              safetyTriggered = true
               break
             }
 
@@ -201,15 +229,17 @@ export class AgentRuntime {
               parsedArgs = {}
             }
 
+            const actionMsg = `\n\n> ⚙️ **Action:** Executing tool \`${call.name}\`...\n`
+            accumulatedDisplayResponse += actionMsg
             options.onToken({
               runId,
-              delta: `\n\n> ⚙️ **Action:** Executing tool \`${call.name}\`...\n`,
+              delta: actionMsg,
               isComplete: false
             })
 
             const execResult = await toolRegistry.executeTool(call.name, parsedArgs, {
               runId,
-              workspacePath: options.workspacePath,
+              workspacePath: effectiveWorkspace,
               signal: abortController.signal
             })
 
@@ -228,9 +258,11 @@ export class AgentRuntime {
             }
 
             const statusIcon = execResult.success ? '✅' : '❌'
+            const outputMsg = `> ${statusIcon} **Output:** ${execResult.success ? 'Execution succeeded' : 'Execution failed'}\n\n`
+            accumulatedDisplayResponse += outputMsg
             options.onToken({
               runId,
-              delta: `> ${statusIcon} **Output:** ${execResult.success ? 'Execution succeeded' : 'Execution failed'}\n\n`,
+              delta: outputMsg,
               isComplete: false
             })
 
@@ -244,23 +276,34 @@ export class AgentRuntime {
               content: `[Tool Output for ${call.name}]:\n${resultFormatted}\n\nPlease proceed to inspect this output and continue answering the user's request.`
             })
           }
+          if (safetyTriggered) {
+            break
+          }
           // Continue to next turn in tool execution loop
           continue
         }
 
         // No more tool calls; generation is complete
+        accumulatedDisplayResponse += streamResult.fullResponse
         break
       }
 
       // 5. Persist assistant completion and update agent run
+      const contentToSave = (accumulatedDisplayResponse || lastResponse).trim() || 'Task completed.'
       this.convStore.addMessage({
         conversationId: options.conversationId,
         role: 'assistant',
-        content: lastResponse,
+        content: contentToSave,
         modelId: activeModelId
       })
 
       this.convStore.completeRun(runId, 'completed', finalProvider)
+
+      options.onToken({
+        runId,
+        delta: '',
+        isComplete: true
+      })
 
       return {
         runId,

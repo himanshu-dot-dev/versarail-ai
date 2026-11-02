@@ -357,9 +357,10 @@ export class OpenAICompatAdapter implements IProviderAdapter {
 
             if (delta?.tool_calls) {
               const toolCalls = delta.tool_calls.map((tc: any) => ({
+                index: typeof tc.index === 'number' ? tc.index : 0,
                 id: tc.id,
                 name: tc.function?.name,
-                arguments: tc.function?.arguments ? repairToolArguments(tc.function.arguments) : undefined
+                arguments: tc.function?.arguments !== undefined ? String(tc.function.arguments) : undefined
               }))
 
               yield {

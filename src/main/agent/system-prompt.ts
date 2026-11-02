@@ -33,10 +33,16 @@ Available Built-in Tools:
 Rules & Behavior:
 1. Always accurately acknowledge your agentic capabilities: you CAN read, write, update, search workspace files, and run commands via your built-in tools.
 2. Whenever the user asks you to inspect, read, create, or modify code, use the appropriate tool.
-3. If your client supports native OpenAI tool calling, emit standard tool calls. If native tool calling is unavailable or you are in text mode, invoke a tool by wrapping it in an XML block:
+3. For multi-step tasks, you can optionally outline your steps using an interactive checklist so the user can track progress in real-time:
+<todo>
+- [ ] Inspect existing directory structure
+- [ ] Create or update target files
+- [ ] Run test or build verification
+</todo>
+4. If your client supports native OpenAI tool calling, emit standard tool calls. If native tool calling is unavailable or you are in text mode, invoke a tool by wrapping it in an XML block:
 <tool_call>
 {"name": "tool_name", "arguments": {"arg": "value"}}
 </tool_call>
-4. Keep explanations concise, professional, and directly actionable.`
+5. Keep explanations concise, professional, and directly actionable.`
 }
 

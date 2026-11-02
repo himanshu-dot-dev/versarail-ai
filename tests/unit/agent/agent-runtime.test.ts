@@ -139,4 +139,70 @@ describe('AgentRuntime Streaming & Cancellation', () => {
     await expect(promptPromise).rejects.toThrow('Generation cancelled by user')
     expect(iterationCount).toBeLessThan(10)
   })
+
+  it('executes multi-turn tool calling without prematurely signaling isComplete and feeds tool output back to model', async () => {
+    // Create a dummy workspace file
+    const workspaceDir = path.join(tempDir, 'workspace')
+    fs.mkdirSync(workspaceDir, { recursive: true })
+    fs.writeFileSync(path.join(workspaceDir, 'test.txt'), 'Secret content in file', 'utf-8')
+
+    let turn = 0
+    const mockAdapter = {
+      id: 'gemini' as const,
+      name: 'Google AI Studio',
+      validateKey: vi.fn(),
+      listModels: vi.fn(),
+      streamCompletion: async function* () {
+        turn++
+        if (turn === 1) {
+          // Turn 1: model returns tool call to read_file
+          yield {
+            toolCallsDelta: [
+              { index: 0, id: 'call_1', name: 'read_file', arguments: '{"path":"test.txt"}' }
+            ]
+          }
+        } else {
+          // Turn 2: model answers based on tool output
+          yield { textDelta: 'The file contains: Secret content in file' }
+        }
+      }
+    }
+
+    vi.spyOn(registry, 'getAdapter').mockReturnValue(mockAdapter as any)
+
+    const receivedChunks: Array<{ delta: string; isComplete: boolean }> = []
+
+    const result = await runtime.executePrompt({
+      conversationId: 'conv-tool-test',
+      prompt: 'What is inside test.txt?',
+      modelId: 'gemini-2.5-flash',
+      providerId: 'gemini',
+      workspacePath: workspaceDir,
+      onToken: (chunk) => {
+        receivedChunks.push({ delta: chunk.delta, isComplete: chunk.isComplete })
+      },
+      onError: () => {}
+    })
+
+    expect(result.fullResponse).toBe('The file contains: Secret content in file')
+    expect(turn).toBe(2)
+
+    // Check that isComplete is ONLY true on the very last chunk!
+    const completedChunks = receivedChunks.filter((c) => c.isComplete)
+    expect(completedChunks.length).toBe(1)
+    expect(receivedChunks[receivedChunks.length - 1].isComplete).toBe(true)
+
+    // Check that intermediate chunks showed tool execution action and output
+    const combinedDelta = receivedChunks.map((c) => c.delta).join('')
+    expect(combinedDelta).toContain('Executing tool `read_file`')
+    expect(combinedDelta).toContain('Output:** Execution succeeded')
+    expect(combinedDelta).toContain('The file contains: Secret content in file')
+
+    // Check that conversation history in SQLite stored the complete tool action and answer
+    const convStore = ConversationStore.getInstance()
+    const history = convStore.getConversation('conv-tool-test')
+    expect(history?.messages.length).toBe(2)
+    expect(history?.messages[1].content).toContain('Executing tool `read_file`')
+    expect(history?.messages[1].content).toContain('The file contains: Secret content in file')
+  })
 })

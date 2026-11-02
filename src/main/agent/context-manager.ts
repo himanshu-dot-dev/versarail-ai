@@ -214,7 +214,21 @@ export class ContextManager {
    */
   public getPrivacySettings(): PrivacySettingsDTO {
     const defaults: PrivacySettingsDTO = {
-      allowedProviders: ['gemini', 'groq', 'cerebras', 'openrouter', 'custom'],
+      allowedProviders: [
+        'gemini',
+        'groq',
+        'cerebras',
+        'openrouter',
+        'custom',
+        'nvidia',
+        'mistral',
+        'huggingface',
+        'cohere',
+        'deepseek',
+        'cloudflare',
+        'pollinations',
+        'kilo'
+      ],
       allowPublicCloud: true,
       autoRedactSecrets: true,
       auditRetentionDays: 30,

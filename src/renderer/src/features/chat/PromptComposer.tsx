@@ -18,12 +18,71 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
   const { connectedModel, setConnectedModel, workspace, selectWorkspaceFolder, setActiveView } = useUiStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Mention Picker State (@file)
+  const [showMentions, setShowMentions] = useState(false)
+  const [mentionFilter, setMentionFilter] = useState('')
+  const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([])
+  const [mentionIndex, setMentionIndex] = useState(0)
+
   // Model Picker State
   const [isModelOpen, setIsModelOpen] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
   const [models, setModels] = useState<ModelItem[]>([])
   const [isLoadingModels, setIsLoadingModels] = useState(false)
   const modelPickerRef = useRef<HTMLDivElement>(null)
+
+  // Load workspace files for @ mentions
+  useEffect(() => {
+    if (workspace.path && window.electronApi?.inspectWorkspaceFiles) {
+      window.electronApi.inspectWorkspaceFiles().then((res) => {
+        if (res?.files) {
+          setWorkspaceFiles(res.files)
+        }
+      }).catch(console.error)
+    }
+  }, [workspace.path])
+
+  // Handle textarea change and check for @ mention
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setPrompt(val)
+
+    // Detect if cursor is right after an '@'
+    const cursorPos = e.target.selectionStart || val.length
+    const textBeforeCursor = val.slice(0, cursorPos)
+    const atMatch = textBeforeCursor.match(/@([a-zA-Z0-9_\-\./]*)$/)
+
+    if (atMatch && workspace.path) {
+      setShowMentions(true)
+      setMentionFilter(atMatch[1].toLowerCase())
+      setMentionIndex(0)
+    } else {
+      setShowMentions(false)
+    }
+  }
+
+  const matchingFiles = useMemo(() => {
+    if (!mentionFilter) return workspaceFiles.slice(0, 10)
+    return workspaceFiles.filter((f) => f.toLowerCase().includes(mentionFilter)).slice(0, 10)
+  }, [workspaceFiles, mentionFilter])
+
+  const insertMention = (fileName: string) => {
+    if (!textareaRef.current) return
+    const cursorPos = textareaRef.current.selectionStart || prompt.length
+    const textBefore = prompt.slice(0, cursorPos)
+    const textAfter = prompt.slice(cursorPos)
+    const replacedBefore = textBefore.replace(/@([a-zA-Z0-9_\-\./]*)$/, `@${fileName} `)
+    
+    setPrompt(replacedBefore + textAfter)
+    setShowMentions(false)
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        const newPos = replacedBefore.length
+        textareaRef.current.setSelectionRange(newPos, newPos)
+      }
+    }, 50)
+  }
 
   // Auto-resize textarea height
   useEffect(() => {
@@ -85,6 +144,22 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
         ? 'GroqCloud'
         : model.providerId === 'cerebras'
         ? 'Cerebras'
+        : model.providerId === 'kilo'
+        ? 'Kilo Gateway'
+        : model.providerId === 'pollinations'
+        ? 'Pollinations'
+        : model.providerId === 'nvidia'
+        ? 'NVIDIA NIM'
+        : model.providerId === 'mistral'
+        ? 'Mistral AI'
+        : model.providerId === 'deepseek'
+        ? 'DeepSeek'
+        : model.providerId === 'cloudflare'
+        ? 'Cloudflare Workers AI'
+        : model.providerId === 'cohere'
+        ? 'Cohere'
+        : model.providerId === 'huggingface'
+        ? 'Hugging Face'
         : 'OpenRouter'
 
     setConnectedModel({
@@ -112,6 +187,29 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showMentions && matchingFiles.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((prev) => (prev + 1) % matchingFiles.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((prev) => (prev - 1 + matchingFiles.length) % matchingFiles.length)
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        insertMention(matchingFiles[mentionIndex] || matchingFiles[0])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setShowMentions(false)
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -123,14 +221,36 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
   return (
     <div className="p-space-xl bg-surface-dim border-t border-border-subtle shrink-0 relative">
       <div className="max-w-4xl mx-auto flex flex-col gap-space-md bg-surface-container p-space-md rounded-xl border border-outline-variant shadow-lg relative">
+        {/* Kilo-inspired @ Mention Autocomplete Popover */}
+        {showMentions && matchingFiles.length > 0 && (
+          <div className="absolute bottom-full left-4 mb-2 w-80 max-h-60 bg-surface-container-high border border-outline-variant rounded-xl shadow-xl overflow-y-auto z-50 p-1 font-mono text-xs">
+            <div className="px-2.5 py-1.5 text-[10px] text-on-surface-variant font-semibold border-b border-border-subtle uppercase tracking-wider flex items-center justify-between">
+              <span>Workspace Files</span>
+              <span>Tab / Enter</span>
+            </div>
+            {matchingFiles.map((file, i) => (
+              <div
+                key={file}
+                onClick={() => insertMention(file)}
+                className={`px-2.5 py-1.5 rounded-lg cursor-pointer flex items-center gap-2 transition-colors ${
+                  i === mentionIndex ? 'bg-primary text-on-primary font-medium' : 'hover:bg-surface-container text-on-surface'
+                }`}
+              >
+                <Icon name="description" size={14} className={i === mentionIndex ? 'text-on-primary' : 'text-primary'} />
+                <span className="truncate">{file}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           disabled={disabled}
           className="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/70 resize-none focus:outline-none text-body-lg min-h-[44px]"
-          placeholder={`Ask ${connectedModel.name} to modify code, run tests, or explain changes... (Enter to send)`}
+          placeholder={`Ask ${connectedModel.name} to modify code, run tests, or type @ to mention files... (Enter to send)`}
           rows={2}
         />
 

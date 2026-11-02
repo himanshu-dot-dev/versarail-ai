@@ -40,15 +40,15 @@ interface PendingPermission {
 
 export class PermissionBroker {
   private static instance: PermissionBroker | null = null
-  private db: SqliteDatabase
+  private get db(): SqliteDatabase {
+    return SqliteDatabase.getInstance()
+  }
   private pendingRequests: Map<string, PendingPermission> = new Map()
   private sessionApprovals: Set<string> = new Set()
   private customEmitter?: (channel: string, payload: unknown) => void
   private testAuthorizer?: (req: PermissionRequestDTO) => Promise<PermissionResponseDTO>
 
-  private constructor() {
-    this.db = SqliteDatabase.getInstance()
-  }
+  private constructor() {}
 
   public static getInstance(): PermissionBroker {
     if (!PermissionBroker.instance) {

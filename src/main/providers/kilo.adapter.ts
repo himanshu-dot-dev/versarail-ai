@@ -3,20 +3,20 @@ import { ModelDescriptorDTO } from '@shared/domain/models'
 
 const KILO_DEFAULT_MODELS: ModelDescriptorDTO[] = [
   {
-    id: 'deepseek/deepseek-r1:free',
+    id: 'kilo-auto/free',
     providerId: 'kilo',
-    name: 'Kilo DeepSeek R1 (Free)',
-    contextWindow: 65536,
+    name: 'Kilo Auto Free (Rotates Free Models)',
+    contextWindow: 256000,
     outputLimit: 8192,
-    supportsTools: false,
+    supportsTools: true,
     supportsStreaming: true,
     isFreeTierAvailable: true
   },
   {
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    id: 'nvidia/nemotron-3.5-super-vl:free',
     providerId: 'kilo',
-    name: 'Kilo Llama 3.3 70B (Free)',
-    contextWindow: 128000,
+    name: 'NVIDIA Nemotron 3.5 Super VL (Free)',
+    contextWindow: 1000000,
     outputLimit: 8192,
     supportsTools: true,
     supportsStreaming: true,

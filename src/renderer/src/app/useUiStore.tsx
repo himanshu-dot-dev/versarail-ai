@@ -111,6 +111,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     const newWs = { path: folderPath, name }
     setWorkspace(newWs)
     saveRecentWorkspace(newWs)
+    if (window.electronApi?.setWorkspace) {
+      try {
+        await window.electronApi.setWorkspace(folderPath)
+      } catch (err) {
+        console.error('[useUiStore] Failed to sync workspace to backend:', err)
+      }
+    }
     setActiveView('chat')
   }
 
@@ -118,9 +125,10 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setWorkspace({ path: null, name: null })
   }
   const [connectedModel, setConnectedModel] = useState<ConnectedModelInfo>({
-    name: 'No Model Connected',
-    provider: 'None',
-    isConnected: false
+    name: 'kilo-auto/free',
+    provider: 'Kilo Gateway (Free)',
+    providerId: 'kilo',
+    isConnected: true
   })
   const [hasActiveRun, setHasActiveRun] = useState(false)
   const [activeConversationId, setActiveConversationId] = useState<string>('conv-default')
@@ -196,12 +204,24 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // Sync with native backend workspace
   useEffect(() => {
     if (window.electronApi?.getCurrentWorkspace) {
-      window.electronApi.getCurrentWorkspace().then((ws) => {
-        if (ws && ws.path) {
-          setWorkspace(ws)
-          saveRecentWorkspace(ws)
-        }
-      }).catch(console.error)
+      window.electronApi
+        .getCurrentWorkspace()
+        .then(async (ws) => {
+          if (ws && ws.path) {
+            setWorkspace(ws)
+            saveRecentWorkspace(ws)
+          } else if (recentWorkspaces.length > 0 && recentWorkspaces[0]?.path && window.electronApi?.setWorkspace) {
+            try {
+              const restored = await window.electronApi.setWorkspace(recentWorkspaces[0].path)
+              if (restored && restored.path) {
+                setWorkspace(restored)
+              }
+            } catch {
+              // ignore
+            }
+          }
+        })
+        .catch(console.error)
     }
 
     if (window.electronApi?.listProviders) {
@@ -217,6 +237,10 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
               ? 'llama3.1-70b'
               : active.providerId === 'custom'
               ? 'auto/best-coding'
+              : active.providerId === 'kilo'
+              ? 'kilo-auto/free'
+              : active.providerId === 'pollinations'
+              ? 'openai'
               : 'openrouter'
 
           if (window.electronApi?.listModels) {
@@ -255,6 +279,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       const newWs = { path: result.path, name }
       setWorkspace(newWs)
       saveRecentWorkspace(newWs)
+      if (window.electronApi?.setWorkspace) {
+        try {
+          await window.electronApi.setWorkspace(result.path)
+        } catch (err) {
+          console.error('[useUiStore] Failed to sync workspace to backend:', err)
+        }
+      }
       // When opening a folder, auto switch to chat view
       setActiveView('chat')
     }

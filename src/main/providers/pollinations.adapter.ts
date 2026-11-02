@@ -5,28 +5,8 @@ const POLLINATIONS_DEFAULT_MODELS: ModelDescriptorDTO[] = [
   {
     id: 'openai',
     providerId: 'pollinations',
-    name: 'Pollinations GPT-4o (Keyless)',
+    name: 'Pollinations GPT-OSS 20B (Keyless)',
     contextWindow: 128000,
-    outputLimit: 4096,
-    supportsTools: true,
-    supportsStreaming: true,
-    isFreeTierAvailable: true
-  },
-  {
-    id: 'deepseek-r1',
-    providerId: 'pollinations',
-    name: 'Pollinations DeepSeek R1 (Keyless)',
-    contextWindow: 65536,
-    outputLimit: 8192,
-    supportsTools: false,
-    supportsStreaming: true,
-    isFreeTierAvailable: true
-  },
-  {
-    id: 'mistral',
-    providerId: 'pollinations',
-    name: 'Pollinations Mistral Small (Keyless)',
-    contextWindow: 32768,
     outputLimit: 4096,
     supportsTools: true,
     supportsStreaming: true,
@@ -39,7 +19,7 @@ export class PollinationsAdapter extends OpenAICompatAdapter {
     super({
       id: 'pollinations',
       name: 'Pollinations (Keyless Free)',
-      defaultBaseUrl: 'https://gen.pollinations.ai/v1',
+      defaultBaseUrl: 'https://text.pollinations.ai/v1',
       defaultModels: POLLINATIONS_DEFAULT_MODELS,
       keyless: true,
       extraHeaders: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { PermissionRequestDTO, PermissionResponseDTO, PermissionScope } from '@shared/domain/models'
 import Icon from '../common/Icon'
+import { soundService } from '../../services/sound-service'
 
 export interface PermissionModalProps {
   onRequestResolved?: (response: PermissionResponseDTO) => void
@@ -14,6 +15,7 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ onRequestResol
     if (!window.electronApi?.onPermissionRequest) return
 
     const unsubscribe = window.electronApi.onPermissionRequest((request) => {
+      soundService.play('alert')
       setRequests((prev) => {
         // Avoid duplicate requestId in queue
         if (prev.some((r) => r.requestId === request.requestId)) return prev

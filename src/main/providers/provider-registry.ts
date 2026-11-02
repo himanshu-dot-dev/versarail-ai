@@ -76,15 +76,24 @@ export class ProviderRegistry {
 
   // --- Concurrency Lease Acquisition & Release ---
 
-  public acquireLease(credentialId: string, maxConcurrency = 2): boolean {
+  public acquireLease(credentialId: string, modelId?: string, maxConcurrency = 2): boolean {
     const now = Date.now()
+
+    // Check model-level cooldown first
+    if (modelId) {
+      const modelEntry = this.modelCooldowns.get(`${credentialId}::${modelId}`)
+      if (modelEntry && modelEntry.cooldownUntilMs > now) {
+        return false
+      }
+    }
+
     const state = this.keyStates.get(credentialId) || {
       activeRequests: 0,
       maxConcurrency,
       cooldownUntilMs: null
     }
 
-    // Check cooldown
+    // Check credential cooldown
     if (state.cooldownUntilMs && state.cooldownUntilMs > now) {
       return false
     }
@@ -147,6 +156,15 @@ export class ProviderRegistry {
       state.cooldownUntilMs = null
       state.lastError = undefined
       this.keyStates.set(credentialId, state)
+    }
+  }
+
+  public clearAllModelCooldowns(credentialId: string): void {
+    const prefix = `${credentialId}::`
+    for (const key of this.modelCooldowns.keys()) {
+      if (key.startsWith(prefix)) {
+        this.modelCooldowns.delete(key)
+      }
     }
   }
 

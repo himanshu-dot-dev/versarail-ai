@@ -28,6 +28,7 @@ export interface ChatCompletionRequest {
 export interface StreamChunk {
   textDelta?: string
   toolCallsDelta?: Array<{
+    index?: number
     id?: string
     name?: string
     arguments?: string

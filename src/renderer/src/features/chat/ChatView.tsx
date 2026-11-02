@@ -4,6 +4,8 @@ import WelcomeHero from '../workspace/WelcomeHero'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
 import TerminalPanel from '../terminal/TerminalPanel'
+import { TodoDock } from './TodoDock'
+import { soundService } from '../../services/sound-service'
 
 interface ChatMessageItem {
   id: string
@@ -182,6 +184,7 @@ export const ChatView: React.FC = () => {
         }
 
         if (data.error) {
+          soundService.play('error')
           return [
             ...prev.slice(0, -1),
             {
@@ -195,6 +198,7 @@ export const ChatView: React.FC = () => {
 
         if (data.isComplete) {
           loadConversations()
+          soundService.play('success')
           const finalText = lastMsg.text.trim()
             ? lastMsg.text
             : (data.error ? `[Error: ${data.error}]` : '[No response received from model. Upstream provider closed connection without emitting tokens.]')
@@ -656,6 +660,7 @@ export const ChatView: React.FC = () => {
                       isUser ? 'bg-surface-container-lowest' : 'bg-surface-container'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
+                    {!isUser && msg.text && <TodoDock content={msg.text} />}
                     {msg.text ? (
                       <MessageContent text={msg.text} />
                     ) : (
