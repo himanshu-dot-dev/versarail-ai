@@ -35,7 +35,7 @@ export class ExecCmdTool implements ITool<ExecCmdInput, ExecCmdOutput> {
   public readonly inputSchema = ExecCmdInputSchema
   public readonly outputSchema = ExecCmdOutputSchema
 
-  private resolveWorkingDir(inputCwd?: string, contextWorkspace?: string): string {
+  private resolveWorkingDir(inputCwd?: string, contextWorkspace?: string | null): string {
     const ws = WorkspaceService.getInstance()
     if (inputCwd) {
       return ws.resolveSafePath(inputCwd, {
