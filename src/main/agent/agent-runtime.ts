@@ -2,6 +2,9 @@ import { ProviderId } from '@shared/domain/models'
 import { ConversationStore } from '../storage/conversation-store'
 import { FailoverEngine, FailoverEvent } from './failover-engine'
 import { ContextManager } from './context-manager'
+import { buildAgentSystemPrompt } from './system-prompt'
+import { BUILTIN_TOOL_DEFINITIONS } from '../tools/builtin-tool-definitions'
+import { ToolRegistry } from '../tools/tool-registry'
 import { randomUUID } from 'crypto'
 
 export interface AgentRunOptions {
@@ -101,6 +104,21 @@ export class AgentRuntime {
       autoSummarize: privacy.autoSummarizeContext
     })
 
+    // Prepend or refresh Agent System Prompt with active workspace context
+    const systemPrompt = buildAgentSystemPrompt(options.workspacePath)
+    const contextMessages = [...budgeted.messages]
+    if (contextMessages.length === 0 || contextMessages[0].role !== 'system') {
+      contextMessages.unshift({
+        role: 'system',
+        content: systemPrompt
+      })
+    } else {
+      contextMessages[0] = {
+        role: 'system',
+        content: systemPrompt
+      }
+    }
+
     const estimatedPromptTokens = budgeted.finalTokens
 
     let finalProvider = options.providerId
@@ -120,41 +138,133 @@ export class AgentRuntime {
         )
       }
 
-      // 4. Stream response using Failover Engine with Dead-Turn Pre-First-Byte Recovery
-      const streamResult = await this.failoverEngine.executeStreaming({
-        runId,
-        candidates,
-        messages: budgeted.messages,
-        signal: abortController.signal,
-        preferredProviderId: options.providerId,
-        preferredModelId: options.modelId,
-        onToken: (chunk) => {
-          options.onToken({
-            runId,
-            delta: chunk.delta,
-            isComplete: chunk.isComplete
-          })
-        },
-        onFailover: (event) => {
-          options.onFailover?.(event)
-        }
-      })
+      // 4. Stream response using Multi-Turn Agent Tool Execution Loop
+      const toolRegistry = ToolRegistry.getInstance()
+      const MAX_TOOL_STEPS = 5
+      let currentStep = 0
+      let lastResponse = ''
+      let activeModelId = options.modelId
 
-      finalProvider = streamResult.finalProviderId
+      while (currentStep < MAX_TOOL_STEPS) {
+        currentStep++
+
+        const streamResult = await this.failoverEngine.executeStreaming({
+          runId,
+          candidates,
+          messages: contextMessages,
+          tools: BUILTIN_TOOL_DEFINITIONS,
+          signal: abortController.signal,
+          preferredProviderId: options.providerId,
+          preferredModelId: options.modelId,
+          onToken: (chunk) => {
+            options.onToken({
+              runId,
+              delta: chunk.delta,
+              isComplete: chunk.isComplete
+            })
+          },
+          onFailover: (event) => {
+            options.onFailover?.(event)
+          }
+        })
+
+        finalProvider = streamResult.finalProviderId
+        activeModelId = streamResult.finalModelId
+        lastResponse = streamResult.fullResponse
+
+        // Check if model emitted any tool calls to execute
+        if (streamResult.toolCalls && streamResult.toolCalls.length > 0) {
+          let destructiveOpsThisTurn = 0
+
+          for (const call of streamResult.toolCalls) {
+            const toolObj = toolRegistry.getTool(call.name)
+            if (toolObj && ['fs:write', 'cmd:exec'].includes(toolObj.capability)) {
+              destructiveOpsThisTurn++
+            }
+
+            if (destructiveOpsThisTurn > 3) {
+              options.onToken({
+                runId,
+                delta: `\n\n> ⚠️ **Safety Intervention:** AI requested more than 3 destructive write/execute operations in a single turn. Execution paused for safety.\n`,
+                isComplete: false
+              })
+              break
+            }
+
+            let parsedArgs: Record<string, unknown> = {}
+            try {
+              parsedArgs =
+                typeof call.arguments === 'string'
+                  ? JSON.parse(call.arguments)
+                  : (call.arguments as Record<string, unknown>) || {}
+            } catch {
+              parsedArgs = {}
+            }
+
+            options.onToken({
+              runId,
+              delta: `\n\n> ⚙️ **Action:** Executing tool \`${call.name}\`...\n`,
+              isComplete: false
+            })
+
+            const execResult = await toolRegistry.executeTool(call.name, parsedArgs, {
+              runId,
+              workspacePath: options.workspacePath,
+              signal: abortController.signal
+            })
+
+            let resultFormatted = execResult.success
+              ? typeof execResult.result === 'string'
+                ? execResult.result
+                : JSON.stringify(execResult.result, null, 2)
+              : `Error: ${execResult.error}`
+
+            // Truncate tool output if it exceeds context limit (8,000 characters)
+            const MAX_TOOL_RESULT_CHARS = 8000
+            if (resultFormatted.length > MAX_TOOL_RESULT_CHARS) {
+              resultFormatted =
+                resultFormatted.slice(0, MAX_TOOL_RESULT_CHARS) +
+                '\n\n[OUTPUT TRUNCATED: Exceeded 8,000 character safety limit for conversation context]'
+            }
+
+            const statusIcon = execResult.success ? '✅' : '❌'
+            options.onToken({
+              runId,
+              delta: `> ${statusIcon} **Output:** ${execResult.success ? 'Execution succeeded' : 'Execution failed'}\n\n`,
+              isComplete: false
+            })
+
+            contextMessages.push({
+              role: 'assistant',
+              content: streamResult.fullResponse || `[Called tool ${call.name}]`
+            })
+
+            contextMessages.push({
+              role: 'user',
+              content: `[Tool Output for ${call.name}]:\n${resultFormatted}\n\nPlease proceed to inspect this output and continue answering the user's request.`
+            })
+          }
+          // Continue to next turn in tool execution loop
+          continue
+        }
+
+        // No more tool calls; generation is complete
+        break
+      }
 
       // 5. Persist assistant completion and update agent run
       this.convStore.addMessage({
         conversationId: options.conversationId,
         role: 'assistant',
-        content: streamResult.fullResponse,
-        modelId: streamResult.finalModelId
+        content: lastResponse,
+        modelId: activeModelId
       })
 
       this.convStore.completeRun(runId, 'completed', finalProvider)
 
       return {
         runId,
-        fullResponse: streamResult.fullResponse
+        fullResponse: lastResponse
       }
     } catch (err: any) {
       const isCancelled = abortController.signal.aborted || err.message?.includes('cancelled')

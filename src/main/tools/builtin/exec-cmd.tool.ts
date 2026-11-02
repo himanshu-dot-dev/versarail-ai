@@ -2,6 +2,8 @@ import { z } from 'zod'
 import * as path from 'path'
 import { ITool, ToolExecutionContext, PermissionDetails } from '../tool.interface'
 import { AgentCommandRunner } from '../../agent/command-runner'
+import { WorkspaceService } from '../../workspace/workspace-service'
+import { CommandPolicy } from '../../security/command-policy'
 
 export const ExecCmdInputSchema = z.object({
   command: z.string().min(1, 'Executable command name is required'),
@@ -33,21 +35,48 @@ export class ExecCmdTool implements ITool<ExecCmdInput, ExecCmdOutput> {
   public readonly inputSchema = ExecCmdInputSchema
   public readonly outputSchema = ExecCmdOutputSchema
 
+  private resolveWorkingDir(inputCwd?: string, contextWorkspace?: string): string {
+    const ws = WorkspaceService.getInstance()
+    if (inputCwd) {
+      return ws.resolveSafePath(inputCwd, {
+        workspaceRoot: contextWorkspace || undefined,
+        mustExist: true
+      })
+    }
+    return contextWorkspace || ws.getWorkspaceRoot() || process.cwd()
+  }
+
   public formatPermissionRequest(input: ExecCmdInput, context: ToolExecutionContext): PermissionDetails {
-    const cwd = input.cwd || context.workspacePath || process.cwd()
+    let resolvedCwd: string
+    try {
+      resolvedCwd = this.resolveWorkingDir(input.cwd, context.workspacePath)
+    } catch {
+      resolvedCwd = context.workspacePath
+        ? path.resolve(context.workspacePath, input.cwd || '.')
+        : path.resolve(input.cwd || '.')
+    }
+
+    const policy = CommandPolicy.validate(input.command, input.args)
     const fullCommand = [input.command, ...(input.args || [])].join(' ')
 
     return {
-      title: 'Execute Command',
+      title: policy.verdict === 'escalated' ? `⚠️ Execute Command (${policy.reason})` : 'Execute Command',
       description: `Run system command: "${fullCommand}"`,
       command: input.command,
       args: input.args,
-      targetPath: path.resolve(cwd)
+      targetPath: path.resolve(resolvedCwd)
     }
   }
 
   public async execute(input: ExecCmdInput, context: ToolExecutionContext): Promise<ExecCmdOutput> {
-    const cwd = input.cwd || context.workspacePath || process.cwd()
+    // 1. Validate command security policy
+    const policy = CommandPolicy.validate(input.command, input.args)
+    if (policy.verdict === 'blocked') {
+      throw new Error(`[Security Alert] Execution blocked by Command Policy: ${policy.reason}`)
+    }
+
+    // 2. Resolve and sandbox CWD
+    const cwd = this.resolveWorkingDir(input.cwd, context.workspacePath)
     const runner = AgentCommandRunner.getInstance()
 
     const result = await runner.runCommand({

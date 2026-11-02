@@ -8,6 +8,7 @@ import { PermissionBroker } from '../security/permission-broker'
 import { SecretRedactor } from '../security/secret-redactor'
 import { ConversationStore } from '../storage/conversation-store'
 import { ToctouTamperingError } from '../security/payload-hash'
+import { ToolRateLimiter } from '../security/tool-rate-limiter'
 
 export interface ToolExecutionResponse {
   success: boolean
@@ -60,8 +61,14 @@ export class ToolRegistry {
     if (name === 'file_read') {
       return this.tools.get('read_file')
     }
-    if (name === 'search_files') {
+    if (name === 'search_files' || name === 'find_files') {
       return this.tools.get('file_search')
+    }
+    if (name === 'list_dir' || name === 'list_files') {
+      return this.tools.get('list_directory')
+    }
+    if (name === 'exec_cmd' || name === 'run_command' || name === 'terminal_command') {
+      return this.tools.get('execute_command')
     }
     return undefined
   }
@@ -107,7 +114,18 @@ export class ToolRegistry {
 
     const validatedInput = parsed.data as Record<string, unknown>
 
-    // 2. Request authorization from Permission Broker
+    // 2. Sliding window tool rate limit check
+    try {
+      ToolRateLimiter.getInstance().checkAndRecord(tool.capability)
+    } catch (rateErr: any) {
+      return {
+        success: false,
+        toolName,
+        error: rateErr.message || 'Tool call rate limit exceeded'
+      }
+    }
+
+    // 3. Request authorization from Permission Broker
     const details = tool.formatPermissionRequest(validatedInput, context)
     const authReceipt = await this.broker.requestAuthorization({
       toolName: tool.name,

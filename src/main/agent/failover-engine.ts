@@ -6,6 +6,7 @@ import { classifyProviderError, NormalizedProviderError } from './error-classifi
 import { InBandDetector } from '../providers/utils/in-band-detector'
 import { formatResetEta, summarizeExhaustion, ModelExhaustionRecord } from '../providers/utils/reset-eta'
 import { ChatMessage } from '../providers/provider-adapter.interface'
+import { extractInlineToolCalls } from '../tools/builtin-tool-definitions'
 
 export interface CandidateModel {
   providerId: ProviderId
@@ -43,6 +44,7 @@ export interface FailoverExecutionOptions {
   signal?: AbortSignal
   preferredProviderId?: ProviderId
   preferredModelId?: string
+  tools?: any[]
   onToken: (chunk: { delta: string; isComplete: boolean }) => void
   onFailover?: (event: FailoverEvent) => void
 }
@@ -53,6 +55,11 @@ export interface FailoverExecutionResult {
   finalModelId: string
   wasFailoverTriggered: boolean
   failoverCount: number
+  toolCalls?: Array<{
+    id: string
+    name: string
+    arguments: string
+  }>
 }
 
 // Fallback Model Catalog for all supported adapters
@@ -618,12 +625,30 @@ export class FailoverEngine {
           model: candidate.modelId,
           messages,
           signal,
-          customEndpoint: candidate.customEndpoint
+          customEndpoint: candidate.customEndpoint,
+          tools: options.tools
         })
+
+        const accumulatedToolCalls: Map<string, { id: string; name: string; arguments: string }> = new Map()
 
         for await (const chunk of stream) {
           if (signal?.aborted) {
             throw new Error('Generation cancelled by user')
+          }
+
+          if (chunk.toolCallsDelta) {
+            for (const tc of chunk.toolCallsDelta) {
+              const key = tc.id || tc.name || 'call_0'
+              const existing = accumulatedToolCalls.get(key) || {
+                id: tc.id || key,
+                name: tc.name || '',
+                arguments: ''
+              }
+              if (tc.name) existing.name = tc.name
+              if (tc.arguments) existing.arguments += tc.arguments
+              accumulatedToolCalls.set(key, existing)
+            }
+            hasStreamedFirstByte = true
           }
 
           if (chunk.textDelta) {
@@ -644,8 +669,24 @@ export class FailoverEngine {
           }
         }
 
+        // Check for inline tool calls in text
+        const inlineCalls = extractInlineToolCalls(fullResponse)
+        const detectedToolCalls: Array<{ id: string; name: string; arguments: string }> = []
+
+        if (accumulatedToolCalls.size > 0) {
+          detectedToolCalls.push(...Array.from(accumulatedToolCalls.values()))
+        } else if (inlineCalls.length > 0) {
+          detectedToolCalls.push(
+            ...inlineCalls.map((c) => ({
+              id: c.id,
+              name: c.name,
+              arguments: JSON.stringify(c.args)
+            }))
+          )
+        }
+
         // If stream ended with 0 tokens or only empty whitespace
-        if (!hasStreamedFirstByte || !fullResponse.trim()) {
+        if (!hasStreamedFirstByte || (!fullResponse.trim() && detectedToolCalls.length === 0)) {
           throw new Error(
             `Upstream provider ${candidate.providerId} (${candidate.modelId}) closed stream without producing any response. Verify upstream quota, API key, and model availability.`
           )
@@ -661,7 +702,8 @@ export class FailoverEngine {
           finalProviderId: candidate.providerId,
           finalModelId: candidate.modelId,
           wasFailoverTriggered: failoverCount > 0,
-          failoverCount
+          failoverCount,
+          toolCalls: detectedToolCalls.length > 0 ? detectedToolCalls : undefined
         }
       } catch (err: unknown) {
         this.registry.releaseLease(candidate.credentialId)

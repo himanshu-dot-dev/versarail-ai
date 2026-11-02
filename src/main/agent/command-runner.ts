@@ -62,6 +62,42 @@ export class AgentCommandRunner {
   }
 
   /**
+   * Sanitizes process environment by stripping all credentials and API keys.
+   */
+  public static sanitizeEnvironment(customEnv?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+    const strippedKeys = new Set([
+      'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GROQ_API_KEY',
+      'CEREBRAS_API_KEY', 'GOOGLE_API_KEY', 'GEMINI_API_KEY',
+      'DEEPSEEK_API_KEY', 'MISTRAL_API_KEY', 'COHERE_API_KEY',
+      'HUGGINGFACE_API_KEY', 'HF_TOKEN', 'OPENROUTER_API_KEY',
+      'NVIDIA_API_KEY', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID',
+      'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
+      'AZURE_API_KEY', 'GCP_API_KEY', 'STRIPE_SECRET_KEY',
+      'SLACK_TOKEN', 'SLACK_BOT_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN',
+      'NPM_TOKEN', 'DOCKER_PASSWORD', 'DOCKER_TOKEN',
+      'DATABASE_URL', 'REDIS_URL', 'MONGO_URI'
+    ])
+
+    const sanitized: NodeJS.ProcessEnv = {}
+    for (const [key, value] of Object.entries(process.env)) {
+      const upperKey = key.toUpperCase()
+      if (strippedKeys.has(upperKey)) continue
+      if (/(?:SECRET|TOKEN|PASSWORD|API_?KEY|APIKEY|PRIVATE_?KEY|CREDENTIAL)/i.test(key)) continue
+      sanitized[key] = value
+    }
+
+    if (customEnv) {
+      for (const [key, value] of Object.entries(customEnv)) {
+        if (!/(?:SECRET|TOKEN|PASSWORD|API_?KEY|APIKEY|PRIVATE_?KEY|CREDENTIAL)/i.test(key)) {
+          sanitized[key] = value
+        }
+      }
+    }
+
+    return sanitized
+  }
+
+  /**
    * Executes a system command with structured arguments and strict resource bounds.
    */
   public async runCommand(options: CommandExecutionOptions): Promise<CommandExecutionResult> {
@@ -79,10 +115,7 @@ export class AgentCommandRunner {
       const useShell = isWindows && (command.endsWith('.cmd') || command.endsWith('.bat'))
 
       // Sanitize environment variables: strip secret tokens from child process environment
-      const sanitizedEnv: NodeJS.ProcessEnv = {
-        ...process.env,
-        ...(options.env || {})
-      }
+      const sanitizedEnv = AgentCommandRunner.sanitizeEnvironment(options.env)
 
       let child: ChildProcess
       try {

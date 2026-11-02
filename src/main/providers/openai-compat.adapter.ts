@@ -240,6 +240,10 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       max_tokens: request.maxTokens
     }
 
+    if (request.tools && request.tools.length > 0) {
+      payload.tools = request.tools
+    }
+
     if (this.forceSingleToolCall) {
       payload.parallel_tool_calls = false
     }

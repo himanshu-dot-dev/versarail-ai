@@ -27,7 +27,11 @@ export class ExclusionFilter {
     '.gnupg',
     '.npm',
     '.yarn',
-    '.pnpm-store'
+    '.pnpm-store',
+    '.docker',
+    '.kube',
+    '.terraform',
+    '.vault-token'
   ])
 
   // Exact file names blocked regardless of parent folder
@@ -42,7 +46,17 @@ export class ExclusionFilter {
     'credentials',
     'secrets.json',
     'secrets.yaml',
-    'secrets.yml'
+    'secrets.yml',
+    '.npmrc',
+    '.pypirc',
+    '.netrc',
+    '.htpasswd',
+    'wp-config.php',
+    'shadow',
+    'sam',
+    'system',
+    'security',
+    'docker-compose.override.yml'
   ])
 
   // File extensions blocked (private keys, certificates, keystores)
@@ -53,7 +67,8 @@ export class ExclusionFilter {
     '.pfx',
     '.keystore',
     '.jks',
-    '.der'
+    '.der',
+    '.p12'
   ])
 
   // Regex patterns matching sensitive environment and credential files
@@ -61,11 +76,17 @@ export class ExclusionFilter {
     { pattern: /^\.env(\..+)?$/i, description: 'Environment secret file (.env*)' },
     { pattern: /\.key$/i, description: 'Private key file (.key)' },
     { pattern: /\.pem$/i, description: 'Certificate or PEM private key (.pem)' },
+    { pattern: /\.p12$/i, description: 'PKCS#12 certificate bundle (.p12)' },
     { pattern: /^id_[a-z0-9_]+/i, description: 'SSH private key identifier' },
     { pattern: /(?:^|[/\\])\.git(?:[/\\]|$)/i, description: 'Git internal metadata directory' },
     { pattern: /(?:^|[/\\])\.ssh(?:[/\\]|$)/i, description: 'SSH configuration or keys directory' },
     { pattern: /(?:^|[/\\])node_modules(?:[/\\]|$)/i, description: 'Node package dependencies directory' },
-    { pattern: /(?:^|[/\\])\.aws(?:[/\\]|$)/i, description: 'AWS credentials directory' }
+    { pattern: /(?:^|[/\\])\.aws(?:[/\\]|$)/i, description: 'AWS credentials directory' },
+    { pattern: /(?:^|[/\\])\.docker(?:[/\\]|$)/i, description: 'Docker configuration and credentials' },
+    { pattern: /(?:^|[/\\])\.kube(?:[/\\]|$)/i, description: 'Kubernetes configuration and certificates' },
+    { pattern: /(?:^|[/\\])\.terraform(?:[/\\]|$)/i, description: 'Terraform state and secret files' },
+    { pattern: /(?:^|[/\\])\.config[/\\]gh[/\\]/i, description: 'GitHub CLI credentials' },
+    { pattern: /(?:^|[/\\])\.config[/\\]gcloud[/\\]/i, description: 'Google Cloud SDK credentials' }
   ]
 
   private static customRules: CustomExclusionRule[] = []

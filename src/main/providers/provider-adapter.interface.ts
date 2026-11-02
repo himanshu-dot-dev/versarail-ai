@@ -8,8 +8,10 @@ export interface KeyValidationResult {
 }
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
+  role: 'system' | 'user' | 'assistant' | 'tool'
   content: string
+  name?: string
+  tool_call_id?: string
 }
 
 export interface ChatCompletionRequest {
@@ -20,6 +22,7 @@ export interface ChatCompletionRequest {
   maxTokens?: number
   signal?: AbortSignal
   customEndpoint?: string
+  tools?: any[]
 }
 
 export interface StreamChunk {

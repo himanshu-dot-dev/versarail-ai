@@ -1,12 +1,13 @@
 import { z } from 'zod'
 import * as fs from 'fs/promises'
+import * as syncFs from 'fs'
 import * as path from 'path'
 import { ITool, ToolExecutionContext, PermissionDetails } from '../tool.interface'
 import { WorkspaceService } from '../../workspace/workspace-service'
 
 export const WriteFileInputSchema = z.object({
   path: z.string().min(1, 'File path is required'),
-  content: z.string()
+  content: z.string().max(1_048_576, 'File write content exceeds 1MB safety buffer limit')
 })
 
 export type WriteFileInput = z.infer<typeof WriteFileInputSchema>
@@ -42,7 +43,30 @@ export class WriteFileTool implements ITool<WriteFileInput, WriteFileOutput> {
         : path.resolve(input.path)
     }
 
+    const fileExists = syncFs.existsSync(resolvedPath)
     const byteLen = Buffer.byteLength(input.content, 'utf8')
+
+    if (fileExists) {
+      let existingPreview = ''
+      try {
+        const existingData = syncFs.readFileSync(resolvedPath, 'utf8')
+        const existingLines = existingData.split('\n').slice(0, 8).map((l) => `- ${l}`).join('\n')
+        existingPreview = existingLines
+      } catch {
+        existingPreview = '- [Could not read existing file content]'
+      }
+
+      const newLines = input.content.split('\n').slice(0, 8).map((l) => `+ ${l}`).join('\n')
+      const diffPreview = `--- EXISTING ---\n${existingPreview}\n\n+++ PROPOSED NEW CONTENT +++\n${newLines}`
+
+      return {
+        title: '⚠️ Overwrite Existing File',
+        description: `Overwrite existing file "${input.path}" (${byteLen} bytes new content)`,
+        targetPath: resolvedPath,
+        diffPreview
+      }
+    }
+
     const previewLines = input.content.split('\n').slice(0, 10).map((l) => `+ ${l}`).join('\n')
     const diffPreview =
       input.content.split('\n').length > 10
@@ -50,8 +74,8 @@ export class WriteFileTool implements ITool<WriteFileInput, WriteFileOutput> {
         : previewLines
 
     return {
-      title: 'Write File',
-      description: `Write ${byteLen} bytes to "${input.path}"`,
+      title: 'Create New File',
+      description: `Create new file "${input.path}" (${byteLen} bytes)`,
       targetPath: resolvedPath,
       diffPreview
     }

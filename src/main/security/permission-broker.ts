@@ -99,29 +99,35 @@ export class PermissionBroker {
   ): Promise<AuthorizationResult> {
     const payloadHash = computePayloadHash(request.toolName, request.rawArguments)
 
-    // 1. Check in-memory session approvals cache
-    const sessionKey = `${request.capability}:${payloadHash}`
-    if (this.sessionApprovals.has(sessionKey)) {
-      return {
-        granted: true,
-        requestId: `session-${randomUUID()}`,
-        payloadHash,
-        scope: 'session'
+    // Check if this capability is a mutating operation (file write/update or command execution)
+    // Core Security Policy: Read-only operations auto-approve/cache; mutating operations MUST always get explicit authorization
+    const isMutatingCapability = ['fs:write', 'cmd:exec'].includes(request.capability)
+
+    if (!isMutatingCapability) {
+      // 1. Check session-level cache (only for non-mutating/read operations)
+      const sessionKey = `${request.capability}:${payloadHash}`
+      if (this.sessionApprovals.has(sessionKey)) {
+        return {
+          granted: true,
+          requestId: `session-${randomUUID()}`,
+          payloadHash,
+          scope: 'session'
+        }
+      }
+
+      // 2. Check persistent approvals (only for non-mutating/read operations)
+      const persistentApproved = this.checkPersistentApproval(request.capability, payloadHash)
+      if (persistentApproved) {
+        return {
+          granted: true,
+          requestId: `always-${randomUUID()}`,
+          payloadHash,
+          scope: 'always'
+        }
       }
     }
 
-    // 2. Check persistent approvals from SQLite ('always' scope)
-    const persistentApproved = this.checkPersistentApproval(request.capability, payloadHash)
-    if (persistentApproved) {
-      return {
-        granted: true,
-        requestId: `always-${randomUUID()}`,
-        payloadHash,
-        scope: 'always'
-      }
-    }
-
-    // 3. Construct Permission Request DTO
+    // 3. Construct DTO for approval
     const requestId = randomUUID()
     const requestDTO: PermissionRequestDTO = {
       requestId,
@@ -140,6 +146,16 @@ export class PermissionBroker {
     if (this.testAuthorizer) {
       const response = await this.testAuthorizer(requestDTO)
       return this.processDecision(requestDTO, response)
+    }
+
+    // 5. Auto-approve ONLY low-risk read-only inspection operations in production runs
+    if (request.riskLevel === 'low' && !isMutatingCapability) {
+      return {
+        granted: true,
+        requestId: `auto-${randomUUID()}`,
+        payloadHash,
+        scope: 'session'
+      }
     }
 
     // 5. Dispatch request to renderer over IPC
@@ -226,7 +242,10 @@ export class PermissionBroker {
     )
 
     if (isGranted) {
-      if (scope === 'session' || scope === 'always') {
+      const isMutatingCapability = ['fs:write', 'cmd:exec'].includes(request.capability)
+      // Only cache session approvals for non-mutating/read operations.
+      // Every write or command execution must be explicitly confirmed by the user.
+      if (!isMutatingCapability && (scope === 'session' || scope === 'always')) {
         const sessionKey = `${request.capability}:${request.payloadHash}`
         this.sessionApprovals.add(sessionKey)
       }
