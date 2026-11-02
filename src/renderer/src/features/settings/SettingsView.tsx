@@ -192,16 +192,6 @@ export const SettingsView: React.FC = () => {
               )
             })}
           </nav>
-
-          <div className="mt-auto p-space-md rounded-lg bg-surface-container flex flex-col gap-space-xs border border-outline-variant">
-            <div className="flex items-center gap-space-sm">
-              <Icon name="info" size={16} className="text-tertiary" />
-              <span className="text-label-sm text-on-surface font-semibold text-xs">VersaRail Engine</span>
-            </div>
-            <p className="text-body-sm text-on-surface-variant text-[11px] font-mono">
-              v0.1.0-alpha (Electron 45 / Node 24)
-            </p>
-          </div>
         </aside>
 
         {/* Form Content Area */}

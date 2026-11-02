@@ -30,7 +30,6 @@ export const Sidebar: React.FC = () => {
     setActiveView,
     workspace,
     selectWorkspaceFolder,
-    connectedModel,
     activeConversationId,
     setActiveConversationId,
     conversations,
@@ -217,25 +216,11 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Sidebar Footer: Connected Model Telemetry & Settings */}
-      <div className="px-space-md pt-space-md border-t border-border-subtle flex items-center justify-between shrink-0">
-        <div
-          className="flex items-center gap-space-sm min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => setActiveView('ai-providers')}
-          title="Click to manage AI Providers"
-        >
-          <span
-            className={`w-2 h-2 rounded-full shrink-0 ${connectedModel.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-error'
-              }`}
-          />
-          <span className="text-[11px] text-on-surface-variant truncate font-mono max-w-[150px]">
-            {connectedModel.name}
-          </span>
-        </div>
-
+      {/* Sidebar Footer: Settings */}
+      <div className="px-space-md pt-space-md border-t border-border-subtle flex items-center justify-end shrink-0">
         <button
           onClick={() => setActiveView('settings')}
-          className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 transition-colors"
+          className="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 transition-colors cursor-pointer"
           title="Open Settings"
         >
           <Icon name="person" size={15} className="text-on-surface-variant hover:text-on-surface" />

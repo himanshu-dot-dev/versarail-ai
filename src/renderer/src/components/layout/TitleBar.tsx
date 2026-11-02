@@ -6,7 +6,7 @@ export const TitleBar: React.FC = () => {
 
   useEffect(() => {
     if (window.electronApi?.isWindowMaximized) {
-      window.electronApi.isWindowMaximized().then(setIsMaximized).catch(() => {})
+      window.electronApi.isWindowMaximized().then(setIsMaximized).catch(() => { })
     }
   }, [])
 
@@ -35,9 +35,6 @@ export const TitleBar: React.FC = () => {
         </div>
         <span className="font-headline-sm text-on-surface text-xs font-semibold tracking-wide">
           VersaRail AI
-        </span>
-        <span className="text-[10px] text-tertiary font-mono px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant">
-          DESKTOP
         </span>
       </div>
 
