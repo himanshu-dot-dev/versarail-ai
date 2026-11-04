@@ -103,6 +103,25 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_tool_calls_run ON tool_calls(run_id);
       CREATE INDEX IF NOT EXISTS idx_file_changes_workspace ON file_changes_journal(workspace_path);
     `
+  },
+  {
+    version: 2,
+    name: '002_provider_health',
+    up: `
+      CREATE TABLE IF NOT EXISTS provider_health (
+        key_id TEXT PRIMARY KEY,
+        provider_id TEXT NOT NULL,
+        model_id TEXT,
+        status TEXT NOT NULL DEFAULT 'ok',
+        strikes INTEGER NOT NULL DEFAULT 0,
+        cooldown_until INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        last_used_at INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_provider_health_status ON provider_health(status);
+      CREATE INDEX IF NOT EXISTS idx_provider_health_provider ON provider_health(provider_id);
+    `
   }
 ]
 

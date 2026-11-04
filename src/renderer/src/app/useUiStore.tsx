@@ -125,9 +125,9 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setWorkspace({ path: null, name: null })
   }
   const [connectedModel, setConnectedModel] = useState<ConnectedModelInfo>({
-    name: 'kilo-auto/free',
-    provider: 'Kilo Gateway (Free)',
-    providerId: 'kilo',
+    name: 'AI Agent (Auto-Switch)',
+    provider: 'Universal AI Agent',
+    providerId: 'auto',
     isConnected: true
   })
   const [hasActiveRun, setHasActiveRun] = useState(false)

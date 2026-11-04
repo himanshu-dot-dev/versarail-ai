@@ -48,6 +48,8 @@ export interface FailoverExecutionOptions {
   tools?: any[]
   onToken: (chunk: { delta: string; isComplete: boolean }) => void
   onFailover?: (event: FailoverEvent) => void
+  onWaiting?: (info: { waitMs: number; resumesAt: string; reason: string }) => void
+  _retryCount?: number
 }
 
 export interface FailoverExecutionResult {
@@ -468,6 +470,11 @@ export class FailoverEngine {
       }
 
       for (const m of availableModels) {
+        // Virtual free policy: when auto/free is requested, enforce free tier availability
+        if (options.preferredModelId === 'auto/free' && m.isFreeTierAvailable === false) {
+          continue
+        }
+
         // Pre-Flight Context Floor Filtering:
         // Skip models whose usable context cannot fit the prompt
         if (estimatedTokens > 0 && !this.registry.passesContextWindowFloor(estimatedTokens, m)) {
@@ -492,10 +499,16 @@ export class FailoverEngine {
     }
 
     // Sort Candidates:
-    // 1. User preferred model first
+    // 1. User preferred model first (if not an auto virtual model policy)
     // 2. Candidates not in cooldown before candidates currently in cooldown
-    // 3. Provider priority preference (Gemini/Groq -> Cerebras -> OpenRouter)
+    // 3. Provider-level LRU rotation across active healthy providers for auto/free mesh
+    // 4. Provider priority preference (Gemini/Groq -> Cerebras -> Nvidia -> Mistral...)
     const now = Date.now()
+    const isAutoPolicy =
+      (options.preferredProviderId as string) === 'auto' ||
+      (options.preferredProviderId as string) === 'universal' ||
+      (!options.preferredProviderId && options.preferredModelId?.startsWith('auto/'))
+
     const providerPriority: Record<ProviderId, number> = {
       gemini: 1,
       groq: 2,
@@ -513,13 +526,15 @@ export class FailoverEngine {
     }
 
     return rawCandidates.sort((a, b) => {
-      // 1. User preference match
-      const aIsPreferred = a.providerId === options.preferredProviderId && a.modelId === options.preferredModelId
-      const bIsPreferred = b.providerId === options.preferredProviderId && b.modelId === options.preferredModelId
-      if (aIsPreferred && !bIsPreferred) return -1
-      if (!aIsPreferred && bIsPreferred) return 1
+      // 1. User explicit preference match (only if not an auto policy)
+      if (!isAutoPolicy) {
+        const aIsPreferred = a.providerId === options.preferredProviderId && a.modelId === options.preferredModelId
+        const bIsPreferred = b.providerId === options.preferredProviderId && b.modelId === options.preferredModelId
+        if (aIsPreferred && !bIsPreferred) return -1
+        if (!aIsPreferred && bIsPreferred) return 1
+      }
 
-      // 2. Cooldown check
+      // 2. Cooldown check: healthy candidates before cooling candidates
       const aCooldown = this.registry.getCooldownExpiry(a.credentialId, a.modelId)
       const bCooldown = this.registry.getCooldownExpiry(b.credentialId, b.modelId)
       const aInCooldown = aCooldown !== null && aCooldown > now
@@ -528,7 +543,18 @@ export class FailoverEngine {
       if (!aInCooldown && bInCooldown) return -1
       if (aInCooldown && !bInCooldown) return 1
 
-      // 3. Provider priority
+      // 3. For auto policies among healthy candidates: Provider-level LRU rotation!
+      if (isAutoPolicy && !aInCooldown && !bInCooldown) {
+        if (a.providerId !== b.providerId) {
+          const aUsed = this.registry.getProviderLastUsed(a.providerId)
+          const bUsed = this.registry.getProviderLastUsed(b.providerId)
+          if (aUsed !== bUsed) {
+            return aUsed - bUsed // Least recently used provider first
+          }
+        }
+      }
+
+      // 4. Provider priority
       const aPrio = providerPriority[a.providerId] ?? 99
       const bPrio = providerPriority[b.providerId] ?? 99
       return aPrio - bPrio
@@ -687,6 +713,7 @@ export class FailoverEngine {
         // Successfully completed stream
         this.registry.releaseLease(candidate.credentialId)
         this.registry.clearCooldown(candidate.credentialId, candidate.modelId)
+        this.registry.recordProviderUsage(candidate.providerId)
         // Only signal completion if no more tool calls need to be processed
         onToken({ delta: '', isComplete: detectedToolCalls.length === 0 })
 
@@ -779,7 +806,64 @@ export class FailoverEngine {
       }
     }
 
-    // All candidate models exhausted
+    // Check for The All-Cooling Wait State:
+    // If all candidates failed because of rate limits or cooldowns, do not kill the task!
+    // Sleep until the earliest cooldown expires, then retry automatically.
+    const retryCount = options._retryCount || 0
+    const allCooling =
+      exhaustionRecords.length > 0 &&
+      exhaustionRecords.every((r) => r.reason === 'cooldown' || r.reason === 'rate_limit')
+
+    const resetTimes = exhaustionRecords
+      .map((r) => r.resetAt)
+      .filter((t): t is number => typeof t === 'number' && !isNaN(t))
+
+    if (allCooling && retryCount < 2 && !signal?.aborted && resetTimes.length > 0) {
+      const minResetAt = Math.min(...resetTimes)
+      const waitMs = minResetAt - Date.now()
+      const effectiveWaitMs = Math.max(0, waitMs)
+      const MAX_WAIT_MS = 60_000 // wait up to 60 seconds
+
+      if (effectiveWaitMs <= MAX_WAIT_MS) {
+        const waitSec = Math.max(1, Math.ceil(effectiveWaitMs / 1000))
+        console.warn(
+          `[FailoverEngine] All providers temporarily cooling. Pausing for ${waitSec}s until reset at ${new Date(minResetAt).toLocaleTimeString()}...`
+        )
+
+        const waitNotice = `\n\n> ⏳ **Rate limit cooldown:** Upstream rate limits reached. Resuming automatically in ${waitSec}s...\n\n`
+        onToken({ delta: waitNotice, isComplete: false })
+
+        if (options.onWaiting) {
+          options.onWaiting({
+            waitMs: effectiveWaitMs,
+            resumesAt: new Date(minResetAt).toLocaleTimeString(),
+            reason: 'All candidate models cooling'
+          })
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, effectiveWaitMs + 300)
+          if (signal) {
+            signal.addEventListener(
+              'abort',
+              () => {
+                clearTimeout(timer)
+                reject(new Error('Generation cancelled by user'))
+              },
+              { once: true }
+            )
+          }
+        })
+
+        // Retry streaming with refreshed candidate list / cooldown states
+        return this.executeStreaming({
+          ...options,
+          _retryCount: retryCount + 1
+        })
+      }
+    }
+
+    // All candidate models exhausted and cannot wait
     const exhaustionMessage = summarizeExhaustion(exhaustionRecords)
     throw new Error(exhaustionMessage)
   }

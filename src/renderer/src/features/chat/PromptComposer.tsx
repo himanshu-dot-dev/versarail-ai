@@ -172,12 +172,15 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
     setModelSearch('')
   }
 
-  const handleSelectAutoMode = () => {
-    handleSelectModel({
-      id: 'auto/gpt',
-      name: 'auto/gpt',
-      providerId: 'custom'
+  const handleSelectAutoMode = (policy: string = 'auto/free') => {
+    setConnectedModel({
+      name: policy === 'auto/free' ? 'AI Agent (Auto-Switch)' : policy,
+      provider: 'Universal AI Agent',
+      providerId: 'auto',
+      isConnected: true
     })
+    setIsModelOpen(false)
+    setModelSearch('')
   }
 
   const handleSend = () => {
@@ -216,7 +219,10 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
     }
   }
 
-  const isAutoModeActive = connectedModel.name.startsWith('auto/')
+  const isAutoModeActive =
+    connectedModel.providerId === 'auto' ||
+    connectedModel.name.startsWith('auto/') ||
+    connectedModel.name.includes('(Auto')
 
   return (
     <div className="p-space-xl bg-surface-dim border-t border-border-subtle shrink-0 relative">
@@ -250,7 +256,11 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
           onKeyDown={handleKeyDown}
           disabled={disabled}
           className="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/70 resize-none focus:outline-none text-body-lg min-h-[44px]"
-          placeholder={`Ask ${connectedModel.name} to modify code, run tests, or type @ to mention files... (Enter to send)`}
+          placeholder={
+            isAutoModeActive
+              ? 'Ask AI Agent to modify code, run tests, or type @ to mention files... (Enter to send)'
+              : `Ask ${connectedModel.name} to modify code, run tests, or type @ to mention files... (Enter to send)`
+          }
           rows={2}
         />
 
@@ -284,15 +294,15 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                     ? 'bg-primary-container/30 border-primary/40 text-primary hover:bg-primary-container/50'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high border-outline-variant'
                 }`}
-                title="Click to switch model or enable OmniRoute Auto-Switch"
+                title="Click to switch model or enable Universal AI Agent Auto-Switch"
               >
                 <Icon
                   name={isAutoModeActive ? 'bolt' : 'smart_toy'}
                   size={14}
                   className={isAutoModeActive ? 'text-primary' : 'text-tertiary'}
                 />
-                <span className="font-mono text-xs max-w-[160px] truncate">
-                  {isAutoModeActive ? `Auto: ${connectedModel.name}` : connectedModel.name}
+                <span className="font-mono text-xs max-w-[170px] truncate">
+                  {isAutoModeActive ? 'AI Agent (Auto-Switch)' : connectedModel.name}
                 </span>
                 <Icon name="arrow_drop_down" size={14} className="text-on-surface-variant" />
               </button>
@@ -344,9 +354,9 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                   <div className="p-space-sm bg-primary/10 border-b border-primary/20">
                     <button
                       type="button"
-                      onClick={handleSelectAutoMode}
+                      onClick={() => handleSelectAutoMode('auto/free')}
                       className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer ${
-                        connectedModel.name === 'auto/gpt' || connectedModel.name === 'auto/best-coding'
+                        isAutoModeActive
                           ? 'bg-primary text-on-primary font-medium shadow-sm'
                           : 'hover:bg-primary/15 text-primary'
                       }`}
@@ -354,14 +364,14 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                       <div className="flex items-center gap-2 min-w-0">
                         <Icon name="bolt" size={16} />
                         <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold truncate">Auto-Switch (Gateway Auto Route)</span>
+                          <span className="text-xs font-bold truncate">AI Agent (Universal Free Mesh)</span>
                           <span className="text-[10px] opacity-80 truncate">
-                            Automatic gateway fallback across all providers
+                            Auto-switches across Gemini, Mistral, Groq, Cerebras & Kilo
                           </span>
                         </div>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded font-mono border border-current shrink-0">
-                        Auto Active
+                        {isAutoModeActive ? 'Active' : 'Enable'}
                       </span>
                     </button>
                   </div>

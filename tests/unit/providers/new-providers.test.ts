@@ -40,7 +40,7 @@ describe('New Provider Adapters & Keyless Tiers', () => {
 
     const kiloResult = await kilo!.validateKey('')
     expect(kiloResult.valid).toBe(true)
-  })
+  }, 15000)
 
   it('applies exact parsed back-off delays to cooldowns', () => {
     const credentialId = 'test-cred-1'

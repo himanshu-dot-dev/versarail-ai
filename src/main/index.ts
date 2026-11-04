@@ -5,11 +5,23 @@ import { createMainWindow } from './app/window-manager'
 import { registerIpcHandlers } from './ipc/ipc-router'
 import { SqliteDatabase } from './storage/sqlite-database'
 
+// Configure isolated user data directory if specified (e.g. for Playwright or e2e tests)
+const customUserDataArg = process.argv.find((a) => a.startsWith('--user-data-dir='))
+if (customUserDataArg) {
+  const customPath = customUserDataArg.split('=')[1]
+  if (customPath) {
+    app.setPath('userData', customPath)
+  }
+} else if (process.env.HARNESS_USER_DATA_DIR) {
+  app.setPath('userData', process.env.HARNESS_USER_DATA_DIR)
+}
+
 // 1. Register custom 'app://' protocol before app is ready
 registerCustomProtocol()
 
-// 2. Enforce Single-Instance Lock
-const gotTheLock = app.requestSingleInstanceLock()
+// 2. Enforce Single-Instance Lock (bypass in automated test mode to prevent test-runner collision)
+const isTestMode = process.env.HARNESS_TEST_MODE === '1' || process.argv.includes('--test-mode')
+const gotTheLock = isTestMode || app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   console.warn('[App] Another instance is already running. Terminating.')

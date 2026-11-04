@@ -265,4 +265,70 @@ export class ContextManager {
     `)
     stmt.run(JSON.stringify(settings), now)
   }
+
+  /**
+   * Calculates the safe context floor across a pool of candidate models.
+   * Budgets context to 75% of the minimum candidate context window.
+   */
+  public calculatePoolContextFloor(
+    candidates: Array<{ contextWindow: number }>,
+    fallbackMax = 32_000
+  ): number {
+    if (!candidates || candidates.length === 0) return fallbackMax
+    const minWindow = Math.min(...candidates.map((c) => c.contextWindow))
+    return Math.max(Math.floor(minWindow * 0.75), 8_000)
+  }
+
+  /**
+   * Compacts tool execution loop messages when tokens exceed the pool context floor.
+   * Slashes old tool outputs to lightweight markers while preserving system prompt
+   * and recent steps.
+   */
+  public compactToolLoopContext(
+    messages: ContextMessage[],
+    contextFloor: number
+  ): ContextMessage[] {
+    const currentTokens = this.estimateMessagesTokens(messages)
+    if (currentTokens <= contextFloor || messages.length <= 3) {
+      return messages
+    }
+
+    const systemMsg = messages[0].role === 'system' ? messages[0] : null
+    const nonSystem = messages.filter((m) => m.role !== 'system')
+
+    // Preserve the latest 2 turns intact
+    const recentTurnsCount = 2
+    const olderTurns = nonSystem.slice(0, Math.max(0, nonSystem.length - recentTurnsCount))
+    const recentTurns = nonSystem.slice(Math.max(0, nonSystem.length - recentTurnsCount))
+
+    // Step 1: Prune verbose tool outputs in older turns
+    const prunedOlder = olderTurns.map((msg) => {
+      if (msg.role === 'user' && msg.content.startsWith('[Tool Output for')) {
+        const header = msg.content.split('\n')[0]
+        return {
+          role: msg.role,
+          content: `${header}\n[Tool result content cleared for context economy]\n`
+        }
+      }
+      return msg
+    })
+
+    const candidateResult = [
+      ...(systemMsg ? [systemMsg] : []),
+      ...prunedOlder,
+      ...recentTurns
+    ]
+
+    if (this.estimateMessagesTokens(candidateResult) <= contextFloor) {
+      return candidateResult
+    }
+
+    // Step 2: If still overflowing, summarize pruned older turns into a pinned milestone
+    const summarizedSummary = `[Context Compaction Milestone: ${olderTurns.length} earlier tool turns summarized to fit ${contextFloor} token floor]`
+    return [
+      ...(systemMsg ? [systemMsg] : []),
+      { role: 'system', content: summarizedSummary },
+      ...recentTurns
+    ]
+  }
 }

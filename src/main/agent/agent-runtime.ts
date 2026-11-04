@@ -7,6 +7,7 @@ import { BUILTIN_TOOL_DEFINITIONS } from '../tools/builtin-tool-definitions'
 import { ToolRegistry } from '../tools/tool-registry'
 import { WorkspaceService } from '../workspace/workspace-service'
 import { randomUUID } from 'crypto'
+import { powerSaveBlocker } from 'electron'
 
 export interface AgentRunOptions {
   conversationId: string
@@ -139,7 +140,7 @@ export class AgentRuntime {
 
     // Prepend or refresh Agent System Prompt with active workspace context
     const systemPrompt = buildAgentSystemPrompt(effectiveWorkspace)
-    const contextMessages = [...budgeted.messages]
+    let contextMessages = [...budgeted.messages]
     if (contextMessages.length === 0 || contextMessages[0].role !== 'system') {
       contextMessages.unshift({
         role: 'system',
@@ -153,22 +154,50 @@ export class AgentRuntime {
     }
 
     let finalProvider = options.providerId
+    let powerSaveBlockerId: number | null = null
+    try {
+      if (typeof powerSaveBlocker?.start === 'function') {
+        powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension')
+      }
+    } catch {
+      // In tests or headless environments, ignore
+    }
 
     try {
-      // 4. Stream response using Multi-Turn Agent Tool Execution Loop
+      // 4. Stream response using Multi-Turn Agent Tool Execution Loop (up to 25 steps)
       const toolRegistry = ToolRegistry.getInstance()
-      const MAX_TOOL_STEPS = 5
+      const MAX_TOOL_STEPS = 25
       let currentStep = 0
       let lastResponse = ''
       let accumulatedDisplayResponse = ''
       let activeModelId = options.modelId
+      let taskCompleted = false
 
       while (currentStep < MAX_TOOL_STEPS) {
         currentStep++
 
+        // 1. Dynamic candidate resolution on each step: respects latest cooldowns & LRU
+        const currentTokens = contextManager.estimateMessagesTokens(contextMessages)
+        const dynamicCandidates = this.failoverEngine.getCandidateModels({
+          preferredProviderId: options.providerId,
+          preferredModelId: activeModelId || options.modelId,
+          estimatedPromptTokens: currentTokens,
+          allowedProviders: effectiveAllowed
+        })
+        const candidatesForStep = dynamicCandidates.length > 0 ? dynamicCandidates : candidates
+
+        // 2. Pool-aware context compaction: budget context against 75% of minimum candidate context window
+        const poolFloor = contextManager.calculatePoolContextFloor(
+          candidatesForStep,
+          privacy.contextWindowBudgetTokens
+        )
+        if (currentTokens > poolFloor) {
+          contextMessages = contextManager.compactToolLoopContext(contextMessages, poolFloor)
+        }
+
         const streamResult = await this.failoverEngine.executeStreaming({
           runId,
-          candidates,
+          candidates: candidatesForStep,
           messages: contextMessages,
           tools: BUILTIN_TOOL_DEFINITIONS,
           signal: abortController.signal,
@@ -202,6 +231,30 @@ export class AgentRuntime {
           let safetyTriggered = false
 
           for (const call of streamResult.toolCalls) {
+            let parsedArgs: Record<string, unknown> = {}
+            try {
+              parsedArgs =
+                typeof call.arguments === 'string'
+                  ? JSON.parse(call.arguments)
+                  : (call.arguments as Record<string, unknown>) || {}
+            } catch {
+              parsedArgs = {}
+            }
+
+            // Completion Contract: task_complete tool signals task is finished
+            if (call.name === 'task_complete') {
+              const summary = (parsedArgs.summary as string) || 'Task completed successfully.'
+              const taskDoneNotice = `\n\n> 🎯 **Task Complete:** ${summary}\n`
+              accumulatedDisplayResponse += taskDoneNotice
+              options.onToken({
+                runId,
+                delta: taskDoneNotice,
+                isComplete: false
+              })
+              taskCompleted = true
+              break
+            }
+
             const toolObj = toolRegistry.getTool(call.name)
             if (toolObj && ['fs:write', 'cmd:exec'].includes(toolObj.capability)) {
               destructiveOpsThisTurn++
@@ -217,16 +270,6 @@ export class AgentRuntime {
               })
               safetyTriggered = true
               break
-            }
-
-            let parsedArgs: Record<string, unknown> = {}
-            try {
-              parsedArgs =
-                typeof call.arguments === 'string'
-                  ? JSON.parse(call.arguments)
-                  : (call.arguments as Record<string, unknown>) || {}
-            } catch {
-              parsedArgs = {}
             }
 
             const actionMsg = `\n\n> ⚙️ **Action:** Executing tool \`${call.name}\`...\n`
@@ -276,7 +319,8 @@ export class AgentRuntime {
               content: `[Tool Output for ${call.name}]:\n${resultFormatted}\n\nPlease proceed to inspect this output and continue answering the user's request.`
             })
           }
-          if (safetyTriggered) {
+
+          if (taskCompleted || safetyTriggered) {
             break
           }
           // Continue to next turn in tool execution loop
@@ -323,6 +367,13 @@ export class AgentRuntime {
 
       throw err
     } finally {
+      if (powerSaveBlockerId !== null && typeof powerSaveBlocker?.stop === 'function') {
+        try {
+          powerSaveBlocker.stop(powerSaveBlockerId)
+        } catch {
+          // Ignore
+        }
+      }
       this.activeRuns.delete(runId)
     }
   }

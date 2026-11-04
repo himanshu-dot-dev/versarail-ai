@@ -305,9 +305,13 @@ export const ChatView: React.FC = () => {
 
     try {
       if (window.electronApi?.sendPrompt) {
-        // Map connected provider name to ID
-        const providerId = (connectedModel.providerId as string) || (connectedModel.provider.toLowerCase().includes('groq') ? 'groq' : 'gemini')
-        const modelId = connectedModel.name || (providerId === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-2.5-flash')
+        // Resolve provider and model ID (support universal AI Agent auto-switch)
+        const isAuto =
+          connectedModel.providerId === 'auto' ||
+          connectedModel.name.includes('(Auto') ||
+          connectedModel.name.startsWith('auto/')
+        const providerId = isAuto ? 'auto' : (connectedModel.providerId as string) || 'gemini'
+        const modelId = isAuto ? (connectedModel.name.startsWith('auto/') ? connectedModel.name : 'auto/free') : connectedModel.name
 
         const result = await window.electronApi.sendPrompt({
           conversationId: activeConversationId,
@@ -645,9 +649,14 @@ export const ChatView: React.FC = () => {
                 <div className="flex flex-col gap-space-xs flex-1 min-w-0">
                   <div className="flex items-center gap-space-sm">
                     <span className="font-headline-sm text-on-surface font-semibold text-xs">
-                      {isUser ? 'You' : msg.model || connectedModel.name}
+                      {isUser ? 'You' : 'AI Agent'}
                     </span>
                     <span className="text-[10px] text-on-surface-variant font-mono">{msg.time}</span>
+                    {!isUser && msg.model && msg.model !== 'AI Agent' && (
+                      <span className="text-[9.5px] text-on-surface-variant/70 font-mono bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/30">
+                        {msg.model}
+                      </span>
+                    )}
                     {!isUser && isStreaming && msg.isStreaming && (
                       <span className="text-[10px] text-tertiary font-mono animate-pulse">
                         Streaming...

@@ -130,6 +130,50 @@ export const BUILTIN_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
         required: ['command']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'edit_file',
+      description:
+        'Surgically replaces a specific contiguous block of text (targetContent) with new content (replacementContent) in a workspace file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Relative path of the file to edit.'
+          },
+          targetContent: {
+            type: 'string',
+            description: 'The exact string block to find and replace. Must match existing text in the file.'
+          },
+          replacementContent: {
+            type: 'string',
+            description: 'The new string to replace targetContent with.'
+          }
+        },
+        required: ['path', 'targetContent', 'replacementContent']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'task_complete',
+      description:
+        'Call this tool when you have fully completed the user request and all verifications or edits are finished.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: {
+            type: 'string',
+            description: 'A concise summary of all changes, actions taken, and final result for the user.'
+          }
+        },
+        required: ['summary']
+      }
+    }
   }
 ]
 

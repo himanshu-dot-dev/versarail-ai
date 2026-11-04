@@ -54,8 +54,8 @@ export const InspectorPanel: React.FC = () => {
   }
 
   const query = fileFilter.toLowerCase().trim()
-  const filteredDirs = workspaceTree?.dirs.filter((d) => d.toLowerCase().includes(query)) || []
-  const filteredFiles = workspaceTree?.files.filter((f) => f.toLowerCase().includes(query)) || []
+  const filteredDirs = workspaceTree?.dirs?.filter((d) => d.toLowerCase().includes(query)) || []
+  const filteredFiles = workspaceTree?.files?.filter((f) => f.toLowerCase().includes(query)) || []
 
   if (!isInspectorOpen) {
     return (

@@ -2,6 +2,8 @@ import { ITool, ToolExecutionContext } from './tool.interface'
 import { ReadFileTool } from './builtin/read-file.tool'
 import { FileSearchTool } from './builtin/file-search-tool'
 import { WriteFileTool } from './builtin/write-file.tool'
+import { EditFileTool } from './builtin/edit-file.tool'
+import { TaskCompleteTool } from './builtin/task-complete.tool'
 import { ListDirTool } from './builtin/list-dir.tool'
 import { ExecCmdTool } from './builtin/exec-cmd.tool'
 import { PermissionBroker } from '../security/permission-broker'
@@ -45,6 +47,8 @@ export class ToolRegistry {
     this.registerTool(new ReadFileTool())
     this.registerTool(new FileSearchTool())
     this.registerTool(new WriteFileTool())
+    this.registerTool(new EditFileTool())
+    this.registerTool(new TaskCompleteTool())
     this.registerTool(new ListDirTool())
     this.registerTool(new ExecCmdTool())
   }
@@ -61,6 +65,9 @@ export class ToolRegistry {
     if (name === 'file_read') {
       return this.tools.get('read_file')
     }
+    if (name === 'file_edit' || name === 'modify_file' || name === 'patch_file') {
+      return this.tools.get('edit_file')
+    }
     if (name === 'search_files' || name === 'find_files') {
       return this.tools.get('file_search')
     }
@@ -69,6 +76,9 @@ export class ToolRegistry {
     }
     if (name === 'exec_cmd' || name === 'run_command' || name === 'terminal_command') {
       return this.tools.get('execute_command')
+    }
+    if (name === 'complete_task' || name === 'finish_task') {
+      return this.tools.get('task_complete')
     }
     return undefined
   }
