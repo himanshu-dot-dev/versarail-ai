@@ -17,11 +17,67 @@ interface ChatMessageItem {
   error?: string
 }
 
+const InlineFormattedText: React.FC<{ text: string }> = ({ text }) => {
+  // Parse inline `code` and **bold**
+  const tokens = useMemo(() => {
+    const inlineRegex = /(`[^`]+`|\*\*[^*]+\*\*)/g
+    const res: Array<{ type: 'text' | 'code' | 'bold'; value: string }> = []
+    let last = 0
+    let m: RegExpExecArray | null
+    while ((m = inlineRegex.exec(text)) !== null) {
+      if (m.index > last) {
+        res.push({ type: 'text', value: text.slice(last, m.index) })
+      }
+      const raw = m[0]
+      if (raw.startsWith('`') && raw.endsWith('`')) {
+        res.push({ type: 'code', value: raw.slice(1, -1) })
+      } else if (raw.startsWith('**') && raw.endsWith('**')) {
+        res.push({ type: 'bold', value: raw.slice(2, -2) })
+      }
+      last = m.index + raw.length
+    }
+    if (last < text.length) {
+      res.push({ type: 'text', value: text.slice(last) })
+    }
+    return res
+  }, [text])
+
+  return (
+    <span className="select-text cursor-text">
+      {tokens.map((token, idx) => {
+        if (token.type === 'code') {
+          return (
+            <code
+              key={idx}
+              className="px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-mono text-[11px] select-text cursor-text border border-outline-variant/40 mx-0.5"
+            >
+              {token.value}
+            </code>
+          )
+        }
+        if (token.type === 'bold') {
+          return (
+            <strong key={idx} className="font-semibold text-on-surface select-text cursor-text">
+              {token.value}
+            </strong>
+          )
+        }
+        return (
+          <span key={idx} className="select-text cursor-text">
+            {token.value}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
 const MessageContent: React.FC<{ text: string }> = ({ text }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
 
   const parts = useMemo(() => {
-    const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g
+    // Matches ```lang\ncode``` as well as streaming/unclosed ```lang\ncode
+    const codeBlockRegex = /```([a-zA-Z0-9_\-\.\s]*?)\r?\n([\s\S]*?)(?:```|$)/g
     const result: Array<{ type: 'text' | 'code'; content: string; lang?: string }> = []
     let lastIndex = 0
     let match: RegExpExecArray | null
@@ -30,7 +86,8 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
       if (match.index > lastIndex) {
         result.push({ type: 'text', content: text.slice(lastIndex, match.index) })
       }
-      result.push({ type: 'code', lang: match[1] || 'plaintext', content: match[2].trimEnd() })
+      const lang = match[1]?.trim() || 'code'
+      result.push({ type: 'code', lang, content: match[2].trimEnd() })
       lastIndex = match.index + match[0].length
     }
 
@@ -41,38 +98,66 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
     return result
   }, [text])
 
-  const handleCopyCode = (code: string, index: number) => {
-    navigator.clipboard.writeText(code)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-  }
-
-  if (parts.length === 1 && parts[0].type === 'text') {
-    return <div className="whitespace-pre-wrap">{text}</div>
+  const handleCopyCode = async (code: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedIndex(index)
+      setTimeout(() => setCopiedIndex(null), 2000)
+    } catch {
+      // Fallback
+    }
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {parts.map((part: { type: 'text' | 'code'; content: string; lang?: string }, i: number) => {
+    <div className="flex flex-col gap-2 select-text cursor-text">
+      {parts.map((part, i) => {
         if (part.type === 'code') {
+          const isCopied = copiedIndex === i
+          const lineCount = part.content ? part.content.split('\n').length : 0
           return (
-            <div key={i} className="my-1.5 rounded-lg overflow-hidden border border-outline-variant bg-surface-container-lowest font-mono text-xs">
-              <div className="flex items-center justify-between px-3 py-1.5 bg-surface-container-high/70 border-b border-outline-variant text-[11px] text-on-surface-variant select-none">
-                <span className="font-semibold uppercase tracking-wider font-mono">{part.lang}</span>
+            <div
+              key={i}
+              className="my-2 rounded-xl overflow-hidden border border-outline-variant bg-surface-container-lowest font-mono shadow-xs select-text"
+            >
+              <div className="flex items-center justify-between px-3 py-1.5 bg-surface-container-high/80 border-b border-outline-variant text-[11px] text-on-surface-variant select-none">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold uppercase tracking-wider font-mono text-primary text-[10.5px]">
+                    {part.lang}
+                  </span>
+                  {lineCount > 1 && (
+                    <span className="text-[10px] text-on-surface-variant/70 font-mono">
+                      {lineCount} lines
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => handleCopyCode(part.content, i)}
-                  className="flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-all cursor-pointer text-[11px] font-mono border border-outline-variant/60 shadow-xs"
+                  title="Copy code to clipboard"
                 >
-                  <Icon name={copiedIndex === i ? 'check' : 'content_copy'} size={12} className={copiedIndex === i ? 'text-primary' : ''} />
-                  <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
+                  <Icon
+                    name={isCopied ? 'check' : 'content_copy'}
+                    size={12}
+                    className={isCopied ? 'text-emerald-500' : 'text-on-surface-variant'}
+                  />
+                  <span className={isCopied ? 'text-emerald-500 font-medium' : ''}>
+                    {isCopied ? 'Copied!' : 'Copy'}
+                  </span>
                 </button>
               </div>
-              <pre className="p-3 overflow-x-auto text-on-surface leading-relaxed">{part.content}</pre>
+              <pre className="p-3.5 overflow-x-auto text-on-surface leading-relaxed select-text cursor-text text-xs font-mono bg-surface-container-lowest">
+                <code className="select-text cursor-text">{part.content}</code>
+              </pre>
             </div>
           )
         }
-        return <div key={i} className="whitespace-pre-wrap">{part.content}</div>
+
+        return (
+          <div key={i} className="whitespace-pre-wrap select-text cursor-text leading-relaxed">
+            <InlineFormattedText text={part.content} />
+          </div>
+        )
       })}
     </div>
   )
@@ -409,9 +494,8 @@ export const ChatView: React.FC = () => {
       <div className="h-12 bg-surface-container-lowest flex items-center justify-between px-space-xl z-10 border-b border-border-subtle shrink-0">
         <div className="flex items-center gap-space-sm min-w-0">
           <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
-              isStreaming ? 'bg-primary animate-ping' : 'bg-emerald-500 animate-pulse'
-            }`}
+            className={`w-2 h-2 rounded-full shrink-0 ${isStreaming ? 'bg-primary animate-ping' : 'bg-emerald-500 animate-pulse'
+              }`}
           />
 
           {/* Project Management Popover Trigger */}
@@ -540,11 +624,10 @@ export const ChatView: React.FC = () => {
                                 setIsProjectMenuOpen(false)
                               }
                             }}
-                            className={`flex items-center justify-between px-2 py-1 rounded text-left text-xs transition-colors cursor-pointer ${
-                              isCurrent
-                                ? 'bg-primary/10 text-primary font-medium'
-                                : 'hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface'
-                            }`}
+                            className={`flex items-center justify-between px-2 py-1 rounded text-left text-xs transition-colors cursor-pointer ${isCurrent
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+                              }`}
                           >
                             <div className="flex items-center gap-1.5 truncate min-w-0">
                               <Icon name="folder" size={13} className="text-primary shrink-0" />
@@ -589,11 +672,10 @@ export const ChatView: React.FC = () => {
 
           <button
             onClick={() => setIsTerminalOpen((prev) => !prev)}
-            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border ${
-              isTerminalOpen
-                ? 'bg-primary text-on-primary border-primary shadow-xs'
-                : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
-            }`}
+            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border ${isTerminalOpen
+              ? 'bg-primary text-on-primary border-primary shadow-xs'
+              : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+              }`}
             title="Toggle Developer Interactive Terminal"
           >
             <Icon name="terminal" size={14} />
@@ -603,11 +685,10 @@ export const ChatView: React.FC = () => {
           {/* Files & Diffs Inspector Toggle */}
           <button
             onClick={toggleInspector}
-            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${
-              isInspectorOpen
-                ? 'bg-primary text-on-primary border-primary shadow-xs'
-                : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
-            }`}
+            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${isInspectorOpen
+              ? 'bg-primary text-on-primary border-primary shadow-xs'
+              : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+              }`}
             title="Toggle Workspace Files & Diffs Panel"
           >
             <Icon name="description" size={14} />
@@ -639,15 +720,14 @@ export const ChatView: React.FC = () => {
                 className={`flex gap-space-lg ${isUser ? 'max-w-3xl' : 'max-w-4xl'}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant ${
-                    isUser ? 'bg-surface-container-high' : 'bg-primary text-on-primary shadow-sm'
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant ${isUser ? 'bg-surface-container-high' : 'bg-primary text-on-primary shadow-sm'
+                    }`}
                 >
                   <Icon name={isUser ? 'person' : 'smart_toy'} size={18} />
                 </div>
 
-                <div className="flex flex-col gap-space-xs flex-1 min-w-0">
-                  <div className="flex items-center gap-space-sm">
+                <div className="flex flex-col gap-space-xs flex-1 min-w-0 select-text">
+                  <div className="flex items-center gap-space-sm select-none">
                     <span className="font-headline-sm text-on-surface font-semibold text-xs">
                       {isUser ? 'You' : 'AI Agent'}
                     </span>
@@ -665,7 +745,7 @@ export const ChatView: React.FC = () => {
                   </div>
 
                   <div
-                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs ${
+                    className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs select-text cursor-text ${
                       isUser ? 'bg-surface-container-lowest' : 'bg-surface-container'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
@@ -689,11 +769,10 @@ export const ChatView: React.FC = () => {
       {/* Failover Alert Pill */}
       {failoverNotice && (
         <div
-          className={`mx-space-xl mb-2 px-space-md py-2 rounded-xl text-xs flex items-center justify-between border animate-fade-in ${
-            failoverNotice.isSilent
-              ? 'bg-secondary-container/40 border-secondary/40 text-on-surface'
-              : 'bg-error-container/30 border-error/40 text-error'
-          }`}
+          className={`mx-space-xl mb-2 px-space-md py-2 rounded-xl text-xs flex items-center justify-between border animate-fade-in ${failoverNotice.isSilent
+            ? 'bg-secondary-container/40 border-secondary/40 text-on-surface'
+            : 'bg-error-container/30 border-error/40 text-error'
+            }`}
         >
           <div className="flex items-center gap-2">
             <Icon name="swap_horiz" size={16} className={failoverNotice.isSilent ? 'text-secondary' : 'text-error'} />

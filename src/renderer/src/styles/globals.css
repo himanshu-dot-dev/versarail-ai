@@ -22,6 +22,19 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Enable cursor selection on messages, text, code, and content */
+  .select-text,
+  .select-text *,
+  pre,
+  pre *,
+  code,
+  code *,
+  .selectable-content,
+  .selectable-content * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+
   /* Custom Clean Scrollbar */
   ::-webkit-scrollbar {
     width: 5px;
