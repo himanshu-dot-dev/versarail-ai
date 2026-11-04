@@ -413,7 +413,7 @@ export const ProvidersView: React.FC = () => {
                       <span>
                         Model: <strong className="text-on-surface">
                           {p.providerId === 'gemini'
-                            ? 'gemini-2.5-flash'
+                            ? 'gemini-3.5-flash'
                             : p.providerId === 'groq'
                             ? 'llama-3.3-70b-versatile'
                             : p.providerId === 'cerebras'

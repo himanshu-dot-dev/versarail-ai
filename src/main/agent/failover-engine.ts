@@ -69,21 +69,41 @@ export interface FailoverExecutionResult {
 const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
   gemini: [
     {
-      id: 'gemini-2.5-flash',
+      id: 'gemini-3-flash-preview',
       providerId: 'gemini',
-      name: 'Gemini 2.5 Flash',
-      contextWindow: 1000000,
-      outputLimit: 8192,
+      name: 'Gemini 3.0 Flash Preview',
+      contextWindow: 1048576,
+      outputLimit: 65536,
       supportsTools: true,
       supportsStreaming: true,
       isFreeTierAvailable: true
     },
     {
-      id: 'gemini-2.5-pro',
+      id: 'gemini-3.6-flash',
       providerId: 'gemini',
-      name: 'Gemini 2.5 Pro',
-      contextWindow: 2000000,
-      outputLimit: 8192,
+      name: 'Gemini 3.6 Flash',
+      contextWindow: 1048576,
+      outputLimit: 65536,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'gemini-3.5-flash',
+      providerId: 'gemini',
+      name: 'Gemini 3.5 Flash',
+      contextWindow: 1048576,
+      outputLimit: 65536,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'gemini-flash-latest',
+      providerId: 'gemini',
+      name: 'Gemini Flash Latest',
+      contextWindow: 1048576,
+      outputLimit: 65536,
       supportsTools: true,
       supportsStreaming: true,
       isFreeTierAvailable: true
@@ -397,6 +417,16 @@ export class FailoverEngine {
    * tool capabilities, pre-flight context window requirements, and cooldown states.
    */
   public getCandidateModels(options: CandidateSelectionOptions): CandidateModel[] {
+    let preferredModelId = options.preferredModelId
+    if (
+      preferredModelId === 'gemini-2.5-flash' ||
+      preferredModelId === 'gemini-2.5-pro' ||
+      preferredModelId === 'gemini-2.0-flash' ||
+      preferredModelId === 'gemini-2.5-flash-lite'
+    ) {
+      preferredModelId = 'gemini-3-flash-preview'
+    }
+
     const configuredCreds = [...this.secretStore.listCredentialMetadata()]
 
     // Auto-enable keyless providers (e.g. Kilo, Pollinations) as fallback candidates unconditionally
@@ -454,12 +484,12 @@ export class FailoverEngine {
       // Dynamic discovery / user preference injection:
       // If user requested a model (e.g. from OmniRoute dynamic discovery or combo)
       // that isn't in default list, add it so execution proceeds
-      if (options.preferredModelId && (providerId === options.preferredProviderId || availableModels.length === 0)) {
-        if (!availableModels.some((m) => m.id === options.preferredModelId)) {
+      if (preferredModelId && (providerId === options.preferredProviderId || availableModels.length === 0)) {
+        if (!availableModels.some((m) => m.id === preferredModelId)) {
           availableModels.unshift({
-            id: options.preferredModelId,
+            id: preferredModelId,
             providerId,
-            name: options.preferredModelId,
+            name: preferredModelId,
             contextWindow: 128000,
             outputLimit: 8192,
             supportsTools: true,
@@ -471,7 +501,7 @@ export class FailoverEngine {
 
       for (const m of availableModels) {
         // Virtual free policy: when auto/free is requested, enforce free tier availability
-        if (options.preferredModelId === 'auto/free' && m.isFreeTierAvailable === false) {
+        if (preferredModelId === 'auto/free' && m.isFreeTierAvailable === false) {
           continue
         }
 
@@ -507,7 +537,7 @@ export class FailoverEngine {
     const isAutoPolicy =
       (options.preferredProviderId as string) === 'auto' ||
       (options.preferredProviderId as string) === 'universal' ||
-      (!options.preferredProviderId && options.preferredModelId?.startsWith('auto/'))
+      (!options.preferredProviderId && preferredModelId?.startsWith('auto/'))
 
     const providerPriority: Record<ProviderId, number> = {
       gemini: 1,
@@ -528,8 +558,8 @@ export class FailoverEngine {
     return rawCandidates.sort((a, b) => {
       // 1. User explicit preference match (only if not an auto policy)
       if (!isAutoPolicy) {
-        const aIsPreferred = a.providerId === options.preferredProviderId && a.modelId === options.preferredModelId
-        const bIsPreferred = b.providerId === options.preferredProviderId && b.modelId === options.preferredModelId
+        const aIsPreferred = a.providerId === options.preferredProviderId && a.modelId === preferredModelId
+        const bIsPreferred = b.providerId === options.preferredProviderId && b.modelId === preferredModelId
         if (aIsPreferred && !bIsPreferred) return -1
         if (!aIsPreferred && bIsPreferred) return 1
       }
@@ -583,10 +613,11 @@ export class FailoverEngine {
         throw new Error('Generation cancelled by user')
       }
 
-      // Check if user explicitly requested this exact provider + model
+      // Check if user explicitly requested this exact provider + model (with alias tolerance)
       const isUserPreferred =
         options.preferredProviderId === candidate.providerId &&
-        options.preferredModelId === candidate.modelId
+        (options.preferredModelId === candidate.modelId ||
+          (candidate.modelId === 'gemini-3-flash-preview' && options.preferredModelId?.startsWith('gemini-2.')))
 
       // Check active cooldown (user's explicit preference is never skipped on intentional send)
       const cooldownExpiry = this.registry.getCooldownExpiry(candidate.credentialId, candidate.modelId)

@@ -27,7 +27,7 @@ export type PrivacySettingsDTO = z.infer<typeof PrivacySettingsSchema>
 
 export const GlobalSettingsSchema = z.object({
   privacy: PrivacySettingsSchema.default({}),
-  defaultModel: z.string().default('gemini-2.5-flash'),
+  defaultModel: z.string().default('gemini-3.5-flash'),
   temperature: z.number().min(0).max(2).default(0.7),
   theme: z.enum(['versarail-dark', 'light', 'system']).default('versarail-dark')
 })

@@ -9,31 +9,41 @@ import { detectInBandError } from './utils/in-band-detector'
 
 const GEMINI_DEFAULT_MODELS: ModelDescriptorDTO[] = [
   {
-    id: 'gemini-2.5-flash',
+    id: 'gemini-3-flash-preview',
     providerId: 'gemini',
-    name: 'Gemini 2.5 Flash',
-    contextWindow: 1000000,
-    outputLimit: 8192,
+    name: 'Gemini 3.0 Flash Preview',
+    contextWindow: 1048576,
+    outputLimit: 65536,
     supportsTools: true,
     supportsStreaming: true,
     isFreeTierAvailable: true
   },
   {
-    id: 'gemini-2.5-pro',
+    id: 'gemini-3.6-flash',
     providerId: 'gemini',
-    name: 'Gemini 2.5 Pro',
-    contextWindow: 2000000,
-    outputLimit: 8192,
+    name: 'Gemini 3.6 Flash',
+    contextWindow: 1048576,
+    outputLimit: 65536,
     supportsTools: true,
     supportsStreaming: true,
     isFreeTierAvailable: true
   },
   {
-    id: 'gemini-2.0-flash',
+    id: 'gemini-3.5-flash',
     providerId: 'gemini',
-    name: 'Gemini 2.0 Flash',
-    contextWindow: 1000000,
-    outputLimit: 8192,
+    name: 'Gemini 3.5 Flash',
+    contextWindow: 1048576,
+    outputLimit: 65536,
+    supportsTools: true,
+    supportsStreaming: true,
+    isFreeTierAvailable: true
+  },
+  {
+    id: 'gemini-flash-latest',
+    providerId: 'gemini',
+    name: 'Gemini Flash Latest',
+    contextWindow: 1048576,
+    outputLimit: 65536,
     supportsTools: true,
     supportsStreaming: true,
     isFreeTierAvailable: true
@@ -149,11 +159,43 @@ export class GeminiAdapter implements IProviderAdapter {
       })
 
       if (response.ok) {
-        const body = (await response.json()) as { models?: Array<{ name: string }> }
+        const body = (await response.json()) as {
+          models?: Array<{
+            name: string
+            displayName?: string
+            supportedGenerationMethods?: string[]
+            inputTokenLimit?: number
+            outputTokenLimit?: number
+          }>
+        }
         if (Array.isArray(body?.models)) {
-          const names = new Set(body.models.map((m) => m.name.replace(/^models\//, '')))
-          const matched = GEMINI_DEFAULT_MODELS.filter((m) => names.has(m.id))
-          if (matched.length > 0) return matched
+          const activeModels: ModelDescriptorDTO[] = []
+          for (const m of body.models) {
+            const shortName = m.name.replace(/^models\//, '')
+            const methods = m.supportedGenerationMethods || []
+            if (
+              methods.includes('generateContent') &&
+              !shortName.includes('embedding') &&
+              !shortName.includes('tts') &&
+              !shortName.includes('clip') &&
+              !shortName.includes('transcribe') &&
+              !shortName.includes('banana') &&
+              !shortName.includes('2.5-') &&
+              !shortName.includes('2.0-')
+            ) {
+              activeModels.push({
+                id: shortName,
+                providerId: 'gemini',
+                name: m.displayName || shortName,
+                contextWindow: m.inputTokenLimit || 1048576,
+                outputLimit: m.outputTokenLimit || 65536,
+                supportsTools: true,
+                supportsStreaming: true,
+                isFreeTierAvailable: true
+              })
+            }
+          }
+          if (activeModels.length > 0) return activeModels
         }
       }
     } catch {
@@ -180,7 +222,17 @@ export class GeminiAdapter implements IProviderAdapter {
       parts: [{ text: m.content }]
     }))
 
-    const modelName = request.model.replace(/^models\//, '')
+    let modelName = request.model.replace(/^models\//, '')
+    // Transparent alias mapping for decommissioned legacy models
+    if (
+      modelName === 'gemini-2.5-flash' ||
+      modelName === 'gemini-2.5-pro' ||
+      modelName === 'gemini-2.0-flash' ||
+      modelName === 'gemini-2.5-flash-lite'
+    ) {
+      modelName = 'gemini-3-flash-preview'
+    }
+
     const url = `${endpoint}/models/${modelName}:streamGenerateContent?alt=sse&key=${apiKey.trim()}`
 
     const payload = {

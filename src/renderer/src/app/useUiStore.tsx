@@ -230,7 +230,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         if (active) {
           let modelName =
             active.providerId === 'gemini'
-              ? 'gemini-2.5-flash'
+              ? 'gemini-3.5-flash'
               : active.providerId === 'groq'
               ? 'llama-3.3-70b-versatile'
               : active.providerId === 'cerebras'

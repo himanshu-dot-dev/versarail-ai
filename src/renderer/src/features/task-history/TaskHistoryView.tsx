@@ -42,7 +42,7 @@ export const TaskHistoryView: React.FC = () => {
                 prompt: c.title,
                 project: wsName,
                 provider: isGroq ? 'GroqCloud LPU' : isGemini ? 'Google AI Studio' : 'AI Gateway',
-                model: c.selectedModel || 'gemini-2.5-flash',
+                model: c.selectedModel || 'gemini-3.5-flash',
                 timestamp: new Date(c.createdAt).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit'
