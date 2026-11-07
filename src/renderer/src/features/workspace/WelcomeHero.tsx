@@ -60,13 +60,21 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-space-sm mb-space-md">
-          <button
-            onClick={selectWorkspaceFolder}
-            className="flex items-center gap-space-xs px-space-lg py-2 rounded-xl bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
-          >
-            <Icon name="folder_open" size={16} />
-            <span>{workspace.path ? 'Switch Project Folder' : 'Open Project Folder'}</span>
-          </button>
+          {!workspace.path ? (
+            <button
+              onClick={selectWorkspaceFolder}
+              className="flex items-center gap-space-xs px-space-lg py-2 rounded-xl bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
+            >
+              <Icon name="folder_open" size={16} />
+              <span>Open Project Folder</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container border border-outline-variant text-xs text-on-surface font-mono">
+              <Icon name="folder" size={15} className="text-primary" />
+              <span className="font-semibold">{workspace.name}</span>
+              <span className="text-emerald-500 text-[10px] ml-1">● Active</span>
+            </div>
+          )}
 
           <button
             onClick={() => setActiveView('ai-providers')}
@@ -77,8 +85,8 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
           </button>
         </div>
 
-        {/* Recent Projects Pills */}
-        {recentWorkspaces.length > 0 && (
+        {/* Recent Projects Pills (Only show when no workspace is active) */}
+        {!workspace.path && recentWorkspaces.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-lg mb-space-sm">
             <span className="text-[11px] text-on-surface-variant font-mono mr-1">Recent:</span>
             {recentWorkspaces.slice(0, 4).map((p) => {

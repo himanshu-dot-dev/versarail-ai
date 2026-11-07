@@ -15,7 +15,7 @@ interface ModelItem {
 
 export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled = false }) => {
   const [prompt, setPrompt] = useState('')
-  const { connectedModel, setConnectedModel, workspace, selectWorkspaceFolder, setActiveView } = useUiStore()
+  const { connectedModel, setConnectedModel, workspace, setActiveView } = useUiStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Mention Picker State (@file)
@@ -539,17 +539,6 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Project Selector Dropdown Chip */}
-            <div
-              onClick={selectWorkspaceFolder}
-              className="flex items-center gap-space-xs px-space-md py-space-xs rounded bg-surface-container text-on-surface text-label-md cursor-pointer hover:bg-surface-container-high transition-colors border border-outline-variant"
-              title="Click to switch workspace folder"
-            >
-              <Icon name="folder" size={14} className="text-primary" />
-              <span className="font-mono max-w-[120px] truncate">{workspace.name || 'Select Project'}</span>
-              <Icon name="arrow_drop_down" size={14} className="text-on-surface-variant" />
             </div>
           </div>
 

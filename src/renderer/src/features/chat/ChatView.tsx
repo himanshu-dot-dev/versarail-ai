@@ -168,41 +168,16 @@ export const ChatView: React.FC = () => {
     connectedModel,
     workspace,
     setActiveView,
-    selectWorkspaceFolder,
-    recentWorkspaces,
-    openWorkspacePath,
-    closeWorkspace,
     isInspectorOpen,
     toggleInspector,
     activeConversationId,
+    conversations,
     startNewChat,
     loadConversations
   } = useUiStore()
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
-  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
-  const [copiedPath, setCopiedPath] = useState(false)
-  const projectMenuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (projectMenuRef.current && !projectMenuRef.current.contains(e.target as Node)) {
-        setIsProjectMenuOpen(false)
-      }
-    }
-    if (isProjectMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isProjectMenuOpen])
-
-  const handleCopyPath = () => {
-    if (workspace.path) {
-      navigator.clipboard.writeText(workspace.path)
-      setCopiedPath(true)
-      setTimeout(() => setCopiedPath(false), 2000)
-    }
-  }
+  const activeConv = conversations.find((c) => c.id === activeConversationId)
   const [failoverNotice, setFailoverNotice] = useState<{
     from: string
     to: string
@@ -494,139 +469,9 @@ export const ChatView: React.FC = () => {
               }`}
           />
 
-          {/* Project Management Popover Trigger */}
-          <div className="relative" ref={projectMenuRef}>
-            <button
-              onClick={() => setIsProjectMenuOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors border border-outline-variant text-xs cursor-pointer group"
-              title="Click to manage or switch workspace projects"
-            >
-              <Icon name="folder_open" size={15} className="text-primary shrink-0" />
-              <span className="font-semibold text-on-surface truncate max-w-[170px]">
-                {workspace.name || 'Select Project Folder'}
-              </span>
-              <Icon
-                name="arrow_drop_down"
-                size={14}
-                className="text-on-surface-variant group-hover:text-on-surface transition-colors"
-              />
-            </button>
-
-            {/* Dropdown Popover */}
-            {isProjectMenuOpen && (
-              <div className="absolute left-0 top-full mt-2 w-80 bg-surface-container border border-outline-variant rounded-xl shadow-2xl p-space-md flex flex-col gap-space-sm z-50 animate-fade-in font-sans">
-                {/* Active Project Header */}
-                <div className="flex flex-col gap-1 pb-space-xs border-b border-border-subtle">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-on-surface-variant uppercase font-mono tracking-wider">
-                      Active Workspace
-                    </span>
-                    {workspace.path && (
-                      <button
-                        onClick={handleCopyPath}
-                        className="text-[10px] text-primary hover:underline flex items-center gap-1 font-mono cursor-pointer"
-                        title="Copy full directory path"
-                      >
-                        <Icon name={copiedPath ? 'check' : 'copy'} size={11} />
-                        <span>{copiedPath ? 'Copied' : 'Copy Path'}</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="folder" size={16} className="text-primary shrink-0" />
-                    <span className="text-xs font-semibold text-on-surface truncate">
-                      {workspace.name || 'No Project Loaded'}
-                    </span>
-                  </div>
-                  {workspace.path ? (
-                    <span className="text-[10px] font-mono text-on-surface-variant truncate" title={workspace.path}>
-                      {workspace.path}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-on-surface-variant">
-                      Open a folder to allow the AI agent to edit files and run terminal commands.
-                    </span>
-                  )}
-                </div>
-
-                {/* Primary Actions */}
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={async () => {
-                      setIsProjectMenuOpen(false)
-                      await selectWorkspaceFolder()
-                    }}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer shadow-sm text-left"
-                  >
-                    <Icon name="folder_open" size={14} />
-                    <span>{workspace.path ? 'Switch Workspace Folder...' : 'Open Workspace Folder...'}</span>
-                  </button>
-
-                  {workspace.path && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setIsProjectMenuOpen(false)
-                          if (!isInspectorOpen) toggleInspector()
-                        }}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-high text-on-surface text-xs transition-colors cursor-pointer text-left"
-                      >
-                        <Icon name="description" size={14} className="text-tertiary" />
-                        <span>Inspect Project Files</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          closeWorkspace()
-                          setIsProjectMenuOpen(false)
-                        }}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-error/15 text-error text-xs transition-colors cursor-pointer text-left"
-                      >
-                        <Icon name="close" size={14} />
-                        <span>Close Active Workspace</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                {/* Recent Projects Section */}
-                {recentWorkspaces.length > 0 && (
-                  <div className="pt-space-xs border-t border-border-subtle flex flex-col gap-1">
-                    <span className="text-[10px] text-on-surface-variant uppercase font-mono tracking-wider px-1">
-                      Recent Projects
-                    </span>
-                    <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto">
-                      {recentWorkspaces.map((proj) => {
-                        const isCurrent = proj.path === workspace.path
-                        return (
-                          <button
-                            key={proj.path || proj.name}
-                            onClick={() => {
-                              if (proj.path) {
-                                openWorkspacePath(proj.path)
-                                setIsProjectMenuOpen(false)
-                              }
-                            }}
-                            className={`flex items-center justify-between px-2 py-1 rounded text-left text-xs transition-colors cursor-pointer ${isCurrent
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface'
-                              }`}
-                          >
-                            <div className="flex items-center gap-1.5 truncate min-w-0">
-                              <Icon name="folder" size={13} className="text-primary shrink-0" />
-                              <span className="truncate">{proj.name}</span>
-                            </div>
-                            {isCurrent && <Icon name="check" size={12} className="text-primary shrink-0 ml-1" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
+          <span className="font-semibold text-on-surface text-xs truncate max-w-[240px]">
+            {activeConv?.title || 'Chat'}
+          </span>
           <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono shrink-0 border border-outline-variant">
             {isStreaming ? 'Generating...' : 'Ready'}
           </span>

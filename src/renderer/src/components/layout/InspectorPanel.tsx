@@ -177,14 +177,6 @@ export const InspectorPanel: React.FC = () => {
                     No files matching "{fileFilter}"
                   </div>
                 )}
-
-                <button
-                  onClick={selectWorkspaceFolder}
-                  className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface text-[11px] font-mono transition-colors cursor-pointer"
-                >
-                  <Icon name="folder_open" size={13} className="text-primary" />
-                  <span>Switch Workspace Folder...</span>
-                </button>
               </>
             ) : (
               <div className="flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
