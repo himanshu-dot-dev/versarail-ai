@@ -2,7 +2,6 @@ import { z } from 'zod'
 import * as path from 'path'
 import { ITool, ToolExecutionContext, PermissionDetails } from '../tool.interface'
 import { WorkspaceService } from '../../workspace/workspace-service'
-import { PathCanonicalizer } from '../../workspace/path-canonicalizer'
 
 export const ReadFileInputSchema = z.object({
   path: z.string().min(1, 'File path is required'),

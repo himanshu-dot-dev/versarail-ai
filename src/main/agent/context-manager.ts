@@ -91,7 +91,6 @@ export class ContextManager {
     }
 
     // Context exceeds target budget — perform budgeting
-    const workingMessages: ContextMessage[] = []
     let systemMessage: ContextMessage | null = null
 
     // Extract or inject system prompt

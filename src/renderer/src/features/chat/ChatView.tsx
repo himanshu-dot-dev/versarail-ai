@@ -164,7 +164,6 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
 
 export const ChatView: React.FC = () => {
   const {
-    hasActiveRun,
     setHasActiveRun,
     connectedModel,
     workspace,

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import * as fs from 'fs/promises'
-import * as syncFs from 'fs'
 import * as path from 'path'
 import { ITool, ToolExecutionContext, PermissionDetails } from '../tool.interface'
 import { WorkspaceService } from '../../workspace/workspace-service'

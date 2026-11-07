@@ -340,11 +340,7 @@ export const ProvidersView: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 gap-space-md">
             {providers.map((p) => {
-            const isGoogle = p.providerId === 'gemini'
-            const isGroq = p.providerId === 'groq'
-            const isCerebras = p.providerId === 'cerebras'
-
-            return (
+              return (
               <div
                 key={p.id}
                 className="bg-surface-container rounded-xl p-space-lg transition-all hover:bg-surface-container-high hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-space-lg border border-outline-variant"

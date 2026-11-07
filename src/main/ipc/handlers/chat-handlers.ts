@@ -1,4 +1,4 @@
-import { ipcMain, IpcMainInvokeEvent, BrowserWindow } from 'electron'
+import { ipcMain, IpcMainInvokeEvent } from 'electron'
 import { IPC_CHANNELS } from '@shared/events/ipc-channels'
 import { SenderVerifier } from '../sender-verifier'
 import { ConversationStore } from '../../storage/conversation-store'

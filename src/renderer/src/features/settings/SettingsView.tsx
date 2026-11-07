@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
-import { useUiStore, ThemeMode } from '../../app/useUiStore'
+import { useUiStore } from '../../app/useUiStore'
 
 export const SettingsView: React.FC = () => {
   const { theme, setTheme } = useUiStore()

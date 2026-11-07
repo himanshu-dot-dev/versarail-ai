@@ -6,7 +6,6 @@ import {
   StreamChunk
 } from './provider-adapter.interface'
 import { detectInBandError } from './utils/in-band-detector'
-import { repairToolArguments } from './utils/tool-repair'
 import { ThinkTagStreamFilter } from './utils/think-tags'
 import { extractRetryDelayMs } from './utils/retry-parser'
 
