@@ -6,7 +6,6 @@ export type ViewId =
   | 'file-explorer'
   | 'ai-providers'
   | 'usage-quotas'
-  | 'task-history'
   | 'settings'
   | (string & {}) // Allows any future view extension
 
