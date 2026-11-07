@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 
 export type ViewId =
   | 'chat'
-  | 'projects'
-  | 'file-explorer'
   | 'ai-providers'
   | 'usage-quotas'
   | 'settings'
