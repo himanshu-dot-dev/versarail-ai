@@ -174,6 +174,28 @@ export const BUILTIN_TOOL_DEFINITIONS: OpenAIToolDefinition[] = [
         required: ['summary']
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description:
+        'Searches the live web for recent documentation, real-time news, library updates, APIs, and code examples beyond training cutoff. Returns titles, URLs, and text highlights.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'The search query or keywords to look up on the web.'
+          },
+          numResults: {
+            type: 'number',
+            description: 'Number of search results to return (default: 5, max: 10).'
+          }
+        },
+        required: ['query']
+      }
+    }
   }
 ]
 

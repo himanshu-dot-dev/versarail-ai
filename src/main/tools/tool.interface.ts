@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export type ToolCapability = 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec'
+export type ToolCapability = 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec' | 'net:search'
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
 export interface ToolExecutionContext {

@@ -51,7 +51,7 @@ export type PermissionScope = 'once' | 'session' | 'always'
 
 export interface PermissionRequestDTO {
   requestId: string
-  capability: 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec'
+  capability: 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec' | 'net:search'
   title: string
   description: string
   targetPath?: string

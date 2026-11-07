@@ -6,6 +6,7 @@ import { EditFileTool } from './builtin/edit-file.tool'
 import { TaskCompleteTool } from './builtin/task-complete.tool'
 import { ListDirTool } from './builtin/list-dir.tool'
 import { ExecCmdTool } from './builtin/exec-cmd.tool'
+import { WebSearchTool } from './builtin/web-search.tool'
 import { PermissionBroker } from '../security/permission-broker'
 import { SecretRedactor } from '../security/secret-redactor'
 import { ConversationStore } from '../storage/conversation-store'
@@ -51,6 +52,7 @@ export class ToolRegistry {
     this.registerTool(new TaskCompleteTool())
     this.registerTool(new ListDirTool())
     this.registerTool(new ExecCmdTool())
+    this.registerTool(new WebSearchTool())
   }
 
   public registerTool(tool: ITool): void {
@@ -79,6 +81,9 @@ export class ToolRegistry {
     }
     if (name === 'complete_task' || name === 'finish_task') {
       return this.tools.get('task_complete')
+    }
+    if (name === 'websearch' || name === 'search_web' || name === 'web_search_exa') {
+      return this.tools.get('web_search')
     }
     return undefined
   }

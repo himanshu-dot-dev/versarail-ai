@@ -11,7 +11,7 @@ import { computePayloadHash, ToctouTamperingError } from './payload-hash'
 
 export interface AuthorizationRequest {
   toolName: string
-  capability: 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec'
+  capability: 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec' | 'net:search'
   riskLevel: 'low' | 'medium' | 'high' | 'critical'
   title: string
   description: string
