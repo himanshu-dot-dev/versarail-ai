@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { useUiStore, InspectorTab } from '../../app/useUiStore'
+import { useUiStore } from '../../app/useUiStore'
 import Icon from '../common/Icon'
 
 export const InspectorPanel: React.FC = () => {
   const {
-    inspectorTab,
-    setInspectorTab,
     isInspectorOpen,
     toggleInspector,
     workspace,
@@ -71,31 +69,17 @@ export const InspectorPanel: React.FC = () => {
 
   return (
     <div className="w-72 bg-surface-container-lowest flex flex-col h-full border-l border-border-subtle shrink-0 select-none">
-      {/* Tab Switcher Header */}
-      <div className="flex items-center justify-between border-b border-border-subtle px-space-md pt-2 pb-1">
-        <div className="flex items-center gap-space-xs flex-1">
-          {(['files', 'activity', 'changes'] as InspectorTab[]).map((tab) => {
-            const isActive = inspectorTab === tab
-            return (
-              <button
-                key={tab}
-                onClick={() => setInspectorTab(tab)}
-                className={`pb-1 text-center text-xs font-medium capitalize border-b-2 transition-colors px-2 ${
-                  isActive
-                    ? 'text-primary border-primary'
-                    : 'text-on-surface-variant hover:text-on-surface border-transparent'
-                }`}
-              >
-                {tab}
-              </button>
-            )
-          })}
+      {/* Panel Header */}
+      <div className="flex items-center justify-between border-b border-border-subtle px-space-md py-2 shrink-0">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-on-surface">
+          <Icon name="description" size={15} className="text-primary" />
+          <span>Project Files</span>
         </div>
 
         <button
           onClick={toggleInspector}
-          className="p-1 text-on-surface-variant hover:text-on-surface rounded hover:bg-surface-container transition-colors"
-          title="Collapse Inspector"
+          className="p-1 text-on-surface-variant hover:text-on-surface rounded hover:bg-surface-container transition-colors cursor-pointer"
+          title="Collapse Panel"
         >
           <Icon name="close" size={14} />
         </button>
@@ -103,9 +87,7 @@ export const InspectorPanel: React.FC = () => {
 
       {/* Tab Content Area */}
       <div className="flex-1 overflow-y-auto p-space-md text-xs">
-        {/* Tab 1: Files */}
-        {inspectorTab === 'files' && (
-          <div className="flex flex-col gap-space-xs">
+        <div className="flex flex-col gap-space-xs">
             {workspaceTree && (workspaceTree.dirs.length > 0 || workspaceTree.files.length > 0) ? (
               <>
                 <div className="flex items-center justify-between px-space-sm py-1.5 rounded-lg bg-surface-container text-on-surface font-medium font-mono text-[11px] mb-1.5 border border-outline-variant">
@@ -221,29 +203,6 @@ export const InspectorPanel: React.FC = () => {
               </div>
             )}
           </div>
-        )}
-
-        {/* Tab 2: Activity */}
-        {inspectorTab === 'activity' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
-            <Icon name="bolt" size={28} className="text-on-surface-variant/60" />
-            <span className="text-xs text-on-surface font-medium">No Activity in Session</span>
-            <span className="text-[11px] text-on-surface-variant max-w-[200px]">
-              Agent steps, tool executions, and model reasoning will stream here.
-            </span>
-          </div>
-        )}
-
-        {/* Tab 3: Changes */}
-        {inspectorTab === 'changes' && (
-          <div className="flex-1 flex flex-col items-center justify-center p-space-xl text-center text-on-surface-variant gap-2 my-auto">
-            <Icon name="difference" size={28} className="text-on-surface-variant/60" />
-            <span className="text-xs text-on-surface font-medium">No File Changes</span>
-            <span className="text-[11px] text-on-surface-variant max-w-[200px]">
-              Proposed file edits and additions will appear here for review before touching disk.
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )

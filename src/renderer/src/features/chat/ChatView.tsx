@@ -174,7 +174,6 @@ export const ChatView: React.FC = () => {
     closeWorkspace,
     isInspectorOpen,
     toggleInspector,
-    setInspectorTab,
     activeConversationId,
     startNewChat,
     loadConversations
@@ -568,25 +567,12 @@ export const ChatView: React.FC = () => {
                       <button
                         onClick={() => {
                           setIsProjectMenuOpen(false)
-                          setInspectorTab('files')
                           if (!isInspectorOpen) toggleInspector()
                         }}
                         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-high text-on-surface text-xs transition-colors cursor-pointer text-left"
                       >
                         <Icon name="description" size={14} className="text-tertiary" />
                         <span>Inspect Project Files</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setIsProjectMenuOpen(false)
-                          setInspectorTab('changes')
-                          if (!isInspectorOpen) toggleInspector()
-                        }}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-high text-on-surface text-xs transition-colors cursor-pointer text-left"
-                      >
-                        <Icon name="difference" size={14} className="text-secondary" />
-                        <span>Review File Changes &amp; Diffs</span>
                       </button>
 
                       <button

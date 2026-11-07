@@ -8,7 +8,6 @@ export type ViewId =
   | (string & {}) // Allows any future view extension
 
 export type ThemeMode = 'versarail-dark' | 'light' | 'system'
-export type InspectorTab = 'files' | 'activity' | 'changes'
 
 export interface WorkspaceInfo {
   path: string | null
@@ -42,9 +41,6 @@ export interface UiState {
   toggleInspector: () => void
   setInspectorOpen: (open: boolean) => void
 
-  inspectorTab: InspectorTab
-  setInspectorTab: (tab: InspectorTab) => void
-
   workspace: WorkspaceInfo
   setWorkspace: (ws: WorkspaceInfo) => void
   selectWorkspaceFolder: () => Promise<void>
@@ -74,7 +70,6 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return (localStorage.getItem('versarail_theme') as ThemeMode) || 'versarail-dark'
   })
   const [isInspectorOpen, setInspectorOpen] = useState(true)
-  const [inspectorTab, setInspectorTab] = useState<InspectorTab>('files')
   const [workspace, setWorkspace] = useState<WorkspaceInfo>({
     path: null,
     name: null
@@ -298,8 +293,6 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     isInspectorOpen,
     toggleInspector,
     setInspectorOpen,
-    inspectorTab,
-    setInspectorTab,
     workspace,
     setWorkspace,
     selectWorkspaceFolder,
