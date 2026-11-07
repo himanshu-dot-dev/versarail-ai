@@ -3,7 +3,6 @@ import { useUiStore } from '../../app/useUiStore'
 import WelcomeHero from '../workspace/WelcomeHero'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
-import TerminalPanel from '../terminal/TerminalPanel'
 import { TodoDock } from './TodoDock'
 import { soundService } from '../../services/sound-service'
 
@@ -183,7 +182,6 @@ export const ChatView: React.FC = () => {
   } = useUiStore()
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
-  const [isTerminalOpen, setIsTerminalOpen] = useState(false)
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
   const [copiedPath, setCopiedPath] = useState(false)
   const projectMenuRef = useRef<HTMLDivElement>(null)
@@ -670,18 +668,6 @@ export const ChatView: React.FC = () => {
             </button>
           )}
 
-          <button
-            onClick={() => setIsTerminalOpen((prev) => !prev)}
-            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border ${isTerminalOpen
-              ? 'bg-primary text-on-primary border-primary shadow-xs'
-              : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
-              }`}
-            title="Toggle Developer Interactive Terminal"
-          >
-            <Icon name="terminal" size={14} />
-            <span>Terminal</span>
-          </button>
-
           {/* Files & Diffs Inspector Toggle */}
           <button
             onClick={toggleInspector}
@@ -795,13 +781,6 @@ export const ChatView: React.FC = () => {
           >
             <Icon name="close" size={14} />
           </button>
-        </div>
-      )}
-
-      {/* Developer Interactive Terminal Drawer */}
-      {isTerminalOpen && (
-        <div className="h-64 shrink-0 px-space-xl pb-2">
-          <TerminalPanel onClose={() => setIsTerminalOpen(false)} />
         </div>
       )}
 

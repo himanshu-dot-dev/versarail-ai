@@ -107,15 +107,6 @@ export interface IElectronApi {
   getSettings: () => Promise<{ privacy: PrivacySettingsDTO }>
   saveSettings: (settings: PrivacySettingsDTO) => Promise<{ success: boolean; error?: string }>
   purgeData: (retentionDays?: number) => Promise<{ success: boolean; purgedConversations: number }>
-
-  // Terminal
-  createTerminalSession: (options?: { shell?: string }) => Promise<{ sessionId: string }>
-  writeTerminal: (sessionId: string, data: string) => void
-  resizeTerminal: (sessionId: string, cols: number, rows: number) => void
-  closeTerminal: (sessionId: string) => void
-  onTerminalData: (
-    callback: (event: { sessionId: string; data: string }) => void
-  ) => () => void
 }
 
 declare global {

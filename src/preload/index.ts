@@ -180,34 +180,6 @@ const electronApi: IElectronApi = {
   },
   purgeData: (retentionDays?: number) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_PURGE_DATA, retentionDays)
-  },
-
-  // Terminal
-  createTerminalSession: (options?: { shell?: string }): Promise<{ sessionId: string }> => {
-    return ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CREATE_SESSION, options)
-  },
-  writeTerminal: (sessionId: string, data: string): void => {
-    ipcRenderer.send(IPC_CHANNELS.TERMINAL_WRITE, { sessionId, data })
-  },
-  resizeTerminal: (sessionId: string, cols: number, rows: number): void => {
-    ipcRenderer.send(IPC_CHANNELS.TERMINAL_RESIZE, { sessionId, cols, rows })
-  },
-  closeTerminal: (sessionId: string): void => {
-    ipcRenderer.send(IPC_CHANNELS.TERMINAL_CLOSE, { sessionId })
-  },
-  onTerminalData: (
-    callback: (event: { sessionId: string; data: string }) => void
-  ): (() => void) => {
-    const subscription = (
-      _event: IpcRendererEvent,
-      payload: { sessionId: string; data: string }
-    ): void => {
-      callback(payload)
-    }
-    ipcRenderer.on(IPC_CHANNELS.TERMINAL_DATA, subscription)
-    return (): void => {
-      ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_DATA, subscription)
-    }
   }
 }
 

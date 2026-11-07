@@ -49,15 +49,7 @@ export const IPC_CHANNELS = {
   // Settings & Privacy
   SETTINGS_GET: 'settings:get',
   SETTINGS_SAVE: 'settings:save',
-  SETTINGS_PURGE_DATA: 'settings:purge-data',
-
-  // Terminal
-  TERMINAL_CREATE_SESSION: 'terminal:create-session',
-  TERMINAL_WRITE: 'terminal:write',
-  TERMINAL_RESIZE: 'terminal:resize',
-  TERMINAL_CLOSE: 'terminal:close',
-  TERMINAL_DATA: 'terminal:data',
-  TERMINAL_EXIT: 'terminal:exit'
+  SETTINGS_PURGE_DATA: 'settings:purge-data'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

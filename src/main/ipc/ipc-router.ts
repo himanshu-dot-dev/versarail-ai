@@ -8,7 +8,6 @@ import { registerChatHandlers } from './handlers/chat-handlers'
 import { registerPermissionHandlers } from './handlers/permission-handlers'
 import { registerWorkspaceHandlers } from './handlers/workspace-handlers'
 import { registerDiffHandlers } from './handlers/diff-handlers'
-import { registerTerminalHandlers } from './handlers/terminal-handlers'
 import { registerSettingsHandlers } from './handlers/settings-handlers'
 
 export function registerIpcHandlers(): void {
@@ -18,7 +17,6 @@ export function registerIpcHandlers(): void {
   registerPermissionHandlers()
   registerWorkspaceHandlers()
   registerDiffHandlers()
-  registerTerminalHandlers()
   registerSettingsHandlers()
 
   // Window Controls
