@@ -145,7 +145,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             <span className="truncate pr-2 transition-all duration-300 text-slate-300">
               {statusText}
             </span>
-            <span className="text-slate-500 text-[10px] shrink-0">v0.1.0</span>
           </div>
         </div>
       </div>
