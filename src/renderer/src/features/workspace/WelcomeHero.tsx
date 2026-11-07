@@ -1,6 +1,7 @@
 import React from 'react'
 import { useUiStore } from '../../app/useUiStore'
 import Icon from '../../components/common/Icon'
+import vLogo from '../../assets/glowing-gradient-v-logo.png'
 
 export interface WelcomeHeroProps {
   onStartPrompt?: (prompt: string) => void
@@ -38,13 +39,17 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
         <div className="absolute w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none -top-6" />
 
         {/* Logo Mark */}
-        <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mb-space-md shadow-lg relative border border-outline-variant">
-          <Icon name="hub" size={28} className="text-primary" />
+        <div className="w-20 h-20 rounded-2xl bg-surface-container-high/80 flex items-center justify-center mb-space-md shadow-2xl relative border border-outline-variant p-2 group hover:scale-105 transition-transform">
+          <img
+            src={vLogo}
+            alt="VersaRail AI"
+            className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+          />
           <div
-            className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-surface"
+            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-surface shadow-sm"
             title="Gateway Ready"
           >
-            <span className="w-1 h-1 rounded-full bg-white" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           </div>
         </div>
 

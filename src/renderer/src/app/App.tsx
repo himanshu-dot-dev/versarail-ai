@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { UiProvider, useUiStore } from './useUiStore'
 import { viewRegistry } from './viewRegistry'
 import { TitleBar } from '../components/layout/TitleBar'
@@ -6,6 +6,7 @@ import { Sidebar } from '../components/layout/Sidebar'
 import { InspectorPanel } from '../components/layout/InspectorPanel'
 import { ChatView } from '../features/chat/ChatView'
 import { PermissionModal } from '../components/permissions/PermissionModal'
+import { SplashScreen } from '../components/layout/SplashScreen'
 
 const ShellContent: React.FC = () => {
   const { activeView } = useUiStore()
@@ -41,8 +42,11 @@ const ShellContent: React.FC = () => {
 }
 
 export default function App(): React.JSX.Element {
+  const [showSplash, setShowSplash] = useState(true)
+
   return (
     <UiProvider>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       <ShellContent />
     </UiProvider>
   )
