@@ -48,7 +48,40 @@ export function registerWorkspaceHandlers(): void {
     }
   )
 
-  // 2. Get Current Active Workspace
+  // 2. Native File Selection Dialog (Multi-file Attach)
+  ipcMain.handle(
+    IPC_CHANNELS.WORKSPACE_SELECT_FILE,
+    async (
+      event: IpcMainInvokeEvent,
+      defaultPath?: string
+    ): Promise<{ canceled: boolean; filePaths?: string[] }> => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.WORKSPACE_SELECT_FILE)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      const win =
+        BrowserWindow.fromWebContents(event.sender) ||
+        BrowserWindow.getFocusedWindow() ||
+        undefined
+
+      const result = await dialog.showOpenDialog(win as any, {
+        title: 'Select File(s) to Attach',
+        defaultPath: typeof defaultPath === 'string' ? defaultPath : undefined,
+        properties: ['openFile', 'multiSelections']
+      })
+
+      if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+        return { canceled: true, filePaths: [] }
+      }
+
+      return {
+        canceled: false,
+        filePaths: result.filePaths
+      }
+    }
+  )
+
+  // 3. Get Current Active Workspace
   ipcMain.handle(
     IPC_CHANNELS.WORKSPACE_GET_CURRENT,
     async (event: IpcMainInvokeEvent): Promise<{ path: string | null; name: string | null }> => {

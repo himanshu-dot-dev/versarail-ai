@@ -189,6 +189,86 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
     setPrompt('')
   }
 
+  const handleAttachFiles = async () => {
+    if (disabled || !window.electronApi?.selectFile) return
+    try {
+      const res = await window.electronApi.selectFile(workspace.path || undefined)
+      if (res.canceled || !res.filePaths || res.filePaths.length === 0) return
+
+      const formatted = res.filePaths.map((fp) => {
+        const normalizedFp = fp.replace(/\\/g, '/')
+        if (workspace.path) {
+          const normalizedWs = workspace.path.replace(/\\/g, '/').replace(/\/$/, '')
+          if (normalizedFp.toLowerCase().startsWith(normalizedWs.toLowerCase() + '/')) {
+            const rel = normalizedFp.slice(normalizedWs.length + 1)
+            return `@${rel}`
+          }
+        }
+        return `@${normalizedFp}`
+      })
+
+      const textarea = textareaRef.current
+      const currentVal = prompt
+      const cursorPos = textarea ? textarea.selectionStart : currentVal.length
+      const textBefore = currentVal.slice(0, cursorPos)
+      const textAfter = currentVal.slice(cursorPos)
+
+      const needsLeadingSpace = textBefore.length > 0 && !/\s$/.test(textBefore)
+      const insertion = (needsLeadingSpace ? ' ' : '') + formatted.join(' ') + ' '
+      const newPrompt = textBefore + insertion + textAfter
+
+      setPrompt(newPrompt)
+
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+          const newCursor = cursorPos + insertion.length
+          textareaRef.current.setSelectionRange(newCursor, newCursor)
+        }
+      }, 50)
+    } catch (err) {
+      console.error('Failed to attach files:', err)
+    }
+  }
+
+  const handleInsertCodeSnippet = () => {
+    if (disabled) return
+    const textarea = textareaRef.current
+    const currentVal = prompt
+    const start = textarea ? textarea.selectionStart : currentVal.length
+    const end = textarea ? textarea.selectionEnd : currentVal.length
+
+    const textBefore = currentVal.slice(0, start)
+    const selectedText = currentVal.slice(start, end)
+    const textAfter = currentVal.slice(end)
+
+    const needsPrefixNewline = textBefore.length > 0 && !textBefore.endsWith('\n')
+    const prefix = needsPrefixNewline ? '\n' : ''
+    const needsSuffixNewline = textAfter.length > 0 && !textAfter.startsWith('\n')
+    const suffix = needsSuffixNewline ? '\n' : ''
+
+    let insertion = ''
+    let cursorTarget = 0
+
+    if (selectedText.trim()) {
+      insertion = `${prefix}\`\`\`\n${selectedText}\n\`\`\`${suffix}`
+      cursorTarget = start + insertion.length
+    } else {
+      insertion = `${prefix}\`\`\`\n\n\`\`\`${suffix}`
+      cursorTarget = start + prefix.length + 4
+    }
+
+    const newPrompt = textBefore + insertion + textAfter
+    setPrompt(newPrompt)
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(cursorTarget, cursorTarget)
+      }
+    }, 50)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showMentions && matchingFiles.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -268,7 +348,9 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
           <div className="flex items-center gap-space-sm flex-wrap">
             {/* Attachment Button */}
             <button
-              className="w-8 h-8 flex items-center justify-center rounded bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+              onClick={handleAttachFiles}
+              disabled={disabled}
+              className="w-8 h-8 flex items-center justify-center rounded bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               title="Attach Files"
               type="button"
             >
@@ -277,7 +359,9 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
 
             {/* Code Snippet Button */}
             <button
-              className="w-8 h-8 flex items-center justify-center rounded bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+              onClick={handleInsertCodeSnippet}
+              disabled={disabled}
+              className="w-8 h-8 flex items-center justify-center rounded bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               title="Insert Code Snippet"
               type="button"
             >

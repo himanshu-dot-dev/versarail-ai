@@ -38,6 +38,7 @@ export const IPC_CHANNELS = {
 
   // Workspace & Filesystem
   WORKSPACE_SELECT_FOLDER: 'workspace:select-folder',
+  WORKSPACE_SELECT_FILE: 'workspace:select-file',
   WORKSPACE_GET_CURRENT: 'workspace:get-current',
   WORKSPACE_SET: 'workspace:set',
   WORKSPACE_INSPECT_FILES: 'workspace:inspect-files',

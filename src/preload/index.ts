@@ -153,6 +153,9 @@ const electronApi: IElectronApi = {
   selectWorkspaceFolder: (): Promise<{ canceled: boolean; path?: string }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_SELECT_FOLDER)
   },
+  selectFile: (defaultPath?: string): Promise<{ canceled: boolean; filePaths?: string[] }> => {
+    return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_SELECT_FILE, defaultPath)
+  },
   getCurrentWorkspace: (): Promise<{ path: string | null; name: string | null }> => {
     return ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_GET_CURRENT)
   },

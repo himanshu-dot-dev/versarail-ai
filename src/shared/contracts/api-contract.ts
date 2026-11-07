@@ -95,6 +95,7 @@ export interface IElectronApi {
 
   // Workspace
   selectWorkspaceFolder: () => Promise<{ canceled: boolean; path?: string }>
+  selectFile: (defaultPath?: string) => Promise<{ canceled: boolean; filePaths?: string[] }>
   getCurrentWorkspace: () => Promise<{ path: string | null; name: string | null }>
   setWorkspace: (folderPath: string) => Promise<{ path: string | null; name: string | null }>
   inspectWorkspaceFiles: (relativeDir?: string) => Promise<{ files: string[]; dirs: string[] }>
