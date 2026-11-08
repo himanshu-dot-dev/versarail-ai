@@ -166,6 +166,11 @@ window.electronApi = {
     name: 'ai-agent-harness'
   }),
 
+  selectFile: async () => ({
+    canceled: false,
+    filePaths: ['src/App.tsx']
+  }),
+
   inspectWorkspaceFiles: async () => ({
     dirs: ['src', 'out', 'tests'],
     files: ['package.json', 'README.md', 'tsconfig.json']
@@ -283,12 +288,7 @@ window.electronApi = {
   deleteCredential: async () => ({ success: true }),
   setProviderEnabled: async () => ({ success: true }),
   validateCredential: async () => ({ valid: true }),
-  testProviderConnection: async () => ({ success: true, latencyMs: 240, modelsCount: 4 }),
-
-  onTerminalData: () => () => {},
-  writeTerminal: () => {},
-  resizeTerminal: () => {},
-  closeTerminal: () => {}
+  testProviderConnection: async () => ({ success: true, latencyMs: 240, modelsCount: 4 })
 };
 console.log('[MCP Server Mock] window.electronApi initialized successfully.');
 </script>

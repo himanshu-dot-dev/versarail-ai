@@ -1,6 +1,6 @@
 /**
  * VersaRail AI Agent Harness - Subprocess Lifecycle & Command Security Tests
- * Milestone 9: Dual Terminal & Agent Command Runner
+ * Agent Command Runner Lifecycle & Security
  *
  * Verifies that:
  * 1. Structured argument arrays prevent shell command injection.
@@ -8,28 +8,21 @@
  * 3. Mid-flight AbortSignal cancellation terminates process trees cleanly.
  * 4. Output buffer caps prevent memory exhaustion from runaway loops.
  * 5. Secret redaction automatically masks credentials appearing in command stdout/stderr.
- * 6. UserTerminalService spawns interactive shells, handles keystrokes, and closes cleanly.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { AgentCommandRunner } from '../../src/main/agent/command-runner'
-import { UserTerminalService } from '../../src/main/terminal/terminal-service'
 
-describe('Subprocess Lifecycle & Dual Terminal Execution Security', () => {
+describe('Subprocess Lifecycle & Agent Command Execution Security', () => {
   let runner: AgentCommandRunner
-  let terminalService: UserTerminalService
 
   beforeEach(() => {
     AgentCommandRunner.resetInstance()
-    UserTerminalService.resetInstance()
-
     runner = AgentCommandRunner.getInstance()
-    terminalService = UserTerminalService.getInstance()
   })
 
   afterEach(() => {
     AgentCommandRunner.resetInstance()
-    UserTerminalService.resetInstance()
   })
 
   it('executes commands with structured arguments preventing shell injection', async () => {
@@ -121,49 +114,5 @@ describe('Subprocess Lifecycle & Dual Terminal Execution Security', () => {
 
     expect(result.stdout).not.toContain(mockApiKey)
     expect(result.stdout).toContain('[REDACTED_SECRET]')
-  })
-
-  it('spawns interactive user terminal session and streams I/O cleanly', async () => {
-    return new Promise<void>((resolve, reject) => {
-      let outputBuffer = ''
-      const timeout = setTimeout(() => {
-        terminalService.closeAllSessions()
-        reject(new Error('Terminal response timed out'))
-      }, 5000)
-
-      const { sessionId } = terminalService.createSession({
-        onData: (data) => {
-          outputBuffer += data
-          if (outputBuffer.includes('VERSARAIL_TERMINAL_ECHO')) {
-            clearTimeout(timeout)
-            terminalService.closeSession(sessionId)
-            expect(terminalService.getActiveSessionCount()).toBe(0)
-            resolve()
-          }
-        }
-      })
-
-      expect(sessionId).toBeDefined()
-      expect(terminalService.getActiveSessionCount()).toBe(1)
-
-      // Send command to shell stdin
-      const newline = process.platform === 'win32' ? '\r\n' : '\n'
-      terminalService.write(sessionId, `echo VERSARAIL_TERMINAL_ECHO${newline}`)
-    })
-  })
-
-  it('terminates user terminal process tree when session is closed', async () => {
-    const { sessionId } = terminalService.createSession()
-    expect(terminalService.getActiveSessionCount()).toBe(1)
-
-    const session = terminalService.getSession(sessionId)
-    expect(session).toBeDefined()
-    const pid = session?.child.pid
-    expect(pid).toBeDefined()
-
-    const closed = terminalService.closeSession(sessionId)
-    expect(closed).toBe(true)
-    expect(terminalService.getActiveSessionCount()).toBe(0)
-    expect(terminalService.getSession(sessionId)).toBeUndefined()
   })
 })
