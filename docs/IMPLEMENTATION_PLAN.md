@@ -25,6 +25,7 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 
 ### P1 — Planned Extensions (Post-MVP)
 * Additional provider adapters (Anthropic Claude, Mistral, Cohere).
+* **Universal Free Web Search Tool (`net:search`):** Real-time keyword retrieval with zero-cost public MCP (Exa/DuckDuckGo) fallback mesh and semantic highlight extraction. (See full specification in Section 6 below).
 * Per-hunk selective staging and patch editing.
 * Semantic vector search / local AST code indexing.
 * Advanced usage analytics and token cost calculation.
@@ -275,3 +276,246 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 | **TOCTOU Race Condition during File Patch Application** | High | Medium | **Mitigated:** Baseline SHA-256 content hashing upon file read; re-verification immediately before atomic rename. External modifications trigger an explicit conflict alert. |
 | **Orphaned Runaway Subprocesses from Agent Commands** | High | Medium | **Mitigated:** Enforced process-tree termination using `tree-kill` on timeout, cancellation, or application exit. Capped stdout/stderr buffers at 1MB. |
 | **Secret Exfiltration via Telemetry or Logs** | High | Medium | **Mitigated:** Zero remote telemetry. Centralized `SecretRedactor` scans all logs, error objects, and IPC events. Stored secrets never sent back to the renderer after initial submission. |
+
+---
+
+## 6. Specification & Implementation Plan: Universal Free Web Search Tool
+
+*Target: VersaRail AI Agent Harness (Electron + Node.js + TypeScript + React)*  
+*Reference Architectures: `kilocode-main` (`@opencode-ai/core/tool/websearch`, `@kilocode/kilo-gateway`, `mcp-websearch.ts`)*  
+*Target Feature: `net:search` (Web Search Tool)*  
+*Status: Ready for Implementation*
+
+### 6.1 Overview & Problem Statement
+AI coding agents are inherently constrained by training knowledge cutoffs. When working with recent library versions (Tailwind v4, React 19, Node 22, Bun 1.2), emerging cloud SDKs, or obscure GitHub issues, the model needs real-time web search capabilities.
+
+Following the architecture audited in **Kilo Code** (`kilocode-main`), we introduce a native, provider-independent **`web_search`** tool to the VersaRail AI Agent Harness:
+- **100% Free Out of the Box:** Operates with **zero required API keys, zero paid plans, and zero credit cards** by leveraging public Model Context Protocol (MCP) search endpoints and keyless fallback engines.
+- **Natural Language & Keyword Search:** The agent does not need a known URL; it autonomously constructs search keywords (e.g., `"effect-ts schema decodeUnknownSync breaking changes"`), executes the search, extracts relevant sentence highlights, and synthesizes the answer.
+- **Integrated Security & Permission Controls:** Fully compliant with VersaRail's `PermissionBroker`, TOCTOU hashing, and secret redaction policies.
+
+### 6.2 Architectural Patterns Ingested from `kilocode-main`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   KILO CODE DESIGN PATTERNS                             │
+├────────────────────────────────┬────────────────────────────────────────────────────────┤
+│ Pattern in `kilocode-main`     │ How We Implement It in VersaRail Agent Harness          │
+├────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ 1. `websearch` vs `webfetch`   │ Clean separation of concerns:                          │
+│    separation                  │ - `web_search`: Query -> Search Index -> Ranked URLs + │
+│                                │   Highlights                                           │
+│                                │ - `web_fetch`: URL -> Scrapes page -> Clean Markdown   │
+├────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ 2. MCP JSON-RPC Transport      │ Use standard Model Context Protocol over HTTP POST:    │
+│    (`mcp.exa.ai/mcp`)          │ - Protocol: JSON-RPC 2.0 tools/call                   │
+│                                │ - Header: `Accept: application/json, text/event-stream`│
+│                                │ - Fallback: Works without an API key out of the box    │
+├────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ 3. Semantic Sentence           │ Rather than dumping megabytes of noisy HTML or raw DOM │
+│    Highlights                  │ trees, extract curated sentence highlights (`> ...`).  │
+│                                │ Minimizes token usage and preserves context window.    │
+├────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ 4. Flexible Transport Fallback │ Hierarchical search provider resolution:               │
+│    Priority                    │ BYOK Key -> Public Free MCP -> DuckDuckGo -> Native    │
+├────────────────────────────────┼────────────────────────────────────────────────────────┤
+│ 5. Temporal Anchor Prompting   │ Inject current year dynamically into the tool prompt:  │
+│    ("The year is {{year}}")    │ Prevents LLM from searching for outdated years when    │
+│                                │ querying "latest news or updates".                     │
+└────────────────────────────────┴────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Security Boundaries & Capability Design
+In accordance with [`docs/SECURITY_THREAT_MODEL.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/SECURITY_THREAT_MODEL.md):
+
+* **Capability Identifier**: `'net:search'`
+* **Risk Classification**: `'low'`
+* **Permission Modal Details**:
+  * Title: `"Web Search"`
+  * Description: `"Search the web for: \"<query>\" (<numResults> results)"`
+  * Action: Prompts user according to active permission mode (`prompt`, `session`, or `always_allow`).
+* **Secret Redaction**:
+  * Before outbound query dispatch, the query is passed through `SecretRedactor` to guarantee private tokens, environment variables (`API_KEY`, `PASSWORD`), or local file paths are never leaked to external search providers.
+* **Timeout & Abort Propagation**:
+  * Hard timeout of 20 seconds.
+  * Respects `ToolExecutionContext.signal` (cancels immediately if user clicks Stop).
+
+### 6.4 Free Search Provider Fallback Mesh
+
+```mermaid
+flowchart TD
+    Agent["AI Agent Loop (Tool Call: web_search)"] --> Redact["Sanitize Query (SecretRedactor)"]
+    Redact --> Broker["PermissionBroker Check (net:search)"]
+    Broker -- "Denied" --> DeniedErr["Return Tool Error: Permission Denied"]
+    Broker -- "Granted" --> RouteCheck{"Evaluate Configured Providers"}
+    
+    RouteCheck -- "User BYOK Provided (EXA_API_KEY / TAVILY_API_KEY)" --> BYOK["Call Private Search API"]
+    RouteCheck -- "Default (No Key Configured)" --> PublicExa["Exa Public MCP Endpoint (https://mcp.exa.ai/mcp)"]
+    
+    PublicExa -- "Success (200 OK)" --> ParseResults["Parse MCP Payload & Highlights"]
+    PublicExa -- "Fail / Rate Limited (429/500)" --> DDGFallback["Fallback: DuckDuckGo HTML / Instant Search"]
+    
+    BYOK -- "Success" --> ParseResults
+    BYOK -- "Fail" --> PublicExa
+    
+    DDGFallback --> ParseResults
+    ParseResults --> Output["Return Formatted Markdown Chunks to Agent"]
+```
+
+### 6.5 Implementation Components
+
+#### Component 1: Capability & Domain Model Updates
+Update `ToolCapability` in `src/shared/domain/models.ts` and `src/main/tools/tool.interface.ts`:
+```typescript
+export type ToolCapability = 'fs:read' | 'fs:write' | 'fs:delete' | 'cmd:exec' | 'net:search'
+```
+
+#### Component 2: Built-in `WebSearchTool` (`src/main/tools/builtin/web-search.tool.ts`)
+```typescript
+import { z } from 'zod'
+import { ITool, ToolExecutionContext, PermissionDetails } from '../tool.interface'
+
+export const WebSearchInputSchema = z.object({
+  query: z.string().min(1, 'Search query cannot be empty'),
+  numResults: z.number().int().min(1).max(10).optional().default(5)
+})
+
+export type WebSearchInput = z.infer<typeof WebSearchInputSchema>
+
+export const WebSearchOutputSchema = z.object({
+  query: z.string(),
+  content: z.string()
+})
+
+export type WebSearchOutput = z.infer<typeof WebSearchOutputSchema>
+
+export class WebSearchTool implements ITool<WebSearchInput, WebSearchOutput> {
+  public readonly name = 'web_search'
+  public readonly description = 'Searches the web for recent documentation, real-time news, and technical information using keywords.'
+  public readonly capability = 'net:search' as any
+  public readonly riskLevel = 'low' as const
+  public readonly inputSchema = WebSearchInputSchema
+  public readonly outputSchema = WebSearchOutputSchema
+
+  public formatPermissionRequest(input: WebSearchInput, _context: ToolExecutionContext): PermissionDetails {
+    return {
+      title: 'Web Search',
+      description: `Search the web for: "${input.query}" (${input.numResults ?? 5} results)`
+    }
+  }
+
+  public async execute(input: WebSearchInput, context: ToolExecutionContext): Promise<WebSearchOutput> {
+    const response = await fetch('https://mcp.exa.ai/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream'
+      },
+      signal: context.signal,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'web_search_exa',
+          arguments: {
+            query: input.query,
+            numResults: input.numResults ?? 5
+          }
+        }
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Web search failed with HTTP status: ${response.status}`)
+    }
+
+    const rawText = await response.text()
+    const content = this.parseMcpResponse(rawText)
+
+    return {
+      query: input.query,
+      content: content || 'No search results found. Please try a different query.'
+    }
+  }
+
+  private parseMcpResponse(body: string): string | undefined {
+    const parsePayload = (text: string) => {
+      try {
+        const json = JSON.parse(text)
+        return json?.result?.content?.find((c: any) => c.text)?.text
+      } catch {
+        return undefined
+      }
+    }
+
+    const trimmed = body.trim()
+    if (trimmed.startsWith('{')) {
+      return parsePayload(trimmed)
+    }
+
+    for (const line of trimmed.split('\n')) {
+      if (line.startsWith('data: ')) {
+        const res = parsePayload(line.slice(6))
+        if (res) return res
+      }
+    }
+    return undefined
+  }
+}
+```
+
+#### Component 3: OpenAI Wire Protocol Registration (`src/main/tools/builtin-tool-definitions.ts`)
+```typescript
+{
+  type: 'function',
+  function: {
+    name: 'web_search',
+    description: 'Searches the web for live documentation, library updates, APIs, and code examples beyond training cutoff. Returns titles, URLs, and text highlights.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query or keywords to look up.'
+        },
+        numResults: {
+          type: 'number',
+          description: 'Number of results to return (1-10, default: 5).'
+        }
+      },
+      required: ['query']
+    }
+  }
+}
+```
+
+#### Component 4: Registry Wire-Up (`src/main/tools/tool-registry.ts`)
+```typescript
+import { WebSearchTool } from './builtin/web-search.tool'
+
+// inside registerDefaults():
+this.registerTool(new WebSearchTool())
+
+// inside getTool() alias resolution:
+if (name === 'websearch') {
+  return this.tools.get('web_search')
+}
+```
+
+#### Component 5: Temporal Prompt Injection (`src/main/agent/agent-runtime.ts`)
+```text
+Web Search Guidelines:
+- The current year is ${new Date().getFullYear()}. Use this year when searching for current events, latest library releases, or recent documentation.
+- Formulate concise, specific search queries rather than asking full conversational questions.
+```
+
+### 6.6 Milestone Tasks
+
+| Task ID | Description | Milestone | Priority | Complexity | Target Path | Dependencies | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **TSK-M14-01** | Add `'net:search'` to `ToolCapability` across domain models and tool interface | M14 | P1 | Low | `src/shared/domain/models.ts`, `src/main/tools/tool.interface.ts` | None | **Completed** |
+| **TSK-M14-02** | Implement `WebSearchTool` with public Exa MCP JSON-RPC caller and parser | M14 | P1 | Medium | `src/main/tools/builtin/web-search.tool.ts` | TSK-M14-01 | **Completed** |
+| **TSK-M14-03** | Register `web_search` in `tool-registry.ts` and `builtin-tool-definitions.ts` | M14 | P1 | Low | `src/main/tools/tool-registry.ts`, `src/main/tools/builtin-tool-definitions.ts` | TSK-M14-02 | **Completed** |
+| **TSK-M14-04** | Implement unit and security tests with mock MCP responses | M14 | P1 | Medium | `tests/unit/tools/web-search-tool.test.ts` | TSK-M14-03 | **Completed** |
+
