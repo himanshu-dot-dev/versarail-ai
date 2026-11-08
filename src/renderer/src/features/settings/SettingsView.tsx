@@ -5,25 +5,7 @@ import { useUiStore } from '../../app/useUiStore'
 export const SettingsView: React.FC = () => {
   const { theme, setTheme } = useUiStore()
 
-  const [activeCategory, setActiveCategory] = useState<
-    'general' | 'ai-defaults' | 'agent-permissions' | 'appearance' | 'privacy'
-  >('general')
-
-  // General settings state
-  const [launchAtStartup, setLaunchAtStartup] = useState(false)
-  const [hardwareAcceleration, setHardwareAcceleration] = useState(true)
-  const [telemetry, setTelemetry] = useState(false)
-
-  // AI Defaults state
-  const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string; providerId: string }>>([])
-  const [defaultModel, setDefaultModel] = useState('')
-  const [codeEngine, setCodeEngine] = useState('')
-  const [temperature, setTemperature] = useState(0.7)
-
-  // Permissions state
-  const [autoFileMod, setAutoFileMod] = useState(false)
-  const [terminalExecution, setTerminalExecution] = useState(false)
-  const [networkRequests, setNetworkRequests] = useState(true)
+  const [activeCategory, setActiveCategory] = useState<'appearance' | 'privacy'>('appearance')
 
   // Privacy & Context Management state
   const [allowedProviders, setAllowedProviders] = useState<string[]>([
@@ -40,7 +22,7 @@ export const SettingsView: React.FC = () => {
   // Save feedback state
   const [savedToast, setSavedToast] = useState(false)
 
-  // Load persisted privacy & settings and live models on mount
+  // Load persisted privacy & settings on mount
   useEffect(() => {
     if (window.electronApi?.getSettings) {
       window.electronApi.getSettings().then((res) => {
@@ -49,16 +31,6 @@ export const SettingsView: React.FC = () => {
           setAuditRetentionDays(res.privacy.auditRetentionDays ?? 30)
           setContextBudgetTokens(res.privacy.contextWindowBudgetTokens ?? 32_000)
           setAutoSummarize(res.privacy.autoSummarizeContext ?? true)
-        }
-      }).catch(console.error)
-    }
-
-    if (window.electronApi?.listModels) {
-      window.electronApi.listModels().then((models) => {
-        if (models && models.length > 0) {
-          setAvailableModels(models.map((m) => ({ id: m.id, name: m.name || m.id, providerId: m.providerId })))
-          setDefaultModel((prev) => prev || models[0].id)
-          setCodeEngine((prev) => prev || models[0].id)
         }
       }).catch(console.error)
     }
@@ -97,13 +69,6 @@ export const SettingsView: React.FC = () => {
   }
 
   const handleReset = () => {
-    setLaunchAtStartup(false)
-    setHardwareAcceleration(true)
-    setTelemetry(false)
-    setTemperature(0.7)
-    setAutoFileMod(false)
-    setTerminalExecution(false)
-    setNetworkRequests(true)
     setAllowedProviders(['gemini', 'groq', 'cerebras', 'openrouter', 'custom'])
     setAuditRetentionDays(30)
     setContextBudgetTokens(32_000)
@@ -127,7 +92,7 @@ export const SettingsView: React.FC = () => {
           </div>
           <h1 className="font-headline-xl text-on-surface text-2xl font-bold tracking-tight">Settings</h1>
           <p className="font-body-md text-on-surface-variant text-xs mt-0.5">
-            Configure global desktop preferences, AI model routing defaults, and execution permissions.
+            Customize interface appearance and configure local privacy, data retention, and provider gating.
           </p>
         </div>
 
@@ -164,9 +129,6 @@ export const SettingsView: React.FC = () => {
           <nav className="flex flex-col gap-space-xs text-xs">
             {(
               [
-                { id: 'general', label: 'General', icon: 'tune' },
-                { id: 'ai-defaults', label: 'AI Defaults', icon: 'neurology' },
-                { id: 'agent-permissions', label: 'Agent Permissions', icon: 'security' },
                 { id: 'appearance', label: 'Appearance', icon: 'palette' },
                 { id: 'privacy', label: 'Privacy & Security', icon: 'shield_lock' }
               ] as const
@@ -196,272 +158,6 @@ export const SettingsView: React.FC = () => {
 
         {/* Form Content Area */}
         <div className="flex-1 p-space-xl overflow-y-auto max-w-4xl flex flex-col gap-space-xl">
-          {/* General Section */}
-          {activeCategory === 'general' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
-              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
-                <div>
-                  <h2 className="font-headline-lg text-on-surface text-base font-semibold">
-                    General Preferences
-                  </h2>
-                  <p className="font-body-md text-on-surface-variant text-xs">
-                    Manage desktop behavior, startup actions, and telemetry options.
-                  </p>
-                </div>
-                <Icon name="tune" size={24} className="text-primary" />
-              </div>
-
-              <div className="flex flex-col gap-space-lg text-xs">
-                {/* Launch at startup */}
-                <div className="flex items-center justify-between py-space-sm">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Launch at system startup
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Start VersaRail AI automatically when your operating system boots up.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={launchAtStartup}
-                      onChange={(e) => setLaunchAtStartup(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                {/* Hardware acceleration */}
-                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Hardware Acceleration
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Utilize GPU rendering for smoother UI transitions and diff viewer rendering.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={hardwareAcceleration}
-                      onChange={(e) => setHardwareAcceleration(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                {/* Telemetry */}
-                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Anonymous Crash Diagnostics
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Send sanitized local crash stack traces to help resolve unexpected desktop errors.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={telemetry}
-                      onChange={(e) => setTelemetry(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* AI Defaults Section */}
-          {activeCategory === 'ai-defaults' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
-              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
-                <div>
-                  <h2 className="font-headline-lg text-on-surface text-base font-semibold">
-                    AI Model Defaults
-                  </h2>
-                  <p className="font-body-md text-on-surface-variant text-xs">
-                    Select primary reasoning engines and context window parameters.
-                  </p>
-                </div>
-                <Icon name="neurology" size={24} className="text-primary" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-space-lg text-xs">
-                {/* Primary Chat Model */}
-                <div className="flex flex-col gap-space-xs">
-                  <label className="font-headline-sm text-on-surface font-medium">Primary Chat Model</label>
-                  <span className="font-body-sm text-on-surface-variant text-[11px]">
-                    Default LLM for general prompts and agentic chat.
-                  </span>
-                  <div className="relative mt-1">
-                    <select
-                      value={defaultModel}
-                      onChange={(e) => setDefaultModel(e.target.value)}
-                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs border border-outline-variant"
-                    >
-                      {availableModels.length > 0 ? (
-                        availableModels.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.providerId.toUpperCase()})
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No models configured - add in AI Providers</option>
-                      )}
-                    </select>
-                    <Icon
-                      name="expand_more"
-                      size={18}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Code Autocomplete Engine */}
-                <div className="flex flex-col gap-space-xs">
-                  <label className="font-headline-sm text-on-surface font-medium">
-                    Fast Tool &amp; Diff Engine
-                  </label>
-                  <span className="font-body-sm text-on-surface-variant text-[11px]">
-                    Low-latency model for quick edits and diff generation.
-                  </span>
-                  <div className="relative mt-1">
-                    <select
-                      value={codeEngine}
-                      onChange={(e) => setCodeEngine(e.target.value)}
-                      className="w-full bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary text-xs border border-outline-variant"
-                    >
-                      {availableModels.length > 0 ? (
-                        availableModels.map((m) => (
-                          <option key={`fast-${m.id}`} value={m.id}>
-                            {m.name} ({m.providerId.toUpperCase()})
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No models configured</option>
-                      )}
-                    </select>
-                    <Icon
-                      name="expand_more"
-                      size={18}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Temperature Slider */}
-              <div className="flex flex-col gap-space-xs pt-space-md border-t border-border-subtle text-xs">
-                <div className="flex items-center justify-between">
-                  <label className="font-headline-sm text-on-surface font-medium">
-                    Sampling Temperature ({temperature})
-                  </label>
-                  <span className="text-[11px] font-mono text-tertiary">
-                    {temperature < 0.3 ? 'Deterministic / Precise' : temperature > 0.8 ? 'Creative' : 'Balanced'}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0.0"
-                  max="1.0"
-                  step="0.05"
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="w-full accent-primary cursor-pointer mt-1"
-                />
-              </div>
-            </section>
-          )}
-
-          {/* Permissions Section */}
-          {activeCategory === 'agent-permissions' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
-              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
-                <div>
-                  <h2 className="font-headline-lg text-on-surface text-base font-semibold">
-                    Agent Permissions &amp; Tool Safety
-                  </h2>
-                  <p className="font-body-md text-on-surface-variant text-xs">
-                    Fine-tune the security boundaries and approval requirements for agent actions.
-                  </p>
-                </div>
-                <Icon name="security" size={24} className="text-primary" />
-              </div>
-
-              <div className="flex flex-col gap-space-lg text-xs">
-                {/* Automatic File Modification */}
-                <div className="flex items-center justify-between py-space-sm">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Auto-Apply File Changes (No Review)
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      When disabled (recommended), the harness presents an interactive diff review before touching disk.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={autoFileMod}
-                      onChange={(e) => setAutoFileMod(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                {/* Terminal Command Execution */}
-                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Terminal Command Execution
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Allow agents to run safe shell commands (npm test, git status) with interactive permission prompt.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={terminalExecution}
-                      onChange={(e) => setTerminalExecution(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                {/* Network / Outbound HTTP */}
-                <div className="flex items-center justify-between py-space-sm border-t border-border-subtle pt-space-md">
-                  <div className="flex flex-col">
-                    <span className="font-headline-sm text-on-surface font-medium text-xs">
-                      Outbound Network Requests
-                    </span>
-                    <span className="font-body-md text-on-surface-variant text-[11px]">
-                      Permit agent tools to fetch external web documentation and API endpoints.
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={networkRequests}
-                      onChange={(e) => setNetworkRequests(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-              </div>
-            </section>
-          )}
-
           {/* Appearance Section */}
           {activeCategory === 'appearance' && (
             <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
@@ -598,7 +294,7 @@ export const SettingsView: React.FC = () => {
                         <button
                           key={p.id}
                           onClick={() => toggleProvider(p.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
                             isAllowed
                               ? 'bg-primary text-on-primary border-primary/40 font-semibold shadow-xs'
                               : 'bg-surface-container-high text-on-surface-variant border-transparent opacity-60 hover:opacity-100'
@@ -631,7 +327,7 @@ export const SettingsView: React.FC = () => {
                       <button
                         key={b}
                         onClick={() => setContextBudgetTokens(b)}
-                        className={`px-2.5 py-1 rounded text-xs font-mono transition-colors border ${
+                        className={`px-2.5 py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${
                           contextBudgetTokens === b
                             ? 'bg-tertiary-container/40 text-tertiary border-tertiary/40 font-bold'
                             : 'bg-surface-container-high text-on-surface-variant border-transparent hover:text-on-surface'
@@ -721,7 +417,7 @@ export const SettingsView: React.FC = () => {
                   </div>
                   <button
                     onClick={handlePurgeDb}
-                    className="px-space-md py-1 rounded bg-error/20 hover:bg-error text-error hover:text-on-error font-medium transition-colors text-xs"
+                    className="px-space-md py-1 rounded bg-error/20 hover:bg-error text-error hover:text-on-error font-medium transition-colors text-xs cursor-pointer"
                   >
                     Purge DB
                   </button>

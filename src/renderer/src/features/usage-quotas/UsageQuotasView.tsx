@@ -3,7 +3,6 @@ import Icon from '../../components/common/Icon'
 import { ProviderMetadataDTO } from '@shared/domain/models'
 
 export const UsageQuotasView: React.FC = () => {
-  const [timeFilter, setTimeFilter] = useState<'today' | '7days' | '30days'>('today')
   const [isSyncing, setIsSyncing] = useState(false)
   const [providers, setProviders] = useState<ProviderMetadataDTO[]>([])
   const [healthMap, setHealthMap] = useState<Record<string, { status: string; cooldownEta?: string | null }>>({})
@@ -39,13 +38,13 @@ export const UsageQuotasView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col w-full p-space-xl gap-space-xl select-none font-sans">
+    <div className="flex flex-col w-full p-space-xl gap-space-xl select-none font-sans max-w-6xl">
       {/* Top Bar / Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-sm border-b border-border-subtle">
         <div>
           <div className="flex items-center gap-space-sm mb-space-xs">
             <span className="text-label-sm text-primary tracking-wider uppercase text-[11px] font-mono">
-              Telemetry &amp; Billing
+              Telemetry &amp; Provider Health
             </span>
             <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
             <span className="text-label-sm text-on-surface-variant font-mono text-[11px]">
@@ -56,136 +55,31 @@ export const UsageQuotasView: React.FC = () => {
             Usage &amp; Quotas
           </h1>
           <p className="font-body-md text-on-surface-variant text-xs mt-0.5">
-            Monitor token consumption, request counts, and provider rate limits across all connected models.
+            Monitor real-time provider endpoint health, active cooldown periods, and failover status.
           </p>
         </div>
 
-        {/* Time Filter Selector */}
-        <div className="flex items-center bg-surface-container-low p-space-xs rounded-xl self-start md:self-auto border border-border-subtle">
-          {(
-            [
-              { id: 'today', label: 'Today' },
-              { id: '7days', label: 'Last 7 days' },
-              { id: '30days', label: 'Last 30 days' }
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setTimeFilter(item.id)}
-              className={`px-space-md py-space-xs rounded-lg text-xs font-medium transition-all ${
-                timeFilter === item.id
-                  ? 'bg-surface-container-high text-on-surface shadow-sm'
-                  : 'text-on-surface-variant hover:text-on-surface'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant transition-colors self-start md:self-auto cursor-pointer"
+        >
+          <Icon name="refresh" size={15} className={isSyncing ? 'animate-spin text-primary' : 'text-on-surface-variant'} />
+          <span>Sync Status</span>
+        </button>
       </div>
 
-      {/* Summary Metric Cards (Bento Grid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-space-md">
-        {/* Total Requests */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-all pointer-events-none"></div>
-          <div className="flex items-center justify-between mb-space-md">
-            <span className="text-label-sm text-on-surface-variant text-[11px]">Total Requests</span>
-            <Icon name="dns" size={18} className="text-primary" />
-          </div>
-          <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
-            <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-on-surface-variant text-[10px]">-- vs last period</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Successful */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-tertiary/5 rounded-full blur-xl group-hover:bg-tertiary/10 transition-all pointer-events-none"></div>
-          <div className="flex items-center justify-between mb-space-md">
-            <span className="text-label-sm text-on-surface-variant text-[11px]">Successful</span>
-            <Icon name="check_circle" size={18} className="text-tertiary" />
-          </div>
-          <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
-            <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-on-surface-variant font-mono text-[10px]">
-                -- success rate
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Failed */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-error/5 rounded-full blur-xl group-hover:bg-error/10 transition-all pointer-events-none"></div>
-          <div className="flex items-center justify-between mb-space-md">
-            <span className="text-label-sm text-on-surface-variant text-[11px]">Failed</span>
-            <Icon name="error" size={18} className="text-error" />
-          </div>
-          <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
-            <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-on-surface-variant text-[10px]">0.0% error rate</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Fallback Events */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all border border-border-subtle">
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-secondary/5 rounded-full blur-xl group-hover:bg-secondary/10 transition-all pointer-events-none"></div>
-          <div className="flex items-center justify-between mb-space-md">
-            <span className="text-label-sm text-on-surface-variant text-[11px]">Fallback Events</span>
-            <Icon name="alt_route" size={18} className="text-secondary" />
-          </div>
-          <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">0</div>
-            <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-secondary text-[10px]">0 auto-routed</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Estimated Cost */}
-        <div className="bg-surface-container-low rounded-xl p-space-lg flex flex-col justify-between relative overflow-hidden group hover:bg-surface-container transition-all sm:col-span-2 lg:col-span-1 border border-border-subtle">
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary-container/20 rounded-full blur-xl group-hover:bg-primary-container/30 transition-all pointer-events-none"></div>
-          <div className="flex items-center justify-between mb-space-md">
-            <span className="text-label-sm text-on-surface-variant text-[11px]">Estimated Cost</span>
-            <Icon name="payments" size={18} className="text-primary" />
-          </div>
-          <div>
-            <div className="font-headline-lg text-on-surface font-mono text-xl font-bold">$0.00</div>
-            <div className="flex items-center gap-space-xs mt-1">
-              <span className="text-label-sm text-on-surface-variant font-mono text-[10px]">
-                BYOK Direct Rates
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Layout (Split: Usage Breakdown + Telemetry Graph) */}
+      {/* Main Content Layout (Split: Provider Health Breakdown + Telemetry) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-xl">
-        {/* Per-Provider Usage Breakdown (2 Columns Wide) */}
+        {/* Live Provider Health & Status (2 Columns Wide) */}
         <div className="lg:col-span-2 bg-surface-container-low rounded-xl p-space-xl flex flex-col gap-space-lg border border-border-subtle">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-headline-md text-on-surface font-semibold text-sm">
-                Provider Quota Breakdown
-              </h2>
-              <p className="font-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                Real-time usage limits and consumption per AI gateway connection.
-              </p>
-            </div>
-            <button
-              onClick={handleSync}
-              className="flex items-center gap-space-xs text-label-sm text-primary hover:underline text-xs cursor-pointer"
-            >
-              <Icon name="refresh" size={14} className={isSyncing ? 'animate-spin' : ''} />
-              Sync Quotas
-            </button>
+          <div>
+            <h2 className="font-headline-md text-on-surface font-semibold text-sm">
+              Live Provider Health &amp; Rate Limit Status
+            </h2>
+            <p className="font-body-sm text-on-surface-variant text-[11px] mt-0.5">
+              Active status and dynamic cooldown recovery for configured AI model gateways.
+            </p>
           </div>
 
           <div className="flex flex-col gap-space-md">
@@ -193,10 +87,10 @@ export const UsageQuotasView: React.FC = () => {
               <div className="p-space-xl rounded-xl bg-surface-container flex flex-col items-center justify-center text-center gap-space-xs border border-dashed border-border-subtle py-10">
                 <Icon name="query_stats" size={28} className="text-on-surface-variant/60" />
                 <span className="font-headline-sm text-on-surface font-medium text-xs">
-                  No Provider Quotas
+                  No Providers Configured
                 </span>
                 <span className="text-[11px] text-on-surface-variant max-w-xs">
-                  Connect your API providers to monitor live token quotas, request throughput, and reset times.
+                  Configure API keys in Settings to activate real-time health monitoring and automated failover.
                 </span>
               </div>
             ) : (
@@ -208,7 +102,7 @@ export const UsageQuotasView: React.FC = () => {
                 return (
                   <div
                     key={p.id}
-                    className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all"
+                    className="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md hover:bg-surface-container-high transition-all border border-border-subtle/50"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-space-md">
@@ -221,10 +115,12 @@ export const UsageQuotasView: React.FC = () => {
                               {p.label}
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded text-label-sm font-mono text-[10px] ${
+                              className={`px-2 py-0.5 rounded text-label-sm font-mono text-[10px] font-semibold ${
                                 isCooldown || isQuotaExhausted
                                   ? 'bg-error/20 text-error'
-                                  : 'bg-tertiary-container/30 text-tertiary'
+                                  : p.enabled
+                                  ? 'bg-tertiary-container/30 text-tertiary'
+                                  : 'bg-surface-container-highest text-on-surface-variant'
                               }`}
                             >
                               {isCooldown
@@ -237,25 +133,22 @@ export const UsageQuotasView: React.FC = () => {
                             </span>
                           </div>
                           <span className="text-body-sm text-on-surface-variant font-mono text-[11px]">
-                            {p.providerId.toUpperCase()} Endpoint
+                            {p.providerId.toUpperCase()} Gateway
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-mono text-body-md text-on-surface text-xs">
-                          Active Key Configured
+                          {p.enabled ? 'Active Endpoint' : 'Inactive'}
                         </div>
                         <div className="text-label-sm text-on-surface-variant text-[10px]">
-                          BYOK Model Rates
+                          Hardware DPAPI Encrypted
                         </div>
                       </div>
                     </div>
-                    <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                      <div className="bg-primary h-full rounded-full" style={{ width: '0%' }}></div>
-                    </div>
-                    <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono">
-                      <span>Rate Limit: Dynamic / Tier Default</span>
-                      <span>Hardware DPAPI Encrypted</span>
+                    <div className="flex items-center justify-between text-label-sm text-on-surface-variant text-[10px] font-mono pt-1 border-t border-border-subtle/40">
+                      <span>Gateway Mode: {p.isConfigured ? 'BYOK Direct' : 'Dynamic Endpoint'}</span>
+                      <span>Health Check: Auto-heartbeat</span>
                     </div>
                   </div>
                 )
@@ -278,7 +171,7 @@ export const UsageQuotasView: React.FC = () => {
               <Icon name="check_circle" size={24} className="text-tertiary" />
               <span className="text-xs text-on-surface font-medium">All Endpoints Stable</span>
               <span className="text-[11px] text-on-surface-variant max-w-xs">
-                No failover events or rate limit recoveries recorded.
+                No active failover cascades or rate limit cooldown recoveries in progress.
               </span>
             </div>
           </div>
