@@ -6,6 +6,7 @@ import { SqliteDatabase } from '../../storage/sqlite-database'
 import { SaveCredentialSchema } from '@shared/schemas/provider.schema'
 import { ProviderMetadataDTO, ModelDescriptorDTO, ProviderId } from '@shared/domain/models'
 import { ProviderRegistry } from '../../providers/provider-registry'
+import { ContextManager } from '../../agent/context-manager'
 import { formatResetEta } from '../../providers/utils/reset-eta'
 import { randomUUID } from 'crypto'
 
@@ -254,12 +255,46 @@ export function registerProviderHandlers(): void {
     }
   )
 
-  // 6. List Available Models
+  // 6. List Available Models (Filtered strictly by enabled status and configuration)
   ipcMain.handle(
     IPC_CHANNELS.MODELS_LIST_AVAILABLE,
     async (event: IpcMainInvokeEvent, providerId?: string): Promise<ModelDescriptorDTO[]> => {
       if (!SenderVerifier.verify(event, IPC_CHANNELS.MODELS_LIST_AVAILABLE)) {
         throw new Error('Access denied: Unauthorized IPC sender')
+      }
+
+      // Query database for configured provider metadata and their enabled statuses
+      let dbProviders: Array<{ id: string; provider_id: string; enabled: number }> = []
+      try {
+        dbProviders = db.prepare('SELECT id, provider_id, enabled FROM provider_metadata').all() as Array<{
+          id: string
+          provider_id: string
+          enabled: number
+        }>
+      } catch {
+        // In isolated test environments without database, continue gracefully
+      }
+
+      const disabledProviders = new Set<string>()
+      const enabledProviders = new Set<string>()
+
+      for (const row of dbProviders) {
+        if (row.enabled === 0) {
+          disabledProviders.add(row.provider_id)
+        } else {
+          enabledProviders.add(row.provider_id)
+        }
+      }
+
+      // Check workspace privacy allowed providers
+      let privacyAllowed: Set<string> | null = null
+      try {
+        const privacy = ContextManager.getInstance().getPrivacySettings()
+        if (Array.isArray(privacy.allowedProviders)) {
+          privacyAllowed = new Set(privacy.allowedProviders)
+        }
+      } catch {
+        // Ignore in tests
       }
 
       const adapters = providerId
@@ -270,8 +305,28 @@ export function registerProviderHandlers(): void {
 
       for (const adapter of adapters) {
         if (!adapter) continue
-        // Retrieve key if any
+
+        // If provider is explicitly disabled in provider_metadata, omit its models from chat
+        if (disabledProviders.has(adapter.id) && !enabledProviders.has(adapter.id)) {
+          continue
+        }
+
+        // If workspace privacy settings disallowed this provider, omit its models
+        if (privacyAllowed && !privacyAllowed.has(adapter.id)) {
+          continue
+        }
+
+        // Retrieve credentials if any
         const creds = secretStore.listCredentialMetadata().filter((c) => c.providerId === adapter.id)
+
+        // A provider is only available in chat if it is actively enabled in provider_metadata
+        // (or if it's a keyless free tier that hasn't been explicitly disabled)
+        const isKeyless = adapter.id === 'pollinations' || adapter.id === 'kilo'
+        const isExplicitlyEnabled = enabledProviders.has(adapter.id)
+        if (!isExplicitlyEnabled && !isKeyless && !providerId && dbProviders.length > 0) {
+          continue
+        }
+
         let key = ''
         let customEndpoint: string | undefined
         if (creds.length > 0) {
@@ -280,7 +335,7 @@ export function registerProviderHandlers(): void {
             key = normalizeKey(decrypted)
           }
           customEndpoint = creds[0].customEndpoint
-        } else if (adapter.id === 'pollinations' || adapter.id === 'kilo') {
+        } else if (isKeyless) {
           key = 'no-key'
         }
 

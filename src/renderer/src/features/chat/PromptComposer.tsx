@@ -95,13 +95,29 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
 
   // Fetch available models when dropdown opens
   useEffect(() => {
-    if (isModelOpen && window.electronApi?.listModels) {
-      setIsLoadingModels(true)
+    if (window.electronApi?.listModels) {
+      if (isModelOpen) {
+        setIsLoadingModels(true)
+      }
       window.electronApi
         .listModels()
         .then((res) => {
           if (Array.isArray(res)) {
             setModels(res.map((m) => ({ id: m.id, name: m.name || m.id, providerId: m.providerId })))
+            // If currently selected model belongs to a disabled provider, reset to auto mode
+            if (
+              connectedModel.providerId &&
+              connectedModel.providerId !== 'auto' &&
+              res.length > 0 &&
+              !res.some((m) => m.providerId === connectedModel.providerId)
+            ) {
+              setConnectedModel({
+                name: 'AI Agent (Auto-Switch)',
+                provider: 'Universal AI Agent',
+                providerId: 'auto',
+                isConnected: true
+              })
+            }
           }
         })
         .catch(console.error)
@@ -507,8 +523,17 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                             {models.length > otherModels.length ? ` of ${models.length}` : ''})
                           </div>
                           {otherModels.length === 0 ? (
-                            <div className="p-4 text-center text-xs text-on-surface-variant">
-                              No models matching "{modelSearch}"
+                            <div className="p-4 text-center text-xs text-on-surface-variant flex flex-col items-center gap-1">
+                              <span>
+                                {models.length === 0
+                                  ? 'No enabled providers available'
+                                  : `No models matching "${modelSearch}"`}
+                              </span>
+                              {models.length === 0 && (
+                                <span className="text-[10px] text-primary/80">
+                                  Enable providers in AI Providers to see models here.
+                                </span>
+                              )}
                             </div>
                           ) : (
                             otherModels.map((m) => {
