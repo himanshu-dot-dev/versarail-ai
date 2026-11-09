@@ -62,6 +62,27 @@ export class AgentCommandRunner {
   }
 
   /**
+   * Terminates all currently active spawned child processes.
+   */
+  public async terminateAll(signal: string = 'SIGKILL'): Promise<void> {
+    const pids = Array.from(this.activeProcesses.keys())
+    for (const pidStr of pids) {
+      const child = this.activeProcesses.get(pidStr)
+      const pid = Number(pidStr)
+      if (pid && !isNaN(pid)) {
+        await this.terminateProcessTree(pid, signal)
+      } else if (child) {
+        try {
+          child.kill(signal as NodeJS.Signals)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    this.activeProcesses.clear()
+  }
+
+  /**
    * Sanitizes process environment by stripping all credentials and API keys.
    */
   public static sanitizeEnvironment(customEnv?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

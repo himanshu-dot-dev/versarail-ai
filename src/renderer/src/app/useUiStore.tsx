@@ -218,7 +218,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
     if (window.electronApi?.listProviders) {
       window.electronApi.listProviders().then(async (providers) => {
-        const active = providers?.find((p) => p.enabled)
+        const active = providers?.find((p) => p.enabled !== false)
         if (active) {
           let modelName =
             active.providerId === 'gemini'

@@ -4,6 +4,7 @@ import { registerCustomProtocol, setupProtocolHandler } from './app/protocol-han
 import { createMainWindow } from './app/window-manager'
 import { registerIpcHandlers } from './ipc/ipc-router'
 import { SqliteDatabase } from './storage/sqlite-database'
+import { AgentCommandRunner } from './agent/command-runner'
 
 // Configure isolated user data directory if specified (e.g. for Playwright or e2e tests)
 const customUserDataArg = process.argv.find((a) => a.startsWith('--user-data-dir='))
@@ -63,6 +64,20 @@ if (!gotTheLock) {
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
       app.quit()
+    }
+  })
+
+  // Gracefully terminate any spawned child processes and close SQLite cleanly
+  app.on('will-quit', () => {
+    try {
+      AgentCommandRunner.getInstance().terminateAll()
+    } catch {
+      // ignore
+    }
+    try {
+      SqliteDatabase.getInstance().close()
+    } catch {
+      // ignore
     }
   })
 }

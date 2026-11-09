@@ -148,7 +148,7 @@ export class ContextManager {
         }
       }
       summaryMessage = {
-        role: 'system',
+        role: 'user',
         content: `[Context Window Compacted: ${discardedTurns.length} earlier turns summarized to fit model context ceiling]\n${topics.slice(0, 5).join('\n')}`
       }
     }

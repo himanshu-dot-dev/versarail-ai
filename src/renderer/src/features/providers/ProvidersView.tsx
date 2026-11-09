@@ -261,7 +261,7 @@ export const ProvidersView: React.FC = () => {
                   <>
                     Primary execution routes through{' '}
                     <strong className="text-on-surface">
-                      {providers.find((p) => p.enabled)?.label || providers[0].label}
+                      {providers.find((p) => p.enabled !== false)?.label || providers[0]?.label}
                     </strong>{' '}
                     with automatic failover to available backup endpoints on rate-limit (429) or transient 5xx server errors.
                   </>
@@ -396,10 +396,11 @@ export const ProvidersView: React.FC = () => {
                             </span>
                           )
                         }
+                        const isEnabled = p.enabled !== false
                         return (
                           <span className="flex items-center gap-1 text-tertiary text-label-sm font-mono">
-                            <span className={`w-1.5 h-1.5 rounded-full ${p.enabled ? 'bg-tertiary animate-pulse' : 'bg-outline'}`} />
-                            {p.enabled ? 'Connected' : 'Disabled'}
+                            <span className={`w-1.5 h-1.5 rounded-full ${isEnabled ? 'bg-tertiary animate-pulse' : 'bg-outline'}`} />
+                            {isEnabled ? 'Connected' : 'Disabled'}
                           </span>
                         )
                       })()}
@@ -471,15 +472,20 @@ export const ProvidersView: React.FC = () => {
                   </button>
 
                   {/* Toggle Switch */}
-                  <label className="relative inline-flex items-center cursor-pointer" title={p.enabled ? 'Click to disable provider' : 'Click to enable provider'}>
-                    <input
-                      type="checkbox"
-                      checked={p.enabled}
-                      onChange={() => handleToggle(p.id, p.enabled)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-                  </label>
+                  {(() => {
+                    const isEnabled = p.enabled !== false
+                    return (
+                      <label className="relative inline-flex items-center cursor-pointer" title={isEnabled ? 'Click to disable provider' : 'Click to enable provider'}>
+                        <input
+                          type="checkbox"
+                          checked={isEnabled}
+                          onChange={() => handleToggle(p.id, isEnabled)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+                      </label>
+                    )
+                  })()}
 
                   <button
                     onClick={() => handleDelete(p.id)}
