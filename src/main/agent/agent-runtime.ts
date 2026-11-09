@@ -91,6 +91,28 @@ export class AgentRuntime {
     if (candidates.length === 0) {
       this.activeRuns.delete(runId)
       const errMessage = `No valid candidates configured for provider "${options.providerId}". Please check API credentials and context limits in Providers settings.`
+
+      // Ensure conversation exists and record both prompt & failure so UI does not lose the attempt on refresh
+      if (!conv) {
+        this.convStore.createConversation({
+          id: options.conversationId,
+          title: options.prompt.slice(0, 50).trim() || 'New Conversation',
+          selectedModel: options.modelId,
+          workspacePath: options.workspacePath
+        })
+      }
+      this.convStore.addMessage({
+        conversationId: options.conversationId,
+        role: 'user',
+        content: options.prompt
+      })
+      this.convStore.addMessage({
+        conversationId: options.conversationId,
+        role: 'assistant',
+        content: `[Error: ${errMessage}]`,
+        modelId: options.modelId
+      })
+
       options.onError({
         runId,
         message: errMessage,
@@ -154,6 +176,8 @@ export class AgentRuntime {
     }
 
     let finalProvider = options.providerId
+    let activeModelId = options.modelId
+    let accumulatedDisplayResponse = ''
     let powerSaveBlockerId: number | null = null
     try {
       if (typeof powerSaveBlocker?.start === 'function') {
@@ -169,8 +193,6 @@ export class AgentRuntime {
       const MAX_TOOL_STEPS = 25
       let currentStep = 0
       let lastResponse = ''
-      let accumulatedDisplayResponse = ''
-      let activeModelId = options.modelId
       let taskCompleted = false
 
       while (currentStep < MAX_TOOL_STEPS) {
@@ -368,6 +390,25 @@ export class AgentRuntime {
       const status = isCancelled ? 'cancelled' : 'failed'
 
       this.convStore.completeRun(runId, status, finalProvider, err.message)
+
+      // Persist assistant error/partial message so conversation history is retained across reloads
+      const errorText = isCancelled
+        ? '[Generation cancelled by user]'
+        : `[Error: ${err.message || 'Stream generation failed'}]`
+      const contentToSave = accumulatedDisplayResponse
+        ? `${accumulatedDisplayResponse}\n\n${errorText}`
+        : errorText
+
+      try {
+        this.convStore.addMessage({
+          conversationId: options.conversationId,
+          role: 'assistant',
+          content: contentToSave.trim(),
+          modelId: activeModelId || options.modelId
+        })
+      } catch (saveErr) {
+        console.error('[AgentRuntime] Failed to persist failed assistant message:', saveErr)
+      }
 
       options.onError({
         runId,

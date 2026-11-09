@@ -205,4 +205,45 @@ describe('AgentRuntime Streaming & Cancellation', () => {
     expect(history?.messages[1].content).toContain('Executing tool `read_file`')
     expect(history?.messages[1].content).toContain('The file contains: Secret content in file')
   })
+
+  it('persists assistant error response to SQLite when generation fails', async () => {
+    const mockAdapter = {
+      id: 'gemini' as const,
+      name: 'Google AI Studio',
+      validateKey: vi.fn(),
+      listModels: vi.fn(),
+      streamCompletion: async function* () {
+        throw new Error('Upstream Router error HTTP 400: Model not supported')
+      }
+    }
+
+    vi.spyOn(registry, 'getAdapter').mockReturnValue(mockAdapter as any)
+
+    let errorReceived = ''
+    try {
+      await runtime.executePrompt({
+        conversationId: 'conv-error-persist-test',
+        prompt: 'Trigger an error',
+        modelId: 'gemini-2.5-flash',
+        providerId: 'gemini',
+        onToken: () => {},
+        onError: (err) => {
+          errorReceived = err.message
+        }
+      })
+    } catch {
+      // Expected rejection
+    }
+
+    expect(errorReceived).toContain('Upstream Router error HTTP 400: Model not supported')
+
+    // Verify both user message AND assistant error message exist in SQLite
+    const convStore = ConversationStore.getInstance()
+    const history = convStore.getConversation('conv-error-persist-test')
+    expect(history?.messages.length).toBe(2)
+    expect(history?.messages[0].role).toBe('user')
+    expect(history?.messages[0].content).toBe('Trigger an error')
+    expect(history?.messages[1].role).toBe('assistant')
+    expect(history?.messages[1].content).toContain('Upstream Router error HTTP 400: Model not supported')
+  })
 })
