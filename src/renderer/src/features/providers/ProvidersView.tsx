@@ -412,7 +412,7 @@ export const ProvidersView: React.FC = () => {
                           {p.providerId === 'gemini'
                             ? 'gemini-3.5-flash'
                             : p.providerId === 'groq'
-                            ? 'llama-3.3-70b-versatile'
+                            ? 'openai/gpt-oss-120b'
                             : p.providerId === 'cerebras'
                             ? 'llama3.3-70b'
                             : p.providerId === 'nvidia'

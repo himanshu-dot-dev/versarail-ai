@@ -88,6 +88,67 @@ describe('Provider Adapters & Registry Architecture', () => {
       expect(result.valid).toBe(false)
       expect(result.error).toContain('HTTP 401 Unauthorized')
     })
+
+    it('filters out audio/guard models and includes active chat models from Groq endpoint', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'openai/gpt-oss-120b' },
+            { id: 'qwen/qwen3.8-27b' },
+            { id: 'whisper-large-v3' },
+            { id: 'meta-llama/llama-prompt-guard-2-86m' }
+          ]
+        })
+      } as any)
+
+      const models = await adapter.listModels('gsk_validKey')
+      const ids = models.map((m) => m.id)
+      expect(ids).toContain('openai/gpt-oss-120b')
+      expect(ids).toContain('qwen/qwen3.8-27b')
+      expect(ids).not.toContain('whisper-large-v3')
+      expect(ids).not.toContain('meta-llama/llama-prompt-guard-2-86m')
+    })
+
+    it('streams native delta.reasoning wrapped cleanly in think tags', async () => {
+      const sseChunks = [
+        'data: {"choices":[{"delta":{"reasoning":"Analyzing prompt..."}}]}\n\n',
+        'data: {"choices":[{"delta":{"content":"Here is the solution."}}]}\n\n',
+        'data: [DONE]\n\n'
+      ]
+      let idx = 0
+      const sseStream = new ReadableStream({
+        pull(controller) {
+          if (idx < sseChunks.length) {
+            controller.enqueue(new TextEncoder().encode(sseChunks[idx++]))
+          } else {
+            controller.close()
+          }
+        }
+      })
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: sseStream
+      } as any)
+
+      const deltas: string[] = []
+      const stream = adapter.streamCompletion({
+        apiKey: 'gsk_validKey',
+        model: 'openai/gpt-oss-120b',
+        messages: [{ role: 'user', content: 'test' }]
+      })
+
+      for await (const chunk of stream) {
+        if (chunk.textDelta) deltas.push(chunk.textDelta)
+      }
+
+      const combined = deltas.join('')
+      expect(combined).toContain('<think>Analyzing prompt...</think>')
+      expect(combined).toContain('Here is the solution.')
+    })
   })
 
   describe('OpenAICompatAdapter (Custom Gateways & Dynamic Discovery)', () => {

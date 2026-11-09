@@ -224,7 +224,7 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             active.providerId === 'gemini'
               ? 'gemini-3.5-flash'
               : active.providerId === 'groq'
-              ? 'llama-3.3-70b-versatile'
+              ? 'openai/gpt-oss-120b'
               : active.providerId === 'cerebras'
               ? 'llama3.1-70b'
               : active.providerId === 'custom'

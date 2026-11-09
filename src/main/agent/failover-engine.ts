@@ -111,6 +111,36 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
   ],
   groq: [
     {
+      id: 'openai/gpt-oss-120b',
+      providerId: 'groq',
+      name: 'OpenAI GPT-OSS 120B (Groq LPU)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'openai/gpt-oss-20b',
+      providerId: 'groq',
+      name: 'OpenAI GPT-OSS 20B (Groq LPU)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'qwen/qwen3.8-27b',
+      providerId: 'groq',
+      name: 'Qwen 3.8 27B (Groq LPU)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
       id: 'llama-3.3-70b-versatile',
       providerId: 'groq',
       name: 'Llama 3.3 70B Versatile',

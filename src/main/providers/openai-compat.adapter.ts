@@ -199,14 +199,28 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       if (response.ok) {
         const body = (await response.json()) as { data?: Array<{ id: string;[key: string]: unknown }> }
         if (Array.isArray(body?.data) && body.data.length > 0) {
+          // Filter out non-chat models (audio transcription, embeddings, guardrails, tts)
+          const chatModels = body.data.filter((m) => {
+            const id = (m.id || '').toLowerCase()
+            return (
+              !id.includes('whisper') &&
+              !id.includes('prompt-guard') &&
+              !id.includes('safeguard') &&
+              !id.includes('tts') &&
+              !id.includes('embedding') &&
+              !id.includes('orpheus')
+            )
+          })
+          const usableData = chatModels.length > 0 ? chatModels : body.data
+
           if (this.id !== 'custom') {
-            const remoteModelIds = new Set(body.data.map((m) => m.id))
+            const remoteModelIds = new Set(usableData.map((m) => m.id))
             const matched = this.defaultModels.filter((m) => remoteModelIds.has(m.id))
             if (matched.length > 0) return matched
           }
 
-          // Dynamic discovery for custom gateways (e.g. OmniRoute, LocalAI)
-          return body.data.map((m) => ({
+          // Dynamic discovery for custom gateways (e.g. OmniRoute, LocalAI) or newly added models
+          return usableData.map((m) => ({
             id: m.id,
             providerId: this.id,
             name: m.id.startsWith('auto/') ? `⚡ ${m.id} (Auto Switch)` : m.id,
@@ -290,6 +304,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
     let isFirstChunk = true
+    let insideReasoning = false
     const thinkFilter = new ThinkTagStreamFilter()
 
     try {
@@ -305,7 +320,15 @@ export class OpenAICompatAdapter implements IProviderAdapter {
           const trimmed = line.trim()
           if (!trimmed || trimmed.startsWith(':')) continue
           if (trimmed === 'data: [DONE]') {
-            const flushed = thinkFilter.flush()
+            if (insideReasoning) {
+              insideReasoning = false
+              yield { textDelta: '</think>' }
+            }
+            if (insideReasoning) {
+        insideReasoning = false
+        yield { textDelta: '</think>' }
+      }
+      const flushed = thinkFilter.flush()
             if (flushed.contentDelta) {
               yield { textDelta: flushed.contentDelta }
             }
@@ -334,18 +357,39 @@ export class OpenAICompatAdapter implements IProviderAdapter {
             const choice = parsed.choices?.[0]
             const delta = choice?.delta
 
+            // Handle models that stream internal thoughts via dedicated reasoning field
+            const reasoningPart = delta?.reasoning || delta?.reasoning_content
+            if (reasoningPart) {
+              let text = ''
+              if (!insideReasoning) {
+                insideReasoning = true
+                text += '<think>'
+              }
+              text += reasoningPart
+              yield {
+                textDelta: text,
+                finishReason: choice?.finish_reason
+              }
+            }
+
             if (delta?.content) {
+              let contentToProcess = delta.content
+              if (insideReasoning) {
+                insideReasoning = false
+                contentToProcess = '</think>' + contentToProcess
+              }
+
               // In-band anomaly check on first chunk
               if (isFirstChunk) {
                 isFirstChunk = false
-                const inBandErr = detectInBandError(delta.content)
+                const inBandErr = detectInBandError(contentToProcess)
                 if (inBandErr) {
                   throw new Error(`In-band provider error detected: ${inBandErr}`)
                 }
               }
 
               // Filter <think>...</think> tags seamlessly
-              const filtered = thinkFilter.processChunk(delta.content)
+              const filtered = thinkFilter.processChunk(contentToProcess)
               if (filtered.contentDelta) {
                 yield {
                   textDelta: filtered.contentDelta,
@@ -380,6 +424,10 @@ export class OpenAICompatAdapter implements IProviderAdapter {
         }
       }
 
+      if (insideReasoning) {
+        insideReasoning = false
+        yield { textDelta: '</think>' }
+      }
       const flushed = thinkFilter.flush()
       if (flushed.contentDelta) {
         yield { textDelta: flushed.contentDelta }
