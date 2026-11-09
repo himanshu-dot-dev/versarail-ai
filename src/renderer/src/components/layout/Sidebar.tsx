@@ -39,13 +39,35 @@ export const Sidebar: React.FC = () => {
     setActiveConversationId,
     conversations,
     startNewChat,
-    deleteConversation
+    deleteConversation,
+    renameConversation
   } = useUiStore()
 
   const [isChatsExpanded, setIsChatsExpanded] = useState(true)
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false)
   const [copiedPath, setCopiedPath] = useState(false)
+  const [editingConvId, setEditingConvId] = useState<string | null>(null)
+  const [editTitleInput, setEditTitleInput] = useState<string>('')
   const projectMenuRef = useRef<HTMLDivElement>(null)
+
+  const handleStartRename = (e: React.MouseEvent, id: string, currentTitle: string) => {
+    e.stopPropagation()
+    setEditingConvId(id)
+    setEditTitleInput(currentTitle || '')
+  }
+
+  const handleSaveRename = async (id: string) => {
+    const trimmed = editTitleInput.trim()
+    if (trimmed) {
+      await renameConversation(id, trimmed)
+    }
+    setEditingConvId(null)
+  }
+
+  const handleCancelRename = () => {
+    setEditingConvId(null)
+    setEditTitleInput('')
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -291,34 +313,67 @@ export const Sidebar: React.FC = () => {
                                 }`}
                               title={conv.title || 'Untitled Conversation'}
                             >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <Icon
-                                  name="chat_bubble_outline"
-                                  size={13}
-                                  className={isCurrent ? 'text-primary shrink-0' : 'text-on-surface-variant/60 shrink-0'}
-                                />
-                                <div className="flex flex-col min-w-0">
-                                  <span className="truncate max-w-[130px] text-[11.5px] leading-tight">
-                                    {conv.title || 'Untitled Chat'}
-                                  </span>
-                                  <span className="text-[9.5px] text-on-surface-variant/60 font-mono">
-                                    {formatRelativeTime(conv.updatedAt || conv.createdAt)}
-                                  </span>
+                              {editingConvId === conv.id ? (
+                                <div className="flex items-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editTitleInput}
+                                    onChange={(e) => setEditTitleInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        handleSaveRename(conv.id)
+                                      } else if (e.key === 'Escape') {
+                                        e.preventDefault()
+                                        handleCancelRename()
+                                      }
+                                    }}
+                                    onBlur={() => handleSaveRename(conv.id)}
+                                    className="w-full bg-surface-container-highest px-1.5 py-0.5 rounded text-[11px] text-on-surface border border-primary/50 outline-none focus:ring-1 focus:ring-primary font-sans"
+                                  />
+                                  <button
+                                    onClick={() => handleSaveRename(conv.id)}
+                                    className="p-1 hover:bg-primary/20 text-primary rounded shrink-0"
+                                    title="Save title"
+                                  >
+                                    <Icon name="check" size={12} />
+                                  </button>
                                 </div>
-                              </div>
+                              ) : (
+                                <>
+                                  <div className="flex flex-col min-w-0 pr-1">
+                                    <span className="truncate max-w-[130px] text-[11.5px] leading-tight">
+                                      {conv.title || 'Untitled Chat'}
+                                    </span>
+                                    <span className="text-[9.5px] text-on-surface-variant/60 font-mono">
+                                      {formatRelativeTime(conv.updatedAt || conv.createdAt)}
+                                    </span>
+                                  </div>
 
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (confirm('Delete this conversation?')) {
-                                    deleteConversation(conv.id)
-                                  }
-                                }}
-                                className="opacity-0 group-hover/chat:opacity-100 p-1 hover:bg-error/20 hover:text-error text-on-surface-variant/60 rounded transition-all shrink-0 cursor-pointer"
-                                title="Delete conversation"
-                              >
-                                <Icon name="delete" size={13} />
-                              </button>
+                                  <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/chat:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={(e) => handleStartRename(e, conv.id, conv.title || 'Untitled Chat')}
+                                      className="p-1 hover:bg-primary/20 hover:text-primary text-on-surface-variant/60 rounded transition-all shrink-0 cursor-pointer"
+                                      title="Rename conversation"
+                                    >
+                                      <Icon name="edit" size={12} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (confirm('Delete this conversation?')) {
+                                          deleteConversation(conv.id)
+                                        }
+                                      }}
+                                      className="p-1 hover:bg-error/20 hover:text-error text-on-surface-variant/60 rounded transition-all shrink-0 cursor-pointer"
+                                      title="Delete conversation"
+                                    >
+                                      <Icon name="delete" size={12} />
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )
                         })

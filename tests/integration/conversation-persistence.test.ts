@@ -85,6 +85,25 @@ describe('ConversationStore SQLite Integration', () => {
     expect(store.listConversations().length).toBe(0)
   })
 
+  it('renames a conversation successfully and persists new title to database', () => {
+    store.createConversation({
+      id: 'conv-rename-1',
+      title: 'Old Title',
+      selectedModel: 'openai/gpt-oss-120b'
+    })
+
+    expect(store.getConversation('conv-rename-1')?.conversation.title).toBe('Old Title')
+
+    const success = store.renameConversation('conv-rename-1', 'New Refactored Title')
+    expect(success).toBe(true)
+
+    const updated = store.getConversation('conv-rename-1')
+    expect(updated?.conversation.title).toBe('New Refactored Title')
+
+    const list = store.listConversations()
+    expect(list.find((c) => c.id === 'conv-rename-1')?.title).toBe('New Refactored Title')
+  })
+
   it('records and completes agent execution runs', () => {
     store.createConversation({
       id: 'conv-runs',

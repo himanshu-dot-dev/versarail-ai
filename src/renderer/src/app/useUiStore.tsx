@@ -60,6 +60,7 @@ export interface UiState {
   loadConversations: () => Promise<void>
   startNewChat: () => string
   deleteConversation: (id: string) => Promise<void>
+  renameConversation: (id: string, newTitle: string) => Promise<void>
 }
 
 const UiContext = createContext<UiState | undefined>(undefined)
@@ -161,6 +162,25 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       } catch (err) {
         console.error('[useUiStore] Failed to delete conversation:', err)
       }
+    }
+  }
+
+  const renameConversation = async (id: string, newTitle: string) => {
+    const trimmed = (newTitle || '').trim()
+    if (!trimmed) return
+    if (window.electronApi?.renameConversation) {
+      try {
+        await window.electronApi.renameConversation(id, trimmed)
+        setConversations((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, title: trimmed, updatedAt: new Date().toISOString() } : c))
+        )
+      } catch (err) {
+        console.error('[useUiStore] Failed to rename conversation:', err)
+      }
+    } else {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, title: trimmed } : c))
+      )
     }
   }
 
@@ -312,7 +332,8 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     conversations,
     loadConversations,
     startNewChat,
-    deleteConversation
+    deleteConversation,
+    renameConversation
   }
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>

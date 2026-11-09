@@ -75,6 +75,7 @@ export interface IElectronApi {
   listConversations: () => Promise<Array<{ id: string; title: string; selectedModel: string; workspacePath?: string | null; createdAt: string; updatedAt: string }>>
   getConversation: (conversationId: string) => Promise<{ conversation: any; messages: any[] } | null>
   deleteConversation: (conversationId: string) => Promise<boolean>
+  renameConversation: (conversationId: string, title: string) => Promise<boolean>
   sendPrompt: (payload: {
     conversationId: string
     prompt: string

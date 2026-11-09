@@ -168,6 +168,15 @@ export class ConversationStore {
     return true
   }
 
+  public renameConversation(id: string, newTitle: string): boolean {
+    const trimmed = (newTitle || '').trim()
+    if (!trimmed) return false
+    const now = new Date().toISOString()
+    const stmt = this.db.prepare('UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?')
+    stmt.run(trimmed, now, id)
+    return true
+  }
+
   public addMessage(params: {
     id?: string
     conversationId: string

@@ -25,6 +25,7 @@ export const IPC_CHANNELS = {
   CONVERSATIONS_LIST: 'conversations:list',
   CONVERSATIONS_GET: 'conversations:get',
   CONVERSATIONS_DELETE: 'conversations:delete',
+  CONVERSATIONS_RENAME: 'conversations:rename',
   AGENT_START_CONVERSATION: 'agent:start-conversation',
   AGENT_SEND_PROMPT: 'agent:send-prompt',
   AGENT_CANCEL_RUN: 'agent:cancel-run',

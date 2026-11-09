@@ -95,6 +95,9 @@ const electronApi: IElectronApi = {
   deleteConversation: (conversationId: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_DELETE, conversationId)
   },
+  renameConversation: (conversationId: string, title: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CONVERSATIONS_RENAME, { conversationId, title })
+  },
   sendPrompt: (payload: {
     conversationId: string
     prompt: string

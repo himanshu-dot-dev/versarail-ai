@@ -28,6 +28,7 @@ import {
   GitCommit,
   GitCompare,
   GitFork,
+  HelpCircle,
   Info,
   Key,
   Layers,
@@ -38,6 +39,7 @@ import {
   Palette,
   PanelRightClose,
   Paperclip,
+  Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -79,6 +81,8 @@ export interface IconProps {
 const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   // Navigation & Shell
   chat: MessageSquare,
+  chat_bubble: MessageSquare,
+  chat_bubble_outline: MessageSquare,
   folder: Folder,
   folder_open: FolderOpen,
   folder_special: FolderGit2,
@@ -125,6 +129,9 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   cloud_upload: UploadCloud,
   copy: Copy,
   content_copy: Copy,
+  edit: Pencil,
+  pencil: Pencil,
+  edit_note: Pencil,
 
   // Status & Telemetry
   check: Check,
@@ -166,7 +173,7 @@ export const Icon: React.FC<IconProps> = ({
   onClick
 }) => {
   const numericSize = typeof size === 'number' ? size : parseInt(size, 10) || 18
-  const LucideComponent = ICON_MAP[name] || Sparkles
+  const LucideComponent = ICON_MAP[name] || HelpCircle
 
   return (
     <LucideComponent

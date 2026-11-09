@@ -33,7 +33,18 @@ export function registerChatHandlers(): void {
     return convStore.deleteConversation(conversationId)
   })
 
-  // 4. Send Prompt (Starts Streaming Loop)
+  // 4. Rename Conversation
+  ipcMain.handle(
+    IPC_CHANNELS.CONVERSATIONS_RENAME,
+    async (event: IpcMainInvokeEvent, payload: { conversationId: string; title: string }) => {
+      if (!SenderVerifier.verify(event, IPC_CHANNELS.CONVERSATIONS_RENAME)) {
+        throw new Error('Access denied: Unauthorized IPC sender')
+      }
+      return convStore.renameConversation(payload.conversationId, payload.title)
+    }
+  )
+
+  // 5. Send Prompt (Starts Streaming Loop)
   ipcMain.handle(
     IPC_CHANNELS.AGENT_SEND_PROMPT,
     async (
