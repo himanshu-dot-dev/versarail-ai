@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Icon from '../../components/common/Icon'
+import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { useUiStore } from '../../app/useUiStore'
 
 export interface PromptComposerProps {
@@ -380,11 +381,11 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                 }`}
                 title="Click to switch model or enable Universal AI Agent Auto-Switch"
               >
-                <Icon
-                  name={isAutoModeActive ? 'bolt' : 'smart_toy'}
-                  size={14}
-                  className={isAutoModeActive ? 'text-primary' : 'text-tertiary'}
-                />
+                {isAutoModeActive ? (
+                  <Icon name="bolt" size={14} className="text-primary shrink-0" />
+                ) : (
+                  <ProviderIcon providerId={connectedModel.providerId} size={14} className="shrink-0" />
+                )}
                 <span className="font-mono text-xs max-w-[170px] truncate">
                   {isAutoModeActive ? 'AI Agent (Auto-Switch)' : connectedModel.name}
                 </span>
@@ -489,7 +490,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                                   }`}
                                 >
                                   <div className="flex items-center gap-2 min-w-0">
-                                    <Icon name="bolt" size={14} className="text-primary shrink-0" />
+                                    <ProviderIcon providerId={m.providerId} size={14} className="shrink-0" />
                                     <span className="font-mono truncate">{m.id}</span>
                                   </div>
                                   {isSelected && <Icon name="check" size={14} className="text-primary shrink-0" />}
@@ -524,6 +525,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                                   }`}
                                 >
                                   <div className="flex items-center gap-2 min-w-0">
+                                    <ProviderIcon providerId={m.providerId} size={14} className="shrink-0" />
                                     <span className="font-mono truncate">{m.id}</span>
                                   </div>
                                   <span className="text-[10px] text-on-surface-variant font-mono uppercase shrink-0 ml-2">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
+import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { ProviderMetadataDTO } from '@shared/domain/models'
 
 export const ProvidersView: React.FC = () => {
@@ -346,20 +347,8 @@ export const ProvidersView: React.FC = () => {
                 className="bg-surface-container rounded-xl p-space-lg transition-all hover:bg-surface-container-high hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-space-lg border border-outline-variant"
               >
                 <div className="flex items-start md:items-center gap-space-lg min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 text-primary border border-outline-variant">
-                    {p.providerId === 'gemini' && <Icon name="auto_awesome" size={20} className="text-primary" />}
-                    {p.providerId === 'groq' && <Icon name="bolt" size={20} className="text-tertiary" />}
-                    {p.providerId === 'cerebras' && <Icon name="psychology" size={20} className="text-secondary" />}
-                    {p.providerId === 'nvidia' && <Icon name="memory" size={20} className="text-emerald-400" />}
-                    {p.providerId === 'mistral' && <Icon name="code" size={20} className="text-amber-400" />}
-                    {p.providerId === 'deepseek' && <Icon name="rocket_launch" size={20} className="text-blue-400" />}
-                    {p.providerId === 'pollinations' && <Icon name="public" size={20} className="text-purple-400" />}
-                    {p.providerId === 'kilo' && <Icon name="hub" size={20} className="text-cyan-400" />}
-                    {p.providerId === 'cloudflare' && <Icon name="cloud" size={20} className="text-orange-400" />}
-                    {p.providerId === 'cohere' && <Icon name="interests" size={20} className="text-pink-400" />}
-                    {p.providerId === 'huggingface' && <Icon name="sentiment_satisfied" size={20} className="text-yellow-400" />}
-                    {p.providerId === 'openrouter' && <Icon name="alt_route" size={20} className="text-indigo-400" />}
-                    {p.providerId === 'custom' && <Icon name="dns" size={20} className="text-on-surface" />}
+                  <div className="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant p-2 shadow-xs">
+                    <ProviderIcon providerId={p.providerId} size={22} />
                   </div>
 
                   <div className="flex flex-col min-w-0">
@@ -510,7 +499,9 @@ export const ProvidersView: React.FC = () => {
           <div className="bg-surface-container border border-outline-variant rounded-xl p-space-xl max-w-md w-full shadow-2xl flex flex-col gap-space-lg animate-scale-in">
             <div className="flex items-center justify-between pb-space-sm border-b border-border-subtle">
               <div className="flex items-center gap-space-sm">
-                <Icon name={editingProvider ? 'edit' : 'vpn_key'} size={20} className="text-primary" />
+                <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant p-1.5">
+                  <ProviderIcon providerId={editingProvider ? editingProvider.providerId : newProviderId} size={18} />
+                </div>
                 <h3 className="font-headline-md text-on-surface">
                   {editingProvider ? `Edit ${editingProvider.label}` : 'Add AI Provider'}
                 </h3>
@@ -555,24 +546,28 @@ export const ProvidersView: React.FC = () => {
                   <>
                     <div className="flex flex-col gap-1">
                       <label className="text-label-sm text-on-surface-variant">Provider Engine</label>
-                      <select
-                        value={newProviderId}
-                        onChange={(e) => {
-                          const id = e.target.value
-                          setNewProviderId(id)
-                          if (id === 'pollinations') {
-                            setNewLabel('Pollinations (Keyless Free)')
-                            setNewKey('no-key')
-                          } else if (id === 'kilo') {
-                            setNewLabel('Kilo Gateway (Keyless Free)')
-                            setNewKey('no-key')
-                          } else if (newKey === 'no-key') {
-                            setNewKey('')
-                          }
-                        }}
-                        disabled={Boolean(editingProvider)}
-                        className="bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none disabled:opacity-75"
-                      >
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0 border border-outline-variant p-2">
+                          <ProviderIcon providerId={newProviderId} size={20} />
+                        </div>
+                        <select
+                          value={newProviderId}
+                          onChange={(e) => {
+                            const id = e.target.value
+                            setNewProviderId(id)
+                            if (id === 'pollinations') {
+                              setNewLabel('Pollinations (Keyless Free)')
+                              setNewKey('no-key')
+                            } else if (id === 'kilo') {
+                              setNewLabel('Kilo Gateway (Keyless Free)')
+                              setNewKey('no-key')
+                            } else if (newKey === 'no-key') {
+                              setNewKey('')
+                            }
+                          }}
+                          disabled={Boolean(editingProvider)}
+                          className="flex-1 bg-surface-container-highest text-on-surface p-space-sm rounded-lg border border-outline-variant focus:ring-1 focus:ring-primary outline-none disabled:opacity-75"
+                        >
                         <optgroup label="Direct Cloud Providers">
                           <option value="gemini">Google Gemini (Google AI Studio)</option>
                           <option value="groq">GroqCloud (Ultra-Fast LPU)</option>
@@ -593,6 +588,7 @@ export const ProvidersView: React.FC = () => {
                           <option value="custom">Custom OpenAI-Compatible Endpoint</option>
                         </optgroup>
                       </select>
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-1">

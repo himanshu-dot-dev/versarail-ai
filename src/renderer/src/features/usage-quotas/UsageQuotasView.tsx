@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
+import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { ProviderMetadataDTO } from '@shared/domain/models'
 
 export const UsageQuotasView: React.FC = () => {
@@ -106,8 +107,8 @@ export const UsageQuotasView: React.FC = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-space-md">
-                        <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
-                          <Icon name="dns" size={20} />
+                        <div className="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center border border-outline-variant/30 p-2 shrink-0">
+                          <ProviderIcon providerId={p.providerId} size={22} />
                         </div>
                         <div>
                           <div className="flex items-center gap-space-sm">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
+import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { useUiStore } from '../../app/useUiStore'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
@@ -316,13 +317,14 @@ export const SettingsView: React.FC = () => {
                               : 'bg-surface-container-high text-on-surface-variant border-transparent opacity-60 hover:opacity-100'
                           }`}
                         >
-                          <Icon name={isAllowed ? 'check' : 'close'} size={14} />
+                          <ProviderIcon providerId={p.id} size={14} className="shrink-0" />
                           <span>{p.label}</span>
                           {p.isKeyless && (
                             <span className="text-[9px] px-1 py-0.2 rounded bg-surface-container-lowest/30 uppercase font-mono tracking-wider ml-0.5">
                               Free
                             </span>
                           )}
+                          <Icon name={isAllowed ? 'check' : 'close'} size={12} className="opacity-70 ml-1" />
                         </button>
                       )
                     })}
