@@ -5,7 +5,7 @@ import { useUiStore } from '../../app/useUiStore'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export const SettingsView: React.FC = () => {
-  const { theme, setTheme } = useUiStore()
+  const { theme, setTheme, showConfirm, showAlert } = useUiStore()
 
   const [activeCategory, setActiveCategory] = useState<'appearance' | 'privacy'>('appearance')
 
@@ -54,10 +54,22 @@ export const SettingsView: React.FC = () => {
   }
 
   const handlePurgeDb = async () => {
-    if (confirm('Permanently purge local SQLite conversation history? Credentials remain safe.')) {
+    const confirmed = await showConfirm({
+      title: 'Purge Local SQLite Database',
+      message: 'Permanently purge local SQLite conversation history? Stored credentials remain safe.',
+      confirmText: 'Purge Database',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    })
+
+    if (confirmed) {
       if (window.electronApi?.purgeData) {
         const res = await window.electronApi.purgeData(0)
-        alert(`Purge complete. Cleaned ${res.purgedConversations} conversations.`)
+        await showAlert({
+          title: 'Database Purged',
+          message: `Purge complete. Cleaned ${res.purgedConversations} conversations and associated cache.`,
+          variant: 'success'
+        })
       }
     }
   }
@@ -76,7 +88,15 @@ export const SettingsView: React.FC = () => {
     setAllowedProviders([])
   }
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    const confirmed = await showConfirm({
+      title: 'Reset to Defaults',
+      message: 'Reset all privacy and context token configurations to default values?',
+      confirmText: 'Reset',
+      cancelText: 'Cancel',
+      variant: 'warning'
+    })
+    if (!confirmed) return
     setAllowedProviders(DEFAULT_ALLOWED_PROVIDERS)
     setAuditRetentionDays(30)
     setContextBudgetTokens(32_000)

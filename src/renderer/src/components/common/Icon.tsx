@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   ArrowUp,
   Bot,
@@ -134,6 +135,8 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   edit_note: Pencil,
 
   // Status & Telemetry
+  warning: AlertTriangle,
+  alert: AlertCircle,
   check: Check,
   check_circle: CheckCircle2,
   progress_activity: Loader2,

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { ProviderMetadataDTO } from '@shared/domain/models'
+import { useUiStore } from '../../app/useUiStore'
 
 export const ProvidersView: React.FC = () => {
+  const { showConfirm } = useUiStore()
   const [providers, setProviders] = useState<ProviderMetadataDTO[]>([])
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -204,6 +206,16 @@ export const ProvidersView: React.FC = () => {
   }
 
   const handleDelete = async (id: string) => {
+    const target = providers.find((p) => p.id === id)
+    const label = target?.label || target?.providerId || id
+    const confirmed = await showConfirm({
+      title: 'Remove API Credential',
+      message: `Are you sure you want to remove the API key for ${label}? Stored credentials will be deleted from your OS keyring.`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    })
+    if (!confirmed) return
     if (window.electronApi?.deleteCredential) {
       await window.electronApi.deleteCredential(id)
     }

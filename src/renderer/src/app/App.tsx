@@ -6,6 +6,7 @@ import { Sidebar } from '../components/layout/Sidebar'
 import { InspectorPanel } from '../components/layout/InspectorPanel'
 import { ChatView } from '../features/chat/ChatView'
 import { PermissionModal } from '../components/permissions/PermissionModal'
+import { CustomDialog } from '../components/common/CustomDialog'
 import { SplashScreen } from '../components/layout/SplashScreen'
 
 const ShellContent: React.FC = () => {
@@ -18,6 +19,9 @@ const ShellContent: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-surface font-body-md text-on-surface flex flex-col selection:bg-primary/20">
+      {/* Global Custom Confirmation & Alert Dialog */}
+      <CustomDialog />
+
       {/* Global Action Permission Approval Modal */}
       <PermissionModal />
 

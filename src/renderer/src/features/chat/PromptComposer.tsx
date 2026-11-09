@@ -384,7 +384,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
                 {isAutoModeActive ? (
                   <Icon name="bolt" size={14} className="text-primary shrink-0" />
                 ) : (
-                  <ProviderIcon providerId={connectedModel.providerId} size={14} className="shrink-0" />
+                  <ProviderIcon providerId={connectedModel.providerId || 'auto'} size={14} className="shrink-0" />
                 )}
                 <span className="font-mono text-xs max-w-[170px] truncate">
                   {isAutoModeActive ? 'AI Agent (Auto-Switch)' : connectedModel.name}

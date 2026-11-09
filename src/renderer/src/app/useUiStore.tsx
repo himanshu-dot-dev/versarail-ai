@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
 export type ViewId =
   | 'chat'
@@ -28,6 +28,20 @@ export interface ConversationItem {
   workspacePath?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface DialogOptions {
+  title?: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  variant?: 'danger' | 'warning' | 'info' | 'success'
+  type?: 'confirm' | 'alert'
+}
+
+export interface DialogState extends DialogOptions {
+  isOpen: boolean
+  resolve?: (value: boolean) => void
 }
 
 export interface UiState {
@@ -61,6 +75,11 @@ export interface UiState {
   startNewChat: () => string
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, newTitle: string) => Promise<void>
+
+  dialogState: DialogState
+  showConfirm: (options: DialogOptions | string) => Promise<boolean>
+  showAlert: (options: DialogOptions | string) => Promise<void>
+  closeDialog: (confirmed: boolean) => void
 }
 
 const UiContext = createContext<UiState | undefined>(undefined)
@@ -309,6 +328,50 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const toggleInspector = () => setInspectorOpen((prev) => !prev)
 
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    message: ''
+  })
+
+  const showConfirm = useCallback((options: DialogOptions | string): Promise<boolean> => {
+    return new Promise<boolean>((resolve) => {
+      const opts: DialogOptions = typeof options === 'string' ? { message: options } : options
+      setDialogState({
+        isOpen: true,
+        title: opts.title || 'Confirm Action',
+        message: opts.message,
+        confirmText: opts.confirmText || 'Confirm',
+        cancelText: opts.cancelText || 'Cancel',
+        variant: opts.variant || 'danger',
+        type: 'confirm',
+        resolve
+      })
+    })
+  }, [])
+
+  const showAlert = useCallback((options: DialogOptions | string): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      const opts: DialogOptions = typeof options === 'string' ? { message: options } : options
+      setDialogState({
+        isOpen: true,
+        title: opts.title || 'Notice',
+        message: opts.message,
+        confirmText: opts.confirmText || 'OK',
+        cancelText: '',
+        variant: opts.variant || 'info',
+        type: 'alert',
+        resolve: () => resolve()
+      })
+    })
+  }, [])
+
+  const closeDialog = useCallback((confirmed: boolean) => {
+    setDialogState((prev) => {
+      prev.resolve?.(confirmed)
+      return { ...prev, isOpen: false, resolve: undefined }
+    })
+  }, [])
+
   const value: UiState = {
     activeView,
     setActiveView,
@@ -333,7 +396,11 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     loadConversations,
     startNewChat,
     deleteConversation,
-    renameConversation
+    renameConversation,
+    dialogState,
+    showConfirm,
+    showAlert,
+    closeDialog
   }
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>

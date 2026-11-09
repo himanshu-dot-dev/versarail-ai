@@ -40,7 +40,8 @@ export const Sidebar: React.FC = () => {
     conversations,
     startNewChat,
     deleteConversation,
-    renameConversation
+    renameConversation,
+    showConfirm
   } = useUiStore()
 
   const [isChatsExpanded, setIsChatsExpanded] = useState(true)
@@ -360,9 +361,16 @@ export const Sidebar: React.FC = () => {
                                       <Icon name="edit" size={12} />
                                     </button>
                                     <button
-                                      onClick={(e) => {
+                                      onClick={async (e) => {
                                         e.stopPropagation()
-                                        if (confirm('Delete this conversation?')) {
+                                        const confirmed = await showConfirm({
+                                          title: 'Delete Conversation',
+                                          message: `Are you sure you want to delete "${conv.title || 'Untitled Chat'}"? This conversation and its message history cannot be recovered.`,
+                                          confirmText: 'Delete',
+                                          cancelText: 'Cancel',
+                                          variant: 'danger'
+                                        })
+                                        if (confirmed) {
                                           deleteConversation(conv.id)
                                         }
                                       }}
