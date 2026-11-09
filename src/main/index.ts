@@ -20,6 +20,11 @@ if (customUserDataArg) {
 // 1. Register custom 'app://' protocol before app is ready
 registerCustomProtocol()
 
+// Set Application User Model ID for Windows taskbar grouping & icon association
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.versarail.ai.harness')
+}
+
 // 2. Enforce Single-Instance Lock (bypass in automated test mode to prevent test-runner collision)
 const isTestMode = process.env.HARNESS_TEST_MODE === '1' || process.argv.includes('--test-mode')
 const gotTheLock = isTestMode || app.requestSingleInstanceLock()

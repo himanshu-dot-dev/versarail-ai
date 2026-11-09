@@ -13,6 +13,7 @@ export function createMainWindow(): BrowserWindow {
     titleBarStyle: 'hidden',
     title: 'VersaRail AI',
     backgroundColor: '#090a0f',
+    icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
