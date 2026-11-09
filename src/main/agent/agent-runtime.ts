@@ -224,7 +224,14 @@ export class AgentRuntime {
         // Check if model emitted any tool calls to execute
         if (streamResult.toolCalls && streamResult.toolCalls.length > 0) {
           if (streamResult.fullResponse) {
-            accumulatedDisplayResponse += streamResult.fullResponse
+            // Strip raw internal XML tool calls so they don't pollute visible text
+            const cleanTextPart = streamResult.fullResponse
+              .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+              .replace(/<function=[^>]*>[\s\S]*?<\/function>/gi, '')
+              .trim()
+            if (cleanTextPart) {
+              accumulatedDisplayResponse += (accumulatedDisplayResponse ? '\n\n' : '') + cleanTextPart
+            }
           }
 
           let destructiveOpsThisTurn = 0
@@ -332,7 +339,11 @@ export class AgentRuntime {
       }
 
       // 5. Persist assistant completion and update agent run
-      const contentToSave = (accumulatedDisplayResponse || lastResponse).trim() || 'Task completed.'
+      const rawFinal = (accumulatedDisplayResponse || lastResponse)
+        .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '')
+        .replace(/<function=[^>]*>[\s\S]*?<\/function>/gi, '')
+        .trim()
+      const contentToSave = rawFinal || 'Task completed.'
       this.convStore.addMessage({
         conversationId: options.conversationId,
         role: 'assistant',

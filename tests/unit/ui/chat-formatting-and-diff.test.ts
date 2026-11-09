@@ -100,5 +100,23 @@ Here is the analyzed project configuration:`
     const isBlocked = !isPreferred && !(isAutoPolicy && isKeyless) && !allowedProviders.includes(selectedProvider)
     expect(isBlocked).toBe(false)
   })
+
+  it('strips internal XML tool_call blocks from user-visible chat responses', () => {
+    const rawAiOutput = `I will start by listing your files:
+<tool_call>
+{"name": "list_directory", "arguments": {"path": "."}}
+</tool_call>
+Here are the files I found in your project.`
+
+    const clean = rawAiOutput
+      .replace(/<tool_call>[\s\S]*?(?:<\/tool_call>|$)/gi, '')
+      .replace(/<function=[^>]*>[\s\S]*?(?:<\/function>|$)/gi, '')
+      .trim()
+
+    expect(clean).not.toContain('<tool_call>')
+    expect(clean).not.toContain('list_directory')
+    expect(clean).toContain('I will start by listing your files:')
+    expect(clean).toContain('Here are the files I found in your project.')
+  })
 })
 

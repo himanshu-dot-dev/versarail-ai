@@ -570,11 +570,13 @@ const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ tex
   const thinkContent = thinkMatch ? thinkMatch[1].trim() : ''
   const isReasoningActive = isStreaming && text.includes('<think>') && !text.includes('</think>')
 
-  // Clean text from XML artifacts (think blocks, already handled todo tags)
+  // Clean text from internal XML artifacts (think blocks, handled todo tags, and inline tool_call/function tags)
   const cleanText = useMemo(() => {
     return text
       .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '')
       .replace(/<todo>[\s\S]*?<\/todo>/gi, '')
+      .replace(/<tool_call>[\s\S]*?(?:<\/tool_call>|$)/gi, '')
+      .replace(/<function=[^>]*>[\s\S]*?(?:<\/function>|$)/gi, '')
       .trim()
   }, [text])
 

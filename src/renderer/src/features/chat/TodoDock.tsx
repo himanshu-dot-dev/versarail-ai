@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CheckCircle2, Circle, ListTodo, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckSquare, Square, ListTodo, ChevronDown, ChevronUp } from 'lucide-react'
 
 export interface TodoItem {
   id: string
@@ -85,9 +85,9 @@ export const TodoDock: React.FC<TodoDockProps> = ({ content }) => {
               className="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors group"
             >
               {todo.completed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0" />
               ) : (
-                <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                <Square className="w-4 h-4 text-muted-foreground/70 group-hover:text-primary shrink-0" />
               )}
               <span
                 className={`text-xs ${
