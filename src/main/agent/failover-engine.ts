@@ -185,9 +185,9 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
   ],
   openrouter: [
     {
-      id: 'meta-llama/llama-3.3-70b-instruct:free',
+      id: 'openrouter/free',
       providerId: 'openrouter',
-      name: 'Meta Llama 3.3 70B (Free)',
+      name: 'OpenRouter Free (Auto-Mesh)',
       contextWindow: 131072,
       outputLimit: 8192,
       supportsTools: true,
@@ -195,10 +195,60 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
       isFreeTierAvailable: true
     },
     {
-      id: 'google/gemini-2.0-flash-exp:free',
+      id: 'nvidia/nemotron-3.5-lightning:free',
       providerId: 'openrouter',
-      name: 'Gemini 2.0 Flash Exp (Free)',
-      contextWindow: 1048576,
+      name: 'Nvidia Nemotron 3.5 Lightning (Free)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      providerId: 'openrouter',
+      name: 'Nvidia Nemotron 3 Ultra 550B (Free)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'cohere/north-mini-code:free',
+      providerId: 'openrouter',
+      name: 'Cohere North Mini Code (Free)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'google/gemma-4-31b-it:free',
+      providerId: 'openrouter',
+      name: 'Google Gemma 4 31B (Free)',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: true
+    },
+    {
+      id: 'meta-llama/llama-3.3-70b-instruct',
+      providerId: 'openrouter',
+      name: 'Meta Llama 3.3 70B Instruct',
+      contextWindow: 131072,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'meta-llama/llama-3.3-70b-instruct:free',
+      providerId: 'openrouter',
+      name: 'Meta Llama 3.3 70B (Free)',
+      contextWindow: 131072,
       outputLimit: 8192,
       supportsTools: true,
       supportsStreaming: true,
@@ -310,17 +360,27 @@ const DEFAULT_PROVIDER_MODELS: Record<ProviderId, ModelDescriptorDTO[]> = {
       outputLimit: 8192,
       supportsTools: true,
       supportsStreaming: true,
-      isFreeTierAvailable: true
+      isFreeTierAvailable: false
     },
     {
-      id: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+      id: 'Qwen/Qwen3.8-27B',
       providerId: 'huggingface',
-      name: 'Hugging Face Qwen 2.5 Coder 32B',
-      contextWindow: 32768,
+      name: 'Hugging Face Qwen 3.8 27B',
+      contextWindow: 65536,
       outputLimit: 8192,
       supportsTools: true,
       supportsStreaming: true,
-      isFreeTierAvailable: true
+      isFreeTierAvailable: false
+    },
+    {
+      id: 'deepseek-ai/DeepSeek-V4.1-Flash',
+      providerId: 'huggingface',
+      name: 'Hugging Face DeepSeek V4.1 Flash',
+      contextWindow: 128000,
+      outputLimit: 8192,
+      supportsTools: true,
+      supportsStreaming: true,
+      isFreeTierAvailable: false
     }
   ],
   cohere: [
@@ -813,8 +873,11 @@ export class FailoverEngine {
 
         const cooldownExpiryTime = Date.now() + cooldownDurationMs
 
-        // Granular cooldown: model-level unless credential fails authentication globally
-        const cooldownModelId = normalized.kind === 'authentication_failed' ? undefined : candidate.modelId
+        // Granular cooldown: model-level unless credential fails authentication or quota globally
+        const cooldownModelId =
+          normalized.kind === 'authentication_failed' || normalized.kind === 'quota_exhausted'
+            ? undefined
+            : candidate.modelId
         this.registry.setCooldown(candidate.credentialId, cooldownDurationMs, normalized.clientSafeMessage, cooldownModelId)
 
         exhaustionRecords.push({

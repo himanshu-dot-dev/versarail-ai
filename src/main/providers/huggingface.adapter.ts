@@ -10,27 +10,27 @@ const HUGGINGFACE_DEFAULT_MODELS: ModelDescriptorDTO[] = [
     outputLimit: 8192,
     supportsTools: true,
     supportsStreaming: true,
-    isFreeTierAvailable: true
+    isFreeTierAvailable: false
   },
   {
-    id: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+    id: 'Qwen/Qwen3.8-27B',
     providerId: 'huggingface',
-    name: 'Hugging Face Qwen 2.5 Coder 32B',
-    contextWindow: 32768,
+    name: 'Hugging Face Qwen 3.8 27B',
+    contextWindow: 65536,
     outputLimit: 8192,
     supportsTools: true,
     supportsStreaming: true,
-    isFreeTierAvailable: true
+    isFreeTierAvailable: false
   },
   {
-    id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
+    id: 'deepseek-ai/DeepSeek-V4.1-Flash',
     providerId: 'huggingface',
-    name: 'Hugging Face DeepSeek R1 Distill',
-    contextWindow: 65536,
+    name: 'Hugging Face DeepSeek V4.1 Flash',
+    contextWindow: 128000,
     outputLimit: 8192,
-    supportsTools: false,
+    supportsTools: true,
     supportsStreaming: true,
-    isFreeTierAvailable: true
+    isFreeTierAvailable: false
   }
 ]
 

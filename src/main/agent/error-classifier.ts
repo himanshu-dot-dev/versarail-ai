@@ -192,10 +192,14 @@ export function classifyProviderError(
   // 2. Quota / Credits Exhausted (402 or text)
   if (
     status === 402 ||
-    /insufficient\s*(credit|quota|balance)|credit\s*balance|billing\s*hard\s*limit|exceeded your current quota/i.test(
+    /insufficient\s*(credit|quota|balance)|credit\s*balance|billing\s*hard\s*limit|exceeded your current quota|purchase pre-paid credits/i.test(
       sanitizedMessage
     )
   ) {
+    let clientSafeMessage = `${providerId.toUpperCase()} quota or credit limit exhausted. Please top up your account.`
+    if (providerId === 'huggingface' || /purchase pre-paid credits/i.test(sanitizedMessage)) {
+      clientSafeMessage = `${providerId.toUpperCase()} quota or credit limit exhausted. Hugging Face Router requires pre-paid credits or a PRO subscription to use inference providers.`
+    }
     return {
       kind: 'quota_exhausted',
       providerId,
@@ -203,7 +207,7 @@ export function classifyProviderError(
       isRetryable: false,
       isFallbackEligible: true,
       rawMessage: sanitizedMessage,
-      clientSafeMessage: `${providerId.toUpperCase()} quota or credit limit exhausted. Please top up your account.`
+      clientSafeMessage
     }
   }
 
@@ -246,7 +250,9 @@ export function classifyProviderError(
   // 5. Model Not Found / Decommissioned (404 or text)
   if (
     status === 404 ||
-    /model\s*not\s*found|model.*does not exist|decommissioned/i.test(sanitizedMessage)
+    /model\s*not\s*found|model.*does not exist|decommissioned|not supported by any provider|model_not_supported|not a chat model/i.test(
+      sanitizedMessage
+    )
   ) {
     return {
       kind: 'model_not_found',

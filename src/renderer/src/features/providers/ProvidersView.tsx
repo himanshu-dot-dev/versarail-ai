@@ -430,10 +430,12 @@ export const ProvidersView: React.FC = () => {
                             : p.providerId === 'cohere'
                             ? 'command-r-plus'
                             : p.providerId === 'huggingface'
-                            ? 'llama-3.3-70b'
+                            ? 'meta-llama/Llama-3.3-70B-Instruct'
+                            : p.providerId === 'openrouter'
+                            ? 'openrouter/free'
                             : p.providerId === 'custom'
                             ? (p.customEndpoint || 'http://localhost:20128/v1')
-                            : 'openrouter'}
+                            : 'openrouter/free'}
                         </strong>
                       </span>
                       <span>•</span>

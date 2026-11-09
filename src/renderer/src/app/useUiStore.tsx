@@ -233,7 +233,11 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
               ? 'kilo-auto/free'
               : active.providerId === 'pollinations'
               ? 'openai'
-              : 'openrouter'
+              : active.providerId === 'openrouter'
+              ? 'openrouter/free'
+              : active.providerId === 'huggingface'
+              ? 'meta-llama/Llama-3.3-70B-Instruct'
+              : 'openrouter/free'
 
           if (window.electronApi?.listModels) {
             try {
