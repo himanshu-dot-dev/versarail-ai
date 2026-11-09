@@ -466,6 +466,11 @@ export class FailoverEngine {
       // In isolated tests without full database initialization, ignore
     }
 
+    const isAutoPolicy =
+      (options.preferredProviderId as string) === 'auto' ||
+      (options.preferredProviderId as string) === 'universal' ||
+      (!options.preferredProviderId && preferredModelId?.startsWith('auto/'))
+
     for (const cred of configuredCreds) {
       const providerId = cred.providerId as ProviderId
 
@@ -475,7 +480,12 @@ export class FailoverEngine {
         continue
       }
 
-      if (options.allowedProviders && !options.allowedProviders.includes(providerId)) {
+      // Check allowed providers:
+      // 1. If user explicitly chose this provider as preferred in chat, ALWAYS honor explicit intent!
+      // 2. If it's a keyless free tier, allow it for auto policy so free mesh never dies.
+      // 3. Otherwise, check against options.allowedProviders whitelist.
+      const isKeyless = providerId === 'pollinations' || providerId === 'kilo'
+      if (!isPreferred && !(isAutoPolicy && isKeyless) && options.allowedProviders && !options.allowedProviders.includes(providerId)) {
         continue
       }
 
@@ -534,10 +544,6 @@ export class FailoverEngine {
     // 3. Provider-level LRU rotation across active healthy providers for auto/free mesh
     // 4. Provider priority preference (Gemini/Groq -> Cerebras -> Nvidia -> Mistral...)
     const now = Date.now()
-    const isAutoPolicy =
-      (options.preferredProviderId as string) === 'auto' ||
-      (options.preferredProviderId as string) === 'universal' ||
-      (!options.preferredProviderId && preferredModelId?.startsWith('auto/'))
 
     const providerPriority: Record<ProviderId, number> = {
       gemini: 1,

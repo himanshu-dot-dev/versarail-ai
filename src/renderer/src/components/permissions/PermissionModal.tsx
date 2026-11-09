@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { PermissionRequestDTO, PermissionResponseDTO, PermissionScope } from '@shared/domain/models'
 import Icon from '../common/Icon'
+import DiffViewer from '../common/DiffViewer'
 import { soundService } from '../../services/sound-service'
 
 export interface PermissionModalProps {
@@ -150,13 +151,15 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ onRequestResol
             </div>
           )}
 
-          {/* Diff Preview if present */}
+          {/* Unified Diff Preview with line numbers and hunk formatting */}
           {currentRequest.diffPreview && (
             <div className="space-y-1.5">
-              <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Diff Preview</span>
-              <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/20 font-mono text-xs overflow-x-auto max-h-48 text-emerald-300 whitespace-pre">
-                {currentRequest.diffPreview}
-              </div>
+              <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wider">Proposed Changes (Diff)</span>
+              <DiffViewer
+                diffText={currentRequest.diffPreview}
+                filePath={currentRequest.targetPath || undefined}
+                maxHeight="max-h-64"
+              />
             </div>
           )}
 

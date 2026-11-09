@@ -244,7 +244,7 @@ export class AgentRuntime {
             // Completion Contract: task_complete tool signals task is finished
             if (call.name === 'task_complete') {
               const summary = (parsedArgs.summary as string) || 'Task completed successfully.'
-              const taskDoneNotice = `\n\n> 🎯 **Task Complete:** ${summary}\n`
+              const taskDoneNotice = `\n\n> **Task Complete:** ${summary}\n`
               accumulatedDisplayResponse += taskDoneNotice
               options.onToken({
                 runId,
@@ -261,7 +261,7 @@ export class AgentRuntime {
             }
 
             if (destructiveOpsThisTurn > 3) {
-              const safetyMsg = `\n\n> ⚠️ **Safety Intervention:** AI requested more than 3 destructive write/execute operations in a single turn. Execution paused for safety.\n`
+              const safetyMsg = `\n\n> **Safety Intervention:** AI requested more than 3 destructive write/execute operations in a single turn. Execution paused for safety.\n`
               accumulatedDisplayResponse += safetyMsg
               options.onToken({
                 runId,
@@ -272,7 +272,7 @@ export class AgentRuntime {
               break
             }
 
-            const actionMsg = `\n\n> ⚙️ **Action:** Executing tool \`${call.name}\`...\n`
+            const actionMsg = `\n\n> **Action:** Executing tool \`${call.name}\`...\n`
             accumulatedDisplayResponse += actionMsg
             options.onToken({
               runId,
@@ -300,8 +300,7 @@ export class AgentRuntime {
                 '\n\n[OUTPUT TRUNCATED: Exceeded 8,000 character safety limit for conversation context]'
             }
 
-            const statusIcon = execResult.success ? '✅' : '❌'
-            const outputMsg = `> ${statusIcon} **Output:** ${execResult.success ? 'Execution succeeded' : 'Execution failed'}\n\n`
+            const outputMsg = `> **Output:** ${execResult.success ? 'Execution succeeded' : 'Execution failed'}\n\n`
             accumulatedDisplayResponse += outputMsg
             options.onToken({
               runId,

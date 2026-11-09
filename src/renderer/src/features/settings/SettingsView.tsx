@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { useUiStore } from '../../app/useUiStore'
+import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export const SettingsView: React.FC = () => {
   const { theme, setTheme } = useUiStore()
@@ -8,13 +9,7 @@ export const SettingsView: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<'appearance' | 'privacy'>('appearance')
 
   // Privacy & Context Management state
-  const [allowedProviders, setAllowedProviders] = useState<string[]>([
-    'gemini',
-    'groq',
-    'cerebras',
-    'openrouter',
-    'custom'
-  ])
+  const [allowedProviders, setAllowedProviders] = useState<string[]>(DEFAULT_ALLOWED_PROVIDERS)
   const [auditRetentionDays, setAuditRetentionDays] = useState(30)
   const [contextBudgetTokens, setContextBudgetTokens] = useState(32_000)
   const [autoSummarize, setAutoSummarize] = useState(true)
@@ -27,7 +22,11 @@ export const SettingsView: React.FC = () => {
     if (window.electronApi?.getSettings) {
       window.electronApi.getSettings().then((res) => {
         if (res?.privacy) {
-          setAllowedProviders(res.privacy.allowedProviders || ['gemini', 'groq', 'cerebras', 'openrouter', 'custom'])
+          setAllowedProviders(
+            res.privacy.allowedProviders && res.privacy.allowedProviders.length > 0
+              ? res.privacy.allowedProviders
+              : DEFAULT_ALLOWED_PROVIDERS
+          )
           setAuditRetentionDays(res.privacy.auditRetentionDays ?? 30)
           setContextBudgetTokens(res.privacy.contextWindowBudgetTokens ?? 32_000)
           setAutoSummarize(res.privacy.autoSummarizeContext ?? true)
@@ -68,8 +67,16 @@ export const SettingsView: React.FC = () => {
     )
   }
 
+  const handleSelectAll = () => {
+    setAllowedProviders(DEFAULT_ALLOWED_PROVIDERS)
+  }
+
+  const handleClearAll = () => {
+    setAllowedProviders([])
+  }
+
   const handleReset = () => {
-    setAllowedProviders(['gemini', 'groq', 'cerebras', 'openrouter', 'custom'])
+    setAllowedProviders(DEFAULT_ALLOWED_PROVIDERS)
     setAuditRetentionDays(30)
     setContextBudgetTokens(32_000)
     setAutoSummarize(true)
@@ -274,25 +281,34 @@ export const SettingsView: React.FC = () => {
                       <Icon name="policy" size={18} className="text-primary" />
                       <span className="text-on-surface font-medium">Permitted Workspace AI Providers</span>
                     </div>
-                    <span className="text-[10px] text-on-surface-variant font-mono">
-                      Restricts data egress
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAll}
+                        className="text-[10px] text-primary hover:underline font-mono cursor-pointer"
+                      >
+                        Allow All
+                      </button>
+                      <span className="text-on-surface-variant/40 text-[10px]">•</span>
+                      <button
+                        type="button"
+                        onClick={handleClearAll}
+                        className="text-[10px] text-on-surface-variant hover:text-on-surface font-mono cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    </div>
                   </div>
                   <p className="text-[11px] text-on-surface-variant">
                     Failover and agent prompt dispatching will only communicate with checked providers:
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {[
-                      { id: 'gemini', label: 'Google Gemini' },
-                      { id: 'groq', label: 'Groq Cloud' },
-                      { id: 'cerebras', label: 'Cerebras' },
-                      { id: 'openrouter', label: 'OpenRouter' },
-                      { id: 'custom', label: 'Custom Gateway (OmniRoute)' }
-                    ].map((p) => {
+                    {ALL_SUPPORTED_PROVIDERS.map((p) => {
                       const isAllowed = allowedProviders.includes(p.id)
                       return (
                         <button
                           key={p.id}
+                          type="button"
                           onClick={() => toggleProvider(p.id)}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
                             isAllowed
@@ -302,6 +318,11 @@ export const SettingsView: React.FC = () => {
                         >
                           <Icon name={isAllowed ? 'check' : 'close'} size={14} />
                           <span>{p.label}</span>
+                          {p.isKeyless && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-surface-container-lowest/30 uppercase font-mono tracking-wider ml-0.5">
+                              Free
+                            </span>
+                          )}
                         </button>
                       )
                     })}

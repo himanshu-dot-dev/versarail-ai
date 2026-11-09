@@ -1,21 +1,8 @@
 import { z } from 'zod'
+import { DEFAULT_ALLOWED_PROVIDERS } from './provider.schema'
 
 export const PrivacySettingsSchema = z.object({
-  allowedProviders: z.array(z.string()).default([
-    'gemini',
-    'groq',
-    'cerebras',
-    'openrouter',
-    'custom',
-    'nvidia',
-    'mistral',
-    'huggingface',
-    'cohere',
-    'deepseek',
-    'cloudflare',
-    'pollinations',
-    'kilo'
-  ]),
+  allowedProviders: z.array(z.string()).default(DEFAULT_ALLOWED_PROVIDERS),
   allowPublicCloud: z.boolean().default(true),
   autoRedactSecrets: z.boolean().default(true),
   auditRetentionDays: z.number().nonnegative().default(30),

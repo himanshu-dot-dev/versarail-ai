@@ -1,4 +1,30 @@
 import { z } from 'zod'
+import { ProviderId } from '../domain/models'
+
+export interface ProviderMetaInfo {
+  id: ProviderId
+  label: string
+  category: 'cloud' | 'keyless' | 'aggregator'
+  isKeyless?: boolean
+}
+
+export const ALL_SUPPORTED_PROVIDERS: ProviderMetaInfo[] = [
+  { id: 'gemini', label: 'Google Gemini (Google AI Studio)', category: 'cloud' },
+  { id: 'groq', label: 'GroqCloud (Ultra-Fast LPU)', category: 'cloud' },
+  { id: 'cerebras', label: 'Cerebras Cloud (CS-3 Wafer)', category: 'cloud' },
+  { id: 'nvidia', label: 'NVIDIA NIM (Microservices)', category: 'cloud' },
+  { id: 'mistral', label: 'Mistral AI (Codestral / Large)', category: 'cloud' },
+  { id: 'deepseek', label: 'SiliconFlow / DeepSeek', category: 'cloud' },
+  { id: 'cloudflare', label: 'Cloudflare Workers AI', category: 'cloud' },
+  { id: 'cohere', label: 'Cohere (Command R+)', category: 'cloud' },
+  { id: 'pollinations', label: 'Pollinations.ai (Keyless Free Tier)', category: 'keyless', isKeyless: true },
+  { id: 'kilo', label: 'Kilo Gateway (Keyless Free Tier)', category: 'keyless', isKeyless: true },
+  { id: 'openrouter', label: 'OpenRouter Gateway', category: 'aggregator' },
+  { id: 'huggingface', label: 'Hugging Face Router', category: 'aggregator' },
+  { id: 'custom', label: 'Custom OpenAI-Compatible Endpoint', category: 'aggregator' }
+]
+
+export const DEFAULT_ALLOWED_PROVIDERS: ProviderId[] = ALL_SUPPORTED_PROVIDERS.map((p) => p.id)
 
 export const SaveCredentialSchema = z
   .object({

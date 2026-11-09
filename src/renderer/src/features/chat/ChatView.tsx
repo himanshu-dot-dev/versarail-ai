@@ -4,6 +4,7 @@ import WelcomeHero from '../workspace/WelcomeHero'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
 import { TodoDock } from './TodoDock'
+import { DiffViewer } from '../../components/common/DiffViewer'
 import { soundService } from '../../services/sound-service'
 
 interface ChatMessageItem {
@@ -335,12 +336,239 @@ function parseTextBlocks(rawText: string): TextBlock[] {
   return blocks
 }
 
-const MessageContent: React.FC<{ text: string }> = ({ text }) => {
+const ToolExecutionBlock: React.FC<{ lines: string[] }> = ({ lines }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  // Strip raw emojis from historical logs or upstream raw streams
+  const cleanLines = useMemo(() => {
+    return lines.map((l) =>
+      l
+        .replace(/[⚙️✅❌🎯⚠️]/gu, '')
+        .trim()
+    )
+  }, [lines])
+
+  // 1. Task Complete Notice
+  const taskCompleteLine = cleanLines.find((l) => l.includes('Task Complete:'))
+  if (taskCompleteLine) {
+    const summary = taskCompleteLine.replace(/.*Task Complete:\s*/i, '')
+    return (
+      <div className="my-2 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-2.5 shadow-2xs select-text">
+        <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+          <Icon name="check_circle" size={14} className="text-emerald-400" />
+        </div>
+        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+          <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider font-mono">
+            Task Complete
+          </span>
+          <span className="text-xs text-on-surface leading-relaxed">
+            <InlineFormattedText text={summary} />
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // 2. Safety Intervention
+  const safetyLine = cleanLines.find((l) => l.includes('Safety Intervention:'))
+  if (safetyLine) {
+    const reason = safetyLine.replace(/.*Safety Intervention:\s*/i, '')
+    return (
+      <div className="my-2 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-2.5 shadow-2xs select-text">
+        <div className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+          <Icon name="security" size={14} className="text-amber-400" />
+        </div>
+        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+          <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider font-mono">
+            Safety Intervention
+          </span>
+          <span className="text-xs text-on-surface leading-relaxed">
+            <InlineFormattedText text={reason} />
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // 3. Tool Execution Step (Replaces raw Action / Output emojis)
+  const actionLine = cleanLines.find((l) => l.includes('Action:') || l.includes('Executing tool'))
+  const outputLine = cleanLines.find((l) => l.includes('Output:'))
+
+  if (actionLine || outputLine) {
+    let toolName = ''
+    if (actionLine) {
+      const codeMatch = actionLine.match(/`([^`]+)`/)
+      if (codeMatch) {
+        toolName = codeMatch[1]
+      } else {
+        const toolMatch = actionLine.match(/tool\s+([a-zA-Z0-9_\-]+)/i)
+        if (toolMatch) toolName = toolMatch[1]
+      }
+    }
+
+    let toolIcon = 'build'
+    const lowerName = toolName.toLowerCase()
+    if (lowerName.includes('search')) toolIcon = 'search'
+    else if (lowerName.includes('file') || lowerName.includes('read') || lowerName.includes('write')) toolIcon = 'description'
+    else if (lowerName.includes('bash') || lowerName.includes('cmd') || lowerName.includes('exec') || lowerName.includes('terminal')) toolIcon = 'terminal'
+    else if (lowerName.includes('git') || lowerName.includes('diff')) toolIcon = 'difference'
+
+    let status: 'completed' | 'failed' | 'running' = 'running'
+    if (outputLine) {
+      if (outputLine.toLowerCase().includes('succeeded') || outputLine.toLowerCase().includes('success')) {
+        status = 'completed'
+      } else {
+        status = 'failed'
+      }
+    }
+
+    // Filter out redundant raw lines to keep card clean
+    const detailLines = cleanLines.filter((l) => {
+      const norm = l.replace(/\*\*/g, '').trim()
+      if (norm.startsWith('Output: Execution succeeded')) return false
+      if (norm.startsWith('Action: Executing tool') && toolName) return false
+      return true
+    })
+
+    return (
+      <div className="my-2 rounded-xl border border-outline-variant/60 bg-surface-container-lowest/90 overflow-hidden shadow-2xs select-text">
+        <div className="flex items-center justify-between px-3.5 py-2 bg-surface-container-high/60 border-b border-outline-variant/30 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-5 h-5 rounded-md bg-surface-container-highest flex items-center justify-center text-primary shrink-0 border border-outline-variant/40">
+              <Icon name={toolIcon} size={13} />
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-semibold text-on-surface text-[11.5px] truncate">
+                Tool Action
+              </span>
+              {toolName && (
+                <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-container text-primary font-medium border border-outline-variant/40">
+                  {toolName}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {status === 'completed' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Icon name="check" size={11} className="text-emerald-400" />
+                Completed
+              </span>
+            )}
+            {status === 'failed' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] font-mono bg-error/10 text-error border border-error/20">
+                <Icon name="error" size={11} className="text-error" />
+                Failed
+              </span>
+            )}
+            {status === 'running' && (
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10.5px] font-mono bg-primary/10 text-primary border border-primary/20 animate-pulse">
+                <Icon name="progress_activity" size={11} className="animate-spin text-primary" />
+                Running...
+              </span>
+            )}
+
+            {detailLines.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="p-1 rounded hover:bg-surface-container text-on-surface-variant/70 hover:text-on-surface transition-colors cursor-pointer"
+                title={isExpanded ? 'Collapse tool output' : 'Expand tool output'}
+              >
+                <Icon name={isExpanded ? 'expand_less' : 'expand_more'} size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Details or error logs */}
+        {detailLines.length > 0 && (isExpanded || status === 'failed') && (
+          <div className="px-3.5 py-2 text-xs font-mono text-on-surface-variant flex flex-col gap-1 leading-relaxed bg-surface-container-lowest border-t border-outline-variant/20">
+            {detailLines.map((line, idx) => (
+              <div key={idx} className="select-text">
+                <InlineFormattedText text={line} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // 4. Default Blockquote styling
+  return (
+    <div className="my-1.5 px-3 py-1.5 rounded-r-lg border-l-2 border-primary/60 bg-surface-container-high/40 text-xs italic text-on-surface-variant select-text">
+      {cleanLines.map((qLine, qIdx) => (
+        <div key={qIdx} className="leading-snug select-text">
+          <InlineFormattedText text={qLine} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export const LiveThinkingIndicator: React.FC<{ modelName?: string }> = ({ modelName }) => {
+  const [seconds, setSeconds] = useState(0)
+
+  useEffect(() => {
+    const startTime = Date.now()
+    const timer = setInterval(() => {
+      setSeconds(Math.max(0, (Date.now() - startTime) / 1000))
+    }, 100)
+    return () => clearInterval(timer)
+  }, [])
+
+  const phase = useMemo(() => {
+    if (seconds < 1.8) return 'Analyzing query & active workspace context...'
+    if (seconds < 4.2) return 'Synthesizing reasoning & planning tool sequence...'
+    if (seconds < 8.0) return 'Formulating code response & diff operations...'
+    return 'Finalizing stream & verifying outputs...'
+  }, [seconds])
+
+  return (
+    <div className="flex flex-col gap-2.5 p-3 rounded-xl border border-primary/25 bg-surface-container-lowest/80 select-none animate-fade-in shadow-xs">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+            <Icon name="psychology" size={14} className="animate-pulse" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-semibold text-on-surface">Thinking</span>
+              {modelName && (
+                <span className="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40">
+                  {modelName}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-on-surface-variant/80 font-sans truncate">
+              {phase}
+            </span>
+          </div>
+        </div>
+        <span className="font-mono text-[10.5px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40 shrink-0">
+          {seconds.toFixed(1)}s
+        </span>
+      </div>
+      <div className="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+        <div
+          className="h-full bg-primary/80 rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${Math.min(95, Math.max(12, seconds * 14))}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ text, isStreaming }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+  const [isThinkingOpen, setIsThinkingOpen] = useState(true)
 
   // Extract <think> reasoning if present
   const thinkMatch = text.match(/<think>([\s\S]*?)(?:<\/think>|$)/i)
   const thinkContent = thinkMatch ? thinkMatch[1].trim() : ''
+  const isReasoningActive = isStreaming && text.includes('<think>') && !text.includes('</think>')
 
   // Clean text from XML artifacts (think blocks, already handled todo tags)
   const cleanText = useMemo(() => {
@@ -387,15 +615,30 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
     <div className="flex flex-col gap-2 select-text cursor-text">
       {/* 1. Collapsible Thinking Process disclosure for reasoning models */}
       {thinkContent && (
-        <details className="my-1.5 rounded-xl border border-outline-variant/50 bg-surface-container-high/40 text-xs overflow-hidden group select-text">
+        <details
+          open={isStreaming ? true : isThinkingOpen}
+          onToggle={(e) => setIsThinkingOpen((e.target as HTMLDetailsElement).open)}
+          className="my-1.5 rounded-xl border border-outline-variant/50 bg-surface-container-high/40 text-xs overflow-hidden group select-text"
+        >
           <summary className="px-3.5 py-2 font-mono font-medium text-on-surface-variant flex items-center justify-between cursor-pointer hover:bg-surface-container-high/70 select-none">
             <div className="flex items-center gap-2">
-              <Icon name="psychology" size={15} className="text-primary" />
-              <span className="text-[11.5px] font-semibold text-primary">Reasoning & Thought Process</span>
+              <Icon
+                name="psychology"
+                size={15}
+                className={`text-primary ${isReasoningActive ? 'animate-pulse' : ''}`}
+              />
+              <span className="text-[11.5px] font-semibold text-primary">
+                {isReasoningActive ? 'Reasoning in progress...' : 'Reasoning & Thought Process'}
+              </span>
             </div>
-            <span className="text-[10px] text-on-surface-variant/70 font-mono">click to toggle</span>
+            <div className="flex items-center gap-2 text-[10px] text-on-surface-variant/70 font-mono">
+              {isReasoningActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+              )}
+              <span>click to toggle</span>
+            </div>
           </summary>
-          <div className="p-3 border-t border-outline-variant/30 text-on-surface-variant/90 text-[11px] font-mono leading-relaxed bg-surface-container-lowest/50 whitespace-pre-wrap select-text">
+          <div className="p-3 border-t border-outline-variant/30 text-on-surface-variant/90 text-[11px] font-mono leading-relaxed bg-surface-container-lowest/50 whitespace-pre-wrap select-text max-h-80 overflow-y-auto">
             {thinkContent}
           </div>
         </details>
@@ -404,6 +647,22 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
       {/* 2. Formatted Content Parts */}
       {parts.map((part, i) => {
         if (part.type === 'code') {
+          // If code block is a unified diff, render interactive DiffViewer
+          const isDiff =
+            part.lang === 'diff' ||
+            (part.content.includes('@@ -') &&
+              (part.content.includes('\n+') || part.content.includes('\n-')))
+
+          if (isDiff) {
+            return (
+              <DiffViewer
+                key={i}
+                diffText={part.content}
+                className="my-2 shadow-xs"
+              />
+            )
+          }
+
           const isCopied = copiedIndex === i
           const lineCount = part.content ? part.content.split('\n').length : 0
           return (
@@ -580,25 +839,9 @@ const MessageContent: React.FC<{ text: string }> = ({ text }) => {
                 )
               }
 
-              // D. Blockquotes & Tool Action Pills
+              // D. Tool Execution Steps & Blockquotes
               if (block.type === 'quote' && block.lines) {
-                const isActionPill = block.lines.some(
-                  (l) => l.includes('Action:') || l.includes('Output:')
-                )
-                return (
-                  <div
-                    key={bIdx}
-                    className={`my-1.5 px-3.5 py-2 rounded-lg border-l-2 border-primary text-xs font-mono text-on-surface-variant flex flex-col gap-1 shadow-2xs select-text ${
-                      isActionPill ? 'bg-primary/5' : 'bg-surface-container-high/50'
-                    }`}
-                  >
-                    {block.lines.map((qLine, qIdx) => (
-                      <div key={qIdx} className="leading-snug select-text">
-                        <InlineFormattedText text={qLine} />
-                      </div>
-                    ))}
-                  </div>
-                )
+                return <ToolExecutionBlock key={bIdx} lines={block.lines} />
               }
 
               // E. Headings (#, ##, ###, ####)
@@ -1042,11 +1285,21 @@ export const ChatView: React.FC = () => {
                   >
                     {!isUser && msg.text && <TodoDock content={msg.text} />}
                     {msg.text ? (
-                      <MessageContent text={msg.text} />
+                      <MessageContent text={msg.text} isStreaming={msg.isStreaming} />
+                    ) : msg.isStreaming ? (
+                      <LiveThinkingIndicator modelName={msg.model} />
                     ) : (
                       <span className="italic text-on-surface-variant">
-                        {msg.isStreaming ? 'Thinking...' : '[No response received from model]'}
+                        [No response received from model]
                       </span>
+                    )}
+                    {!isUser && msg.isStreaming && msg.text && (
+                      <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-outline-variant/30 select-none">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                        <span className="text-[10px] text-primary/80 font-mono">
+                          Generating response...
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>

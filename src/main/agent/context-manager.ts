@@ -6,6 +6,7 @@
 
 import { SqliteDatabase } from '../storage/sqlite-database'
 import { PrivacySettingsDTO } from '@shared/schemas/settings.schema'
+import { DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export interface ContextMessage {
   role: 'system' | 'user' | 'assistant'
@@ -213,21 +214,7 @@ export class ContextManager {
    */
   public getPrivacySettings(): PrivacySettingsDTO {
     const defaults: PrivacySettingsDTO = {
-      allowedProviders: [
-        'gemini',
-        'groq',
-        'cerebras',
-        'openrouter',
-        'custom',
-        'nvidia',
-        'mistral',
-        'huggingface',
-        'cohere',
-        'deepseek',
-        'cloudflare',
-        'pollinations',
-        'kilo'
-      ],
+      allowedProviders: DEFAULT_ALLOWED_PROVIDERS,
       allowPublicCloud: true,
       autoRedactSecrets: true,
       auditRetentionDays: 30,
@@ -244,7 +231,23 @@ export class ContextManager {
         return defaults
       }
 
-      return JSON.parse(row.value_json)
+      const saved = JSON.parse(row.value_json)
+      // Auto-healing migration: Ensure keyless free providers (pollinations, kilo)
+      // are never locked out by an old 5-element legacy array saved by earlier builds
+      const rawAllowed = Array.isArray(saved.allowedProviders) ? saved.allowedProviders : defaults.allowedProviders
+      const isLegacyFiveOnly =
+        rawAllowed.length === 5 &&
+        ['gemini', 'groq', 'cerebras', 'openrouter', 'custom'].every((p) => rawAllowed.includes(p))
+
+      const healedAllowed = isLegacyFiveOnly
+        ? defaults.allowedProviders
+        : rawAllowed
+
+      return {
+        ...defaults,
+        ...saved,
+        allowedProviders: healedAllowed
+      }
     } catch {
       return defaults
     }
