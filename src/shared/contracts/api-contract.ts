@@ -3,7 +3,8 @@ import {
   ProviderMetadataDTO,
   ModelDescriptorDTO,
   PermissionRequestDTO,
-  PermissionResponseDTO
+  PermissionResponseDTO,
+  TokenUsageSummaryDTO
 } from '../domain/models'
 import {
   ReviewPatchRequestDTO,
@@ -117,6 +118,9 @@ export interface IElectronApi {
   getSettings: () => Promise<{ privacy: PrivacySettingsDTO }>
   saveSettings: (settings: PrivacySettingsDTO) => Promise<{ success: boolean; error?: string }>
   purgeData: (retentionDays?: number) => Promise<{ success: boolean; purgedConversations: number }>
+
+  // Per-Provider Token Calculator
+  getTokenUsageSummary: () => Promise<TokenUsageSummaryDTO>
 }
 
 declare global {

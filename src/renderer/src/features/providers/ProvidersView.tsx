@@ -223,9 +223,9 @@ export const ProvidersView: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-gutter md:p-space-xl flex flex-col gap-space-xl max-w-7xl mx-auto w-full">
+    <div className="shrink-0 p-gutter md:p-space-xl flex flex-col gap-space-xl max-w-7xl mx-auto w-full">
       {/* Top Section: Action Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-lg select-none">
+      <div className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-space-lg select-none">
         <div>
           <div className="flex items-center gap-space-sm text-primary mb-space-xs font-mono">
             <Icon name="hub" size={16} />
@@ -247,7 +247,7 @@ export const ProvidersView: React.FC = () => {
       </div>
 
       {/* Routing Strategy Summary Card */}
-      <div className="relative overflow-hidden bg-surface-container rounded-xl p-space-xl shadow-sm border border-outline-variant select-none">
+      <div className="relative overflow-hidden shrink-0 bg-surface-container rounded-xl p-space-xl shadow-sm border border-outline-variant select-none">
         <div className="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-xl relative z-10">
           <div className="flex items-start gap-space-lg">
@@ -308,7 +308,7 @@ export const ProvidersView: React.FC = () => {
       </div>
 
       {/* Providers List & Grid */}
-      <div className="flex flex-col gap-space-md select-none">
+      <div className="shrink-0 flex flex-col gap-space-md select-none">
         <div className="flex items-center justify-between">
           <h2 className="font-headline-md text-on-surface">Connected Endpoints</h2>
           <span className="text-label-sm text-on-surface-variant font-mono">

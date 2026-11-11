@@ -253,6 +253,20 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       max_tokens: request.maxTokens
     }
 
+    // Request token usage in final SSE chunk on providers that support OpenAI stream_options
+    const STREAM_OPTIONS_PROVIDERS = new Set([
+      'groq',
+      'cerebras',
+      'openrouter',
+      'nvidia',
+      'deepseek',
+      'huggingface',
+      'custom'
+    ])
+    if (STREAM_OPTIONS_PROVIDERS.has(this.id)) {
+      payload.stream_options = { include_usage: true }
+    }
+
     if (request.tools && request.tools.length > 0) {
       payload.tools = request.tools
     }
@@ -289,7 +303,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
       }
 
       // Check if upstream stated a retry delay
-      const retryAfter = response.headers.get('retry-after')
+      const retryAfter = response.headers?.get?.('retry-after') ?? null
       const delayMs = extractRetryDelayMs(message, retryAfter)
       const delayNotice = delayMs ? ` (try again in ~${Math.round(delayMs / 1000)}s)` : ''
 
@@ -324,11 +338,7 @@ export class OpenAICompatAdapter implements IProviderAdapter {
               insideReasoning = false
               yield { textDelta: '</think>' }
             }
-            if (insideReasoning) {
-        insideReasoning = false
-        yield { textDelta: '</think>' }
-      }
-      const flushed = thinkFilter.flush()
+            const flushed = thinkFilter.flush()
             if (flushed.contentDelta) {
               yield { textDelta: flushed.contentDelta }
             }

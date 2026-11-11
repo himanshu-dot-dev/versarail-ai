@@ -8,6 +8,8 @@ import { formatResetEta, summarizeExhaustion, ModelExhaustionRecord } from '../p
 import { ChatMessage } from '../providers/provider-adapter.interface'
 import { extractInlineToolCalls } from '../tools/builtin-tool-definitions'
 import { repairToolArguments } from '../providers/utils/tool-repair'
+import { ContextManager } from './context-manager'
+import { TokenTelemetryService } from '../gateway/token-telemetry'
 
 export interface CandidateModel {
   providerId: ProviderId
@@ -58,6 +60,12 @@ export interface FailoverExecutionResult {
   finalModelId: string
   wasFailoverTriggered: boolean
   failoverCount: number
+  usage?: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    source: 'upstream' | 'estimated'
+  }
   toolCalls?: Array<{
     id: string
     name: string
@@ -741,6 +749,8 @@ export class FailoverEngine {
 
       let hasStreamedFirstByte = false
       let fullResponse = ''
+      let upstreamPromptTokens = 0
+      let upstreamCompletionTokens = 0
 
       try {
         let apiKey = await this.secretStore.getDecryptedKey(candidate.credentialId)
@@ -805,6 +815,15 @@ export class FailoverEngine {
               modelId: candidate.modelId
             })
           }
+
+          if (chunk.usage) {
+            if (typeof chunk.usage.promptTokens === 'number' && chunk.usage.promptTokens > 0) {
+              upstreamPromptTokens = chunk.usage.promptTokens
+            }
+            if (typeof chunk.usage.completionTokens === 'number' && chunk.usage.completionTokens > 0) {
+              upstreamCompletionTokens = chunk.usage.completionTokens
+            }
+          }
         }
 
         // Check for inline tool calls in text
@@ -838,6 +857,31 @@ export class FailoverEngine {
           )
         }
 
+        // Calculate token usage (upstream reported if provided, otherwise ContextManager estimate)
+        const ctxMgr = ContextManager.getInstance()
+        const estimatedIn = ctxMgr.estimateMessagesTokens(
+          messages.map((m) => ({
+            role: m.role === 'tool' ? 'user' : m.role,
+            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content || '')
+          }))
+        )
+        const serializedToolsOut = detectedToolCalls.map((t) => `${t.name}(${t.arguments})`).join('')
+        const estimatedOut = ctxMgr.estimateTokens(`${fullResponse}${serializedToolsOut}`)
+
+        const hasUpstreamTokens = upstreamPromptTokens > 0 || upstreamCompletionTokens > 0
+        const finalPromptTokens = upstreamPromptTokens > 0 ? upstreamPromptTokens : estimatedIn
+        const finalCompletionTokens = upstreamCompletionTokens > 0 ? upstreamCompletionTokens : estimatedOut
+        const tokenSource: 'upstream' | 'estimated' = hasUpstreamTokens ? 'upstream' : 'estimated'
+
+        TokenTelemetryService.getInstance().recordUsage({
+          providerId: candidate.providerId,
+          credentialId: candidate.credentialId,
+          modelId: candidate.modelId,
+          inputTokens: finalPromptTokens,
+          outputTokens: finalCompletionTokens,
+          tokenSource
+        })
+
         // Successfully completed stream
         this.registry.releaseLease(candidate.credentialId)
         this.registry.clearCooldown(candidate.credentialId, candidate.modelId)
@@ -851,6 +895,12 @@ export class FailoverEngine {
           finalModelId: candidate.modelId,
           wasFailoverTriggered: failoverCount > 0,
           failoverCount,
+          usage: {
+            promptTokens: finalPromptTokens,
+            completionTokens: finalCompletionTokens,
+            totalTokens: finalPromptTokens + finalCompletionTokens,
+            source: tokenSource
+          },
           toolCalls: detectedToolCalls.length > 0 ? detectedToolCalls : undefined
         }
       } catch (err: unknown) {

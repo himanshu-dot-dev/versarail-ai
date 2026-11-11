@@ -210,6 +210,8 @@ export class AgentRuntime {
       let currentStep = 0
       let lastResponse = ''
       let taskCompleted = false
+      let totalPromptTokens = 0
+      let totalCompletionTokens = 0
 
       while (currentStep < MAX_TOOL_STEPS) {
         currentStep++
@@ -263,6 +265,10 @@ export class AgentRuntime {
         finalProvider = streamResult.finalProviderId
         activeModelId = streamResult.finalModelId
         lastResponse = streamResult.fullResponse
+        if (streamResult.usage) {
+          totalPromptTokens += streamResult.usage.promptTokens
+          totalCompletionTokens += streamResult.usage.completionTokens
+        }
 
         // Check if model emitted any tool calls to execute
         if (streamResult.toolCalls && streamResult.toolCalls.length > 0) {
@@ -399,7 +405,9 @@ export class AgentRuntime {
         conversationId: options.conversationId,
         role: 'assistant',
         content: contentToSave,
-        modelId: activeModelId
+        modelId: activeModelId,
+        promptTokens: totalPromptTokens,
+        completionTokens: totalCompletionTokens
       })
 
       this.convStore.completeRun(runId, 'completed', finalProvider)

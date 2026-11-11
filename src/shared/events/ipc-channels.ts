@@ -51,7 +51,10 @@ export const IPC_CHANNELS = {
   // Settings & Privacy
   SETTINGS_GET: 'settings:get',
   SETTINGS_SAVE: 'settings:save',
-  SETTINGS_PURGE_DATA: 'settings:purge-data'
+  SETTINGS_PURGE_DATA: 'settings:purge-data',
+
+  // Token Budget & Usage Calculator
+  ANALYTICS_GET_TOKEN_BUDGET: 'analytics:get-token-budget'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

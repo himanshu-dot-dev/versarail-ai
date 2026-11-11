@@ -200,6 +200,11 @@ const electronApi: IElectronApi = {
   },
   purgeData: (retentionDays?: number) => {
     return ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_PURGE_DATA, retentionDays)
+  },
+
+  // Per-Provider Token Calculator
+  getTokenUsageSummary: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.ANALYTICS_GET_TOKEN_BUDGET)
   }
 }
 

@@ -68,3 +68,41 @@ export interface PermissionResponseDTO {
   rememberScope?: PermissionScope
 }
 
+export interface ProviderTokenBreakdownDTO {
+  providerId: ProviderId
+  providerName: string
+  poolKey: string
+  usableKeyCount: number
+  monthlyTokenBudgetTokens: number
+  monthlyBudgetLabel: string
+  budgetKind: 'documented' | 'credits' | 'unpublished'
+  usedTokensMonth: number
+  remainingTokensMonth: number
+  inputTokens24h: number
+  outputTokens24h: number
+  inputTokensMonth: number
+  outputTokensMonth: number
+  modelsCount: number
+}
+
+export interface ModelBudgetEntryDTO {
+  providerId: ProviderId
+  modelId: string
+  displayName: string
+  budget: number
+  used: number
+  remaining: number
+}
+
+export interface TokenUsageSummaryDTO {
+  generatedAt: string
+  totalMonthlyBudgetTokens: number
+  totalUsedMonthTokens: number
+  totalRemainingMonthTokens: number
+  remainingPct: number
+  activeProviderCount: number
+  providers: ProviderTokenBreakdownDTO[]
+  models: ModelBudgetEntryDTO[]
+  unpublishedCount: number
+}
+

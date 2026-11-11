@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowUp,
+  BarChart3,
   Bot,
   Brain,
   Check,
@@ -15,6 +16,7 @@ import {
   Circle,
   Clock,
   Code,
+  Coins,
   Copy,
   Cpu,
   CreditCard,
@@ -164,7 +166,9 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   visibility_off: EyeOff,
   vpn_key: Key,
   lock: Lock,
-  info: Info
+  info: Info,
+  bar_chart: BarChart3,
+  coins: Coins
 }
 
 export const Icon: React.FC<IconProps> = ({
