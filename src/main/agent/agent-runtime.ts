@@ -16,9 +16,15 @@ export interface AgentRunOptions {
   providerId: ProviderId
   workspacePath?: string | null
   allowedProviders?: ProviderId[]
-  onToken: (chunk: { runId: string; delta: string; isComplete: boolean }) => void
-  onFailover?: (event: FailoverEvent) => void
-  onError: (err: { runId: string; message: string; isFallbackEligible: boolean }) => void
+  onToken: (chunk: {
+    runId: string
+    conversationId?: string
+    modelId?: string
+    delta: string
+    isComplete: boolean
+  }) => void
+  onFailover?: (event: FailoverEvent & { conversationId?: string }) => void
+  onError: (err: { runId: string; conversationId?: string; message: string; isFallbackEligible: boolean }) => void
 }
 
 export class AgentRuntime {
@@ -115,6 +121,7 @@ export class AgentRuntime {
 
       options.onError({
         runId,
+        conversationId: options.conversationId,
         message: errMessage,
         isFallbackEligible: false
       })
@@ -142,6 +149,15 @@ export class AgentRuntime {
       id: runId,
       conversationId: options.conversationId,
       initialProvider: options.providerId
+    })
+
+    // Immediately notify renderer of active runId so Stop/Cancel works from millisecond 0
+    options.onToken({
+      runId,
+      conversationId: options.conversationId,
+      modelId: options.modelId,
+      delta: '',
+      isComplete: false
     })
 
     // Build conversation context messages from SQLite and budget via ContextManager
@@ -229,13 +245,18 @@ export class AgentRuntime {
             if (chunk.delta) {
               options.onToken({
                 runId,
+                conversationId: options.conversationId,
+                modelId: chunk.modelId || activeModelId || options.modelId,
                 delta: chunk.delta,
                 isComplete: false
               })
             }
           },
           onFailover: (event) => {
-            options.onFailover?.(event)
+            options.onFailover?.({
+              ...event,
+              conversationId: options.conversationId
+            })
           }
         })
 
@@ -277,6 +298,8 @@ export class AgentRuntime {
               accumulatedDisplayResponse += taskDoneNotice
               options.onToken({
                 runId,
+                conversationId: options.conversationId,
+                modelId: activeModelId || options.modelId,
                 delta: taskDoneNotice,
                 isComplete: false
               })
@@ -294,6 +317,8 @@ export class AgentRuntime {
               accumulatedDisplayResponse += safetyMsg
               options.onToken({
                 runId,
+                conversationId: options.conversationId,
+                modelId: activeModelId || options.modelId,
                 delta: safetyMsg,
                 isComplete: false
               })
@@ -305,6 +330,8 @@ export class AgentRuntime {
             accumulatedDisplayResponse += actionMsg
             options.onToken({
               runId,
+              conversationId: options.conversationId,
+              modelId: activeModelId || options.modelId,
               delta: actionMsg,
               isComplete: false
             })
@@ -333,6 +360,8 @@ export class AgentRuntime {
             accumulatedDisplayResponse += outputMsg
             options.onToken({
               runId,
+              conversationId: options.conversationId,
+              modelId: activeModelId || options.modelId,
               delta: outputMsg,
               isComplete: false
             })
@@ -377,6 +406,8 @@ export class AgentRuntime {
 
       options.onToken({
         runId,
+        conversationId: options.conversationId,
+        modelId: activeModelId || options.modelId,
         delta: '',
         isComplete: true
       })
@@ -412,6 +443,7 @@ export class AgentRuntime {
 
       options.onError({
         runId,
+        conversationId: options.conversationId,
         message: err.message || 'Stream generation failed',
         isFallbackEligible: !isCancelled
       })

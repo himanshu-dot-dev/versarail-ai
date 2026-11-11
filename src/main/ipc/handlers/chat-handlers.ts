@@ -85,6 +85,7 @@ export function registerChatHandlers(): void {
             if (!senderWebContents.isDestroyed()) {
               senderWebContents.send(IPC_CHANNELS.AGENT_STREAM_TOKEN, {
                 runId: err.runId,
+                conversationId: err.conversationId || payload.conversationId,
                 delta: '',
                 isComplete: true,
                 error: err.message

@@ -15,6 +15,7 @@ import { PrivacySettingsDTO } from '../schemas/settings.schema'
 
 export interface FailoverEventDTO {
   runId?: string
+  conversationId?: string
   fromProvider: string
   toProvider: string
   fromModel: string
@@ -87,7 +88,14 @@ export interface IElectronApi {
 
   // Agent Streaming & Activity Events
   onStreamToken: (
-    callback: (data: { runId: string; delta: string; isComplete: boolean; error?: string }) => void
+    callback: (data: {
+      runId: string
+      conversationId?: string
+      modelId?: string
+      delta: string
+      isComplete: boolean
+      error?: string
+    }) => void
   ) => () => void
   onActivityEvent: (
     callback: (event: { runId: string; type: string; summary: string; timestamp: string }) => void

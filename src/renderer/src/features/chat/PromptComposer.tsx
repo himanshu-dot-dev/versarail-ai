@@ -16,7 +16,7 @@ interface ModelItem {
 
 export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled = false }) => {
   const [prompt, setPrompt] = useState('')
-  const { connectedModel, setConnectedModel, workspace, setActiveView } = useUiStore()
+  const { connectedModel, setConnectedModel, workspace, setActiveView, activeView } = useUiStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Mention Picker State (@file)
@@ -93,9 +93,9 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
     }
   }, [prompt])
 
-  // Fetch available models when dropdown opens
+  // Fetch available models when dropdown opens or when returning to chat view
   useEffect(() => {
-    if (window.electronApi?.listModels) {
+    if ((isModelOpen || activeView === 'chat') && window.electronApi?.listModels) {
       if (isModelOpen) {
         setIsLoadingModels(true)
       }
@@ -108,7 +108,6 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
             if (
               connectedModel.providerId &&
               connectedModel.providerId !== 'auto' &&
-              res.length > 0 &&
               !res.some((m) => m.providerId === connectedModel.providerId)
             ) {
               setConnectedModel({
@@ -123,7 +122,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
         .catch(console.error)
         .finally(() => setIsLoadingModels(false))
     }
-  }, [isModelOpen])
+  }, [isModelOpen, activeView])
 
   // Click outside to close model dropdown
   useEffect(() => {

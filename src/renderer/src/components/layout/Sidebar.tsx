@@ -41,7 +41,9 @@ export const Sidebar: React.FC = () => {
     startNewChat,
     deleteConversation,
     renameConversation,
-    showConfirm
+    showConfirm,
+    streamingByConv,
+    hasActiveRun
   } = useUiStore()
 
   const [isChatsExpanded, setIsChatsExpanded] = useState(true)
@@ -259,6 +261,12 @@ export const Sidebar: React.FC = () => {
                       className={isChatActive ? 'text-primary' : 'text-on-surface-variant'}
                     />
                     <span className="truncate">{view.label}</span>
+                    {hasActiveRun && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-primary animate-ping shrink-0"
+                        title="AI generation running in background"
+                      />
+                    )}
                   </div>
 
                   <button
@@ -344,11 +352,22 @@ export const Sidebar: React.FC = () => {
                               ) : (
                                 <>
                                   <div className="flex flex-col min-w-0 pr-1">
-                                    <span className="truncate max-w-[130px] text-[11.5px] leading-tight">
-                                      {conv.title || 'Untitled Chat'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      {streamingByConv[conv.id] && (
+                                        <Icon
+                                          name="progress_activity"
+                                          size={11}
+                                          className="animate-spin text-primary shrink-0"
+                                        />
+                                      )}
+                                      <span className="truncate max-w-[130px] text-[11.5px] leading-tight">
+                                        {conv.title || 'Untitled Chat'}
+                                      </span>
+                                    </div>
                                     <span className="text-[9.5px] text-on-surface-variant/60 font-mono">
-                                      {formatRelativeTime(conv.updatedAt || conv.createdAt)}
+                                      {streamingByConv[conv.id]
+                                        ? 'Generating...'
+                                        : formatRelativeTime(conv.updatedAt || conv.createdAt)}
                                     </span>
                                   </div>
 

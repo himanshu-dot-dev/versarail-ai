@@ -5,17 +5,6 @@ import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
 import { TodoDock } from './TodoDock'
 import { DiffViewer } from '../../components/common/DiffViewer'
-import { soundService } from '../../services/sound-service'
-
-interface ChatMessageItem {
-  id: string
-  role: 'user' | 'assistant'
-  text: string
-  time: string
-  model?: string
-  isStreaming?: boolean
-  error?: string
-}
 
 interface InlineToken {
   type: 'text' | 'code' | 'bold' | 'italic' | 'bold_italic' | 'strikethrough' | 'link'
@@ -884,28 +873,25 @@ const MessageContent: React.FC<{ text: string; isStreaming?: boolean }> = ({ tex
 
 export const ChatView: React.FC = () => {
   const {
-    setHasActiveRun,
-    connectedModel,
-    workspace,
     setActiveView,
     isInspectorOpen,
     toggleInspector,
     activeConversationId,
     conversations,
     startNewChat,
-    loadConversations
+    messagesByConv,
+    streamingByConv,
+    failoverNoticeByConv,
+    loadConversationMessages,
+    sendChatPrompt,
+    cancelChatRun,
+    dismissFailoverNotice
   } = useUiStore()
-  const [activeRunId, setActiveRunId] = useState<string | null>(null)
-  const [isStreaming, setIsStreaming] = useState(false)
+
   const activeConv = conversations.find((c) => c.id === activeConversationId)
-  const [failoverNotice, setFailoverNotice] = useState<{
-    from: string
-    to: string
-    reason: string
-    isSilent: boolean
-    resetEta?: string | null
-  } | null>(null)
-  const [messages, setMessages] = useState<ChatMessageItem[]>([])
+  const messages = messagesByConv[activeConversationId] || []
+  const isStreaming = Boolean(streamingByConv[activeConversationId])
+  const failoverNotice = failoverNoticeByConv[activeConversationId] || null
 
   const chatBottomRef = useRef<HTMLDivElement>(null)
 
@@ -914,269 +900,21 @@ export const ChatView: React.FC = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load existing conversation on mount or when active conversation changes
+  // Load persisted messages when switching to a conversation that is not actively streaming
   useEffect(() => {
-    setIsStreaming(false)
-    setHasActiveRun(false)
-    setActiveRunId(null)
-    setFailoverNotice(null)
-
-    if (window.electronApi?.getConversation) {
-      window.electronApi
-        .getConversation(activeConversationId)
-        .then((res) => {
-          if (res && res.messages && res.messages.length > 0) {
-            setMessages(
-              res.messages.map((m) => ({
-                id: m.id,
-                role: m.role as 'user' | 'assistant',
-                text: m.content,
-                time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                model: m.modelId || undefined
-              }))
-            )
-          } else {
-            setMessages([])
-          }
-        })
-        .catch((err) => {
-          console.error('[ChatView] Failed to load conversation:', err)
-          setMessages([])
-        })
-    } else {
-      setMessages([])
-    }
-  }, [activeConversationId])
-
-  // Setup streaming token listener
-  useEffect(() => {
-    if (!window.electronApi?.onStreamToken) return
-
-    const unsubscribe = window.electronApi.onStreamToken((data) => {
-      setMessages((prev) => {
-        const lastMsg = prev[prev.length - 1]
-        if (!lastMsg || lastMsg.role !== 'assistant' || !lastMsg.isStreaming) {
-          return prev
-        }
-
-        if (data.error) {
-          soundService.play('error')
-          return [
-            ...prev.slice(0, -1),
-            {
-              ...lastMsg,
-              text: lastMsg.text ? `${lastMsg.text}\n\n[Error: ${data.error}]` : `[Error: ${data.error}]`,
-              isStreaming: false,
-              error: data.error
-            }
-          ]
-        }
-
-        if (data.isComplete) {
-          loadConversations()
-          soundService.play('success')
-          const finalText = lastMsg.text.trim()
-            ? lastMsg.text
-            : (data.error ? `[Error: ${data.error}]` : '[No response received from model. Upstream provider closed connection without emitting tokens.]')
-          return [
-            ...prev.slice(0, -1),
-            {
-              ...lastMsg,
-              text: finalText,
-              isStreaming: false
-            }
-          ]
-        }
-
-        return [
-          ...prev.slice(0, -1),
-          {
-            ...lastMsg,
-            text: lastMsg.text + data.delta
-          }
-        ]
-      })
-
-      if (data.isComplete || data.error) {
-        setIsStreaming(false)
-        setHasActiveRun(false)
-        setActiveRunId(null)
-      }
-    })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [])
-
-  // Setup failover event listener
-  useEffect(() => {
-    if (!window.electronApi?.onFailoverEvent) return
-
-    const unsubscribe = window.electronApi.onFailoverEvent((data) => {
-      setFailoverNotice({
-        from: `${data.fromProvider} (${data.fromModel})`,
-        to: `${data.toProvider} (${data.toModel})`,
-        reason: data.reason,
-        isSilent: data.isSilent,
-        resetEta: data.resetEta
-      })
-    })
-
-    return () => {
-      unsubscribe()
-    }
-  }, [])
+    loadConversationMessages(activeConversationId)
+  }, [activeConversationId, loadConversationMessages])
 
   const handleSendPrompt = async (text: string) => {
-    const userTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    const userMsgId = `msg-${Date.now()}`
-    const assistantMsgId = `msg-assistant-${Date.now()}`
-
-    // Check if any provider is connected
-    if (!connectedModel.isConnected || connectedModel.name === 'No Model Connected') {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: userMsgId,
-          role: 'user',
-          text,
-          time: userTime
-        },
-        {
-          id: assistantMsgId,
-          role: 'assistant',
-          text: 'No AI provider is connected yet. Please navigate to AI Providers and add an API key (e.g. Google Gemini, Groq, Cerebras, or OmniRoute) to start generating responses.',
-          time: userTime,
-          isStreaming: false,
-          error: 'No provider connected'
-        }
-      ])
-      setIsStreaming(false)
-      setHasActiveRun(false)
-      return
-    }
-
-    // Optimistically add user message and streaming assistant placeholder
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: userMsgId,
-        role: 'user',
-        text,
-        time: userTime
-      },
-      {
-        id: assistantMsgId,
-        role: 'assistant',
-        text: '',
-        time: userTime,
-        model: connectedModel.name,
-        isStreaming: true
-      }
-    ])
-
-    setIsStreaming(true)
-    setHasActiveRun(true)
-
-    try {
-      if (window.electronApi?.sendPrompt) {
-        // Resolve provider and model ID (support universal AI Agent auto-switch)
-        const isAuto =
-          connectedModel.providerId === 'auto' ||
-          connectedModel.name.includes('(Auto') ||
-          connectedModel.name.startsWith('auto/')
-        const providerId = isAuto ? 'auto' : (connectedModel.providerId as string) || 'gemini'
-        const modelId = isAuto ? (connectedModel.name.startsWith('auto/') ? connectedModel.name : 'auto/free') : connectedModel.name
-
-        const result = await window.electronApi.sendPrompt({
-          conversationId: activeConversationId,
-          prompt: text,
-          modelId,
-          providerId,
-          workspacePath: workspace.path
-        })
-        loadConversations()
-
-        if (!result.success) {
-          setMessages((prev) => [
-            ...prev.slice(0, -1),
-            {
-              id: assistantMsgId,
-              role: 'assistant',
-              text: `Failed to initiate generation: ${result.error || 'Unknown error'}`,
-              time: userTime,
-              isStreaming: false,
-              error: result.error
-            }
-          ])
-          setIsStreaming(false)
-          setHasActiveRun(false)
-        } else if (result.runId) {
-          setActiveRunId(result.runId)
-        }
-      } else {
-        // Fallback local simulation if running in pure browser
-        setTimeout(() => {
-          setMessages((prev) => [
-            ...prev.slice(0, -1),
-            {
-              id: assistantMsgId,
-              role: 'assistant',
-              text: `Simulated local response for: "${text}"`,
-              time: userTime,
-              isStreaming: false
-            }
-          ])
-          setIsStreaming(false)
-          setHasActiveRun(false)
-        }, 1000)
-      }
-    } catch (err: any) {
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        {
-          id: assistantMsgId,
-          role: 'assistant',
-          text: `Request error: ${err.message}`,
-          time: userTime,
-          isStreaming: false,
-          error: err.message
-        }
-      ])
-      setIsStreaming(false)
-      setHasActiveRun(false)
-    }
+    await sendChatPrompt(text, activeConversationId)
   }
 
   const handleCancelRun = async () => {
-    if (activeRunId && window.electronApi?.cancelRun) {
-      await window.electronApi.cancelRun(activeRunId)
-    }
-    setIsStreaming(false)
-    setHasActiveRun(false)
-    setActiveRunId(null)
-    setMessages((prev) => {
-      const last = prev[prev.length - 1]
-      if (last && last.isStreaming) {
-        return [
-          ...prev.slice(0, -1),
-          {
-            ...last,
-            text: last.text + ' [Generation stopped by user]',
-            isStreaming: false
-          }
-        ]
-      }
-      return prev
-    })
+    await cancelChatRun(activeConversationId)
   }
 
   const handleNewChat = () => {
     startNewChat()
-    setMessages([])
-    setIsStreaming(false)
-    setActiveRunId(null)
   }
 
   return (
@@ -1336,7 +1074,7 @@ export const ChatView: React.FC = () => {
             </span>
           </div>
           <button
-            onClick={() => setFailoverNotice(null)}
+            onClick={() => dismissFailoverNotice(activeConversationId)}
             className="p-1 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface"
           >
             <Icon name="close" size={14} />

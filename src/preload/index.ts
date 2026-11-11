@@ -113,11 +113,25 @@ const electronApi: IElectronApi = {
 
   // Agent Streaming & Events
   onStreamToken: (
-    callback: (data: { runId: string; delta: string; isComplete: boolean }) => void
+    callback: (data: {
+      runId: string
+      conversationId?: string
+      modelId?: string
+      delta: string
+      isComplete: boolean
+      error?: string
+    }) => void
   ): (() => void) => {
     const subscription = (
       _event: IpcRendererEvent,
-      data: { runId: string; delta: string; isComplete: boolean }
+      data: {
+        runId: string
+        conversationId?: string
+        modelId?: string
+        delta: string
+        isComplete: boolean
+        error?: string
+      }
     ): void => {
       callback(data)
     }

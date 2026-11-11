@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AgentRuntime } from '../../../src/main/agent/agent-runtime'
 import { ProviderRegistry } from '../../../src/main/providers/provider-registry'
+import { FailoverEngine } from '../../../src/main/agent/failover-engine'
 import { SecretStorageService } from '../../../src/main/security/safe-storage.service'
 import { ConversationStore } from '../../../src/main/storage/conversation-store'
 import { SqliteDatabase } from '../../../src/main/storage/sqlite-database'
@@ -26,6 +27,9 @@ describe('AgentRuntime Streaming & Cancellation', () => {
     ConversationStore.instance = null
     // @ts-expect-error Reset singleton
     SecretStorageService.instance = null
+    ProviderRegistry.resetInstance()
+    // @ts-expect-error Reset singleton
+    FailoverEngine.instance = null
     // @ts-expect-error Reset singleton
     AgentRuntime.instance = null
 
@@ -245,5 +249,44 @@ describe('AgentRuntime Streaming & Cancellation', () => {
     expect(history?.messages[0].content).toBe('Trigger an error')
     expect(history?.messages[1].role).toBe('assistant')
     expect(history?.messages[1].content).toContain('Upstream Router error HTTP 400: Model not supported')
+  })
+
+  it('attaches conversationId and modelId to stream chunks for background multi-conversation tracking', async () => {
+    const mockAdapter = {
+      id: 'gemini' as const,
+      name: 'Google AI Studio',
+      validateKey: vi.fn(),
+      listModels: vi.fn(),
+      streamCompletion: async function* () {
+        yield { textDelta: 'Background token' }
+      }
+    }
+
+    vi.spyOn(registry, 'getAdapter').mockReturnValue(mockAdapter as any)
+
+    const emittedChunks: Array<{ runId: string; conversationId?: string; modelId?: string; delta: string; isComplete: boolean }> = []
+
+    await runtime.executePrompt({
+      conversationId: 'conv-bg-tracking-123',
+      prompt: 'Run in background',
+      modelId: 'gemini-3-flash-preview',
+      providerId: 'gemini',
+      onToken: (chunk) => {
+        emittedChunks.push(chunk)
+      },
+      onError: () => {}
+    })
+
+    // First chunk is immediate run registration pulse with runId & conversationId
+    expect(emittedChunks.length).toBeGreaterThanOrEqual(3)
+    expect(emittedChunks[0].runId).toBeTruthy()
+    expect(emittedChunks[0].conversationId).toBe('conv-bg-tracking-123')
+    expect(emittedChunks[0].isComplete).toBe(false)
+
+    // Every emitted chunk preserves conversationId for multi-chat background routing
+    for (const chunk of emittedChunks) {
+      expect(chunk.conversationId).toBe('conv-bg-tracking-123')
+    }
+    expect(emittedChunks[emittedChunks.length - 1].isComplete).toBe(true)
   })
 })

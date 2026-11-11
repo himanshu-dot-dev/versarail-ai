@@ -46,7 +46,7 @@ export interface FailoverExecutionOptions {
   preferredProviderId?: ProviderId
   preferredModelId?: string
   tools?: any[]
-  onToken: (chunk: { delta: string; isComplete: boolean }) => void
+  onToken: (chunk: { delta: string; isComplete: boolean; modelId?: string }) => void
   onFailover?: (event: FailoverEvent) => void
   onWaiting?: (info: { waitMs: number; resumesAt: string; reason: string }) => void
   _retryCount?: number
@@ -801,7 +801,8 @@ export class FailoverEngine {
             fullResponse += chunk.textDelta
             onToken({
               delta: chunk.textDelta,
-              isComplete: false
+              isComplete: false,
+              modelId: candidate.modelId
             })
           }
         }

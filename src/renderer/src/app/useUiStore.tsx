@@ -1,4 +1,23 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { soundService } from '../services/sound-service'
+
+export interface ChatMessageItem {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+  time: string
+  model?: string
+  isStreaming?: boolean
+  error?: string
+}
+
+export interface FailoverNotice {
+  from: string
+  to: string
+  reason: string
+  isSilent: boolean
+  resetEta?: string | null
+}
 
 export type ViewId =
   | 'chat'
@@ -76,6 +95,16 @@ export interface UiState {
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, newTitle: string) => Promise<void>
 
+  // Persistent multi-conversation background streaming state
+  messagesByConv: Record<string, ChatMessageItem[]>
+  streamingByConv: Record<string, boolean>
+  activeRunIdByConv: Record<string, string | null>
+  failoverNoticeByConv: Record<string, FailoverNotice | null>
+  loadConversationMessages: (conversationId: string) => Promise<void>
+  sendChatPrompt: (prompt: string, conversationId?: string) => Promise<void>
+  cancelChatRun: (conversationId: string) => Promise<void>
+  dismissFailoverNotice: (conversationId: string) => void
+
   dialogState: DialogState
   showConfirm: (options: DialogOptions | string) => Promise<boolean>
   showAlert: (options: DialogOptions | string) => Promise<void>
@@ -146,7 +175,39 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [activeConversationId, setActiveConversationId] = useState<string>('conv-default')
   const [conversations, setConversations] = useState<ConversationItem[]>([])
 
-  const loadConversations = async () => {
+  // Persistent multi-conversation background streaming state
+  const [messagesByConv, setMessagesByConv] = useState<Record<string, ChatMessageItem[]>>({})
+  const [streamingByConv, setStreamingByConv] = useState<Record<string, boolean>>({})
+  const [activeRunIdByConv, setActiveRunIdByConv] = useState<Record<string, string | null>>({})
+  const [failoverNoticeByConv, setFailoverNoticeByConv] = useState<Record<string, FailoverNotice | null>>({})
+
+  const streamingByConvRef = useRef<Record<string, boolean>>({})
+  const activeRunIdByConvRef = useRef<Record<string, string | null>>({})
+  const runToConvRef = useRef<Map<string, string>>(new Map())
+  const activeConversationIdRef = useRef<string>(activeConversationId)
+  const connectedModelRef = useRef<ConnectedModelInfo>(connectedModel)
+  const workspacePathRef = useRef<string | null>(workspace.path)
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId
+  }, [activeConversationId])
+
+  useEffect(() => {
+    connectedModelRef.current = connectedModel
+  }, [connectedModel])
+
+  useEffect(() => {
+    workspacePathRef.current = workspace.path
+  }, [workspace.path])
+
+  const updateStreamingState = useCallback((convId: string, isStreaming: boolean) => {
+    const next = { ...streamingByConvRef.current, [convId]: isStreaming }
+    streamingByConvRef.current = next
+    setStreamingByConv(next)
+    setHasActiveRun(Object.values(next).some(Boolean))
+  }, [])
+
+  const loadConversations = useCallback(async () => {
     if (window.electronApi?.listConversations) {
       try {
         const list = await window.electronApi.listConversations()
@@ -155,7 +216,357 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         console.error('[useUiStore] Failed to list conversations:', err)
       }
     }
-  }
+  }, [])
+
+  const loadConversationMessages = useCallback(async (convId: string) => {
+    if (!convId) return
+    // Preserve live streaming tokens in memory if this conversation is actively running
+    if (streamingByConvRef.current[convId]) {
+      return
+    }
+    if (window.electronApi?.getConversation) {
+      try {
+        const res = await window.electronApi.getConversation(convId)
+        if (streamingByConvRef.current[convId]) {
+          return
+        }
+        if (res && res.messages && res.messages.length > 0) {
+          setMessagesByConv((prev) => ({
+            ...prev,
+            [convId]: res.messages.map((m) => ({
+              id: m.id,
+              role: m.role as 'user' | 'assistant',
+              text: m.content,
+              time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              model: m.modelId || undefined
+            }))
+          }))
+        } else {
+          setMessagesByConv((prev) => ({ ...prev, [convId]: [] }))
+        }
+      } catch (err) {
+        console.error('[useUiStore] Failed to load conversation:', err)
+      }
+    }
+  }, [])
+
+  const dismissFailoverNotice = useCallback((convId: string) => {
+    setFailoverNoticeByConv((prev) => ({ ...prev, [convId]: null }))
+  }, [])
+
+  const sendChatPrompt = useCallback(
+    async (text: string, convIdOverride?: string) => {
+      const targetConvId = convIdOverride || activeConversationIdRef.current
+      const modelInfo = connectedModelRef.current
+      const userTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const userMsgId = `user-${Date.now()}`
+      const assistantMsgId = `ai-${Date.now() + 1}`
+
+      setFailoverNoticeByConv((prev) => ({ ...prev, [targetConvId]: null }))
+
+      if (!modelInfo.isConnected || modelInfo.name === 'No Model Connected') {
+        setMessagesByConv((prev) => ({
+          ...prev,
+          [targetConvId]: [
+            ...(prev[targetConvId] || []),
+            { id: userMsgId, role: 'user', text, time: userTime },
+            {
+              id: assistantMsgId,
+              role: 'assistant',
+              text: '[Warning] No active AI provider configured. Please go to AI Providers in the sidebar and enter your Gemini, Groq, Cerebras, OpenRouter, or custom key.',
+              time: userTime,
+              isStreaming: false,
+              error: 'No provider connected'
+            }
+          ]
+        }))
+        return
+      }
+
+      setMessagesByConv((prev) => ({
+        ...prev,
+        [targetConvId]: [
+          ...(prev[targetConvId] || []),
+          { id: userMsgId, role: 'user', text, time: userTime },
+          {
+            id: assistantMsgId,
+            role: 'assistant',
+            text: '',
+            time: userTime,
+            model: modelInfo.name,
+            isStreaming: true
+          }
+        ]
+      }))
+
+      updateStreamingState(targetConvId, true)
+
+      try {
+        if (window.electronApi?.sendPrompt) {
+          const isAuto =
+            modelInfo.providerId === 'auto' ||
+            modelInfo.name.includes('(Auto') ||
+            modelInfo.name.startsWith('auto/')
+          const providerId = isAuto ? 'auto' : (modelInfo.providerId as string) || 'gemini'
+          const modelId = isAuto
+            ? modelInfo.name.startsWith('auto/')
+              ? modelInfo.name
+              : 'auto/free'
+            : modelInfo.name
+
+          const result = await window.electronApi.sendPrompt({
+            conversationId: targetConvId,
+            prompt: text,
+            modelId,
+            providerId,
+            workspacePath: workspacePathRef.current
+          })
+          loadConversations()
+
+          if (!result.success) {
+            setMessagesByConv((prev) => {
+              const list = prev[targetConvId] || []
+              const last = list[list.length - 1]
+              if (!last || !last.isStreaming) return prev
+              return {
+                ...prev,
+                [targetConvId]: [
+                  ...list.slice(0, -1),
+                  {
+                    ...last,
+                    text: `Failed to initiate generation: ${result.error || 'Unknown error'}`,
+                    isStreaming: false,
+                    error: result.error
+                  }
+                ]
+              }
+            })
+            updateStreamingState(targetConvId, false)
+            activeRunIdByConvRef.current[targetConvId] = null
+            setActiveRunIdByConv((prev) => ({ ...prev, [targetConvId]: null }))
+          } else if (result.runId) {
+            activeRunIdByConvRef.current[targetConvId] = result.runId
+            setActiveRunIdByConv((prev) => ({ ...prev, [targetConvId]: result.runId || null }))
+          }
+        } else {
+          setTimeout(() => {
+            setMessagesByConv((prev) => {
+              const list = prev[targetConvId] || []
+              if (list.length === 0) return prev
+              const last = list[list.length - 1]
+              return {
+                ...prev,
+                [targetConvId]: [
+                  ...list.slice(0, -1),
+                  {
+                    ...last,
+                    text: `Simulated local response for: "${text}"`,
+                    isStreaming: false
+                  }
+                ]
+              }
+            })
+            updateStreamingState(targetConvId, false)
+          }, 1000)
+        }
+      } catch (err: any) {
+        setMessagesByConv((prev) => {
+          const list = prev[targetConvId] || []
+          const last = list[list.length - 1]
+          if (!last || !last.isStreaming) return prev
+          return {
+            ...prev,
+            [targetConvId]: [
+              ...list.slice(0, -1),
+              {
+                ...last,
+                text: `Request error: ${err.message}`,
+                isStreaming: false,
+                error: err.message
+              }
+            ]
+          }
+        })
+        updateStreamingState(targetConvId, false)
+      }
+    },
+    [loadConversations, updateStreamingState]
+  )
+
+  const cancelChatRun = useCallback(
+    async (convId: string) => {
+      const runId = activeRunIdByConvRef.current[convId]
+      if (runId && window.electronApi?.cancelRun) {
+        await window.electronApi.cancelRun(runId)
+      }
+      updateStreamingState(convId, false)
+      activeRunIdByConvRef.current[convId] = null
+      setActiveRunIdByConv((prev) => ({ ...prev, [convId]: null }))
+      setMessagesByConv((prev) => {
+        const list = prev[convId] || []
+        const last = list[list.length - 1]
+        if (last && last.isStreaming) {
+          return {
+            ...prev,
+            [convId]: [
+              ...list.slice(0, -1),
+              {
+                ...last,
+                text: last.text ? `${last.text}\n\n[Generation stopped by user]` : '[Generation stopped by user]',
+                isStreaming: false
+              }
+            ]
+          }
+        }
+        return prev
+      })
+    },
+    [updateStreamingState]
+  )
+
+  // Persistent root-level stream token listener (never unmounts across view or conversation switches!)
+  useEffect(() => {
+    if (!window.electronApi?.onStreamToken) return
+
+    const unsubscribe = window.electronApi.onStreamToken((data) => {
+      const convId =
+        data.conversationId ||
+        (data.runId ? runToConvRef.current.get(data.runId) : undefined) ||
+        activeConversationIdRef.current
+
+      if (data.runId && convId) {
+        runToConvRef.current.set(data.runId, convId)
+        if (!data.isComplete && !data.error) {
+          if (activeRunIdByConvRef.current[convId] !== data.runId) {
+            activeRunIdByConvRef.current[convId] = data.runId
+            setActiveRunIdByConv((prev) => ({ ...prev, [convId]: data.runId }))
+            // Refresh sidebar list so new background chat appears immediately with Generating indicator
+            loadConversations()
+          }
+        }
+      }
+
+      // Initial runId registration pulse (delta is empty and run is not complete/error)
+      if (!data.delta && !data.isComplete && !data.error) {
+        if (data.modelId && data.modelId !== 'auto/free') {
+          setMessagesByConv((prev) => {
+            const list = prev[convId] || []
+            const lastMsg = list[list.length - 1]
+            if (!lastMsg || lastMsg.role !== 'assistant' || !lastMsg.isStreaming || lastMsg.model === data.modelId) {
+              return prev
+            }
+            return {
+              ...prev,
+              [convId]: [...list.slice(0, -1), { ...lastMsg, model: data.modelId }]
+            }
+          })
+        }
+        return
+      }
+
+      setMessagesByConv((prev) => {
+        const list = prev[convId] || []
+        const lastMsg = list[list.length - 1]
+        if (!lastMsg || lastMsg.role !== 'assistant' || !lastMsg.isStreaming) {
+          return prev
+        }
+
+        const resolvedModel = data.modelId && data.modelId !== 'auto/free' ? data.modelId : lastMsg.model
+
+        if (data.error) {
+          soundService.play('error')
+          const isCancel = data.error.includes('cancelled')
+          const formattedErr = isCancel ? '[Generation cancelled by user]' : `[Error: ${data.error}]`
+          const nextText = lastMsg.text ? `${lastMsg.text}\n\n${formattedErr}` : formattedErr
+          return {
+            ...prev,
+            [convId]: [
+              ...list.slice(0, -1),
+              {
+                ...lastMsg,
+                model: resolvedModel,
+                text: nextText,
+                isStreaming: false,
+                error: data.error
+              }
+            ]
+          }
+        }
+
+        if (data.isComplete) {
+          loadConversations()
+          soundService.play('success')
+          const finalText = lastMsg.text.trim()
+            ? lastMsg.text
+            : '[No response received from model. Upstream provider closed connection without emitting tokens.]'
+          return {
+            ...prev,
+            [convId]: [
+              ...list.slice(0, -1),
+              {
+                ...lastMsg,
+                model: resolvedModel,
+                text: finalText,
+                isStreaming: false
+              }
+            ]
+          }
+        }
+
+        return {
+          ...prev,
+          [convId]: [
+            ...list.slice(0, -1),
+            {
+              ...lastMsg,
+              model: resolvedModel,
+              text: lastMsg.text + data.delta
+            }
+          ]
+        }
+      })
+
+      if (data.isComplete || data.error) {
+        updateStreamingState(convId, false)
+        activeRunIdByConvRef.current[convId] = null
+        setActiveRunIdByConv((prev) => ({ ...prev, [convId]: null }))
+        if (data.runId) {
+          runToConvRef.current.delete(data.runId)
+        }
+      }
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [loadConversations, updateStreamingState])
+
+  // Persistent root-level failover event listener
+  useEffect(() => {
+    if (!window.electronApi?.onFailoverEvent) return
+
+    const unsubscribe = window.electronApi.onFailoverEvent((data) => {
+      const convId =
+        data.conversationId ||
+        (data.runId ? runToConvRef.current.get(data.runId) : undefined) ||
+        activeConversationIdRef.current
+
+      setFailoverNoticeByConv((prev) => ({
+        ...prev,
+        [convId]: {
+          from: `${data.fromProvider} (${data.fromModel})`,
+          to: `${data.toProvider} (${data.toModel})`,
+          reason: data.reason,
+          isSilent: data.isSilent,
+          resetEta: data.resetEta
+        }
+      }))
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [])
 
   const startNewChat = () => {
     const newId = `conv-${Date.now()}`
@@ -397,6 +808,14 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     startNewChat,
     deleteConversation,
     renameConversation,
+    messagesByConv,
+    streamingByConv,
+    activeRunIdByConv,
+    failoverNoticeByConv,
+    loadConversationMessages,
+    sendChatPrompt,
+    cancelChatRun,
+    dismissFailoverNotice,
     dialogState,
     showConfirm,
     showAlert,

@@ -14,6 +14,7 @@ const ShellContent: React.FC = () => {
 
   // Dynamic view resolution from registry
   const currentViewDef = viewRegistry.get(activeView) || viewRegistry.get('chat')
+  const ChatComponent = viewRegistry.get('chat')?.component || ChatView
   const ActiveComponent = currentViewDef?.component || ChatView
   const hasInspector = !!currentViewDef?.hasInspector
 
@@ -33,9 +34,12 @@ const ShellContent: React.FC = () => {
         {/* Navigation Sidebar */}
         <Sidebar />
 
-        {/* Active Feature View */}
-        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-surface">
-          <ActiveComponent />
+        {/* Active Feature View (Keep ChatView mounted so draft input & scroll state survive view switches) */}
+        <main className="flex-1 min-w-0 h-full overflow-y-auto bg-surface flex flex-col">
+          <div className={activeView === 'chat' ? 'flex-1 flex flex-col min-h-0 h-full w-full' : 'hidden'}>
+            <ChatComponent />
+          </div>
+          {activeView !== 'chat' && <ActiveComponent />}
         </main>
 
         {/* Optional Right-hand Inspector Panel */}
