@@ -12,19 +12,19 @@
 
 | Milestone | Status | Description | Core Artifacts |
 | :--- | :---: | :--- | :--- |
-| **Milestone 0** | ✅ **Completed** | Inspection, Security Threat Model & Architectural Decisions | [`docs/DECISIONS.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/DECISIONS.md), [`docs/SECURITY_THREAT_MODEL.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/SECURITY_THREAT_MODEL.md) |
-| **Milestone 1** | ✅ **Completed** | Hardened Electron Shell, Strict CSP, Preload & Typed IPC Bridge | [`src/main/index.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/index.ts), [`src/preload/index.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/preload/index.ts), [`src/main/ipc/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/ipc/) |
-| **Milestone 2** | ✅ **Completed** | Local SQLite (`node:sqlite`) Migrations & OS Hardware SafeStorage Keyring | [`src/main/storage/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/storage/), [`src/main/security/safe-storage.service.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/security/safe-storage.service.ts) |
-| **Milestone 3** | ✅ **Completed** | BYOK Engine (Gemini, Groq, Cerebras, OpenRouter), Tool Dialect Repair | [`src/main/providers/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/providers/), [`src/renderer/src/features/providers/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/renderer/src/features/providers/) |
-| **Milestone 4** | ✅ **Completed** | Real-Time Streaming Chat, Run Cancellation & Conversation Persistence | [`src/main/agent/agent-runtime.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/agent/agent-runtime.ts), [`src/renderer/src/features/chat/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/renderer/src/features/chat/) |
-| **Milestone 5** | ✅ **Completed** | Dead-Turn Pre-First-Byte Failover, Context Floor, Live Health Badges | [`src/main/providers/failover-engine.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/providers/failover-engine.ts), [`error-classifier.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/providers/error-classifier.ts) |
-| **Milestone 6** | ✅ **Completed** | Central Tool Registry, Permission Broker, TOCTOU Defenses & Approval Modal | [`src/main/tools/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/tools/), [`src/main/security/permission-broker.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/security/permission-broker.ts) |
-| **Milestone 7** | ✅ **Completed** | Workspace Safe Filesystem, Path Canonicalization & Sensitive Exclusions | [`src/main/workspace/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/workspace/), [`tests/security/path-traversal.test.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/tests/security/path-traversal.test.ts) |
-| **Milestone 8** | ✅ **Completed** | Diff-First Editing, Unified Diff Review & Pre-Application Conflict Checks | [`src/main/changes/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/changes/), [`src/renderer/src/features/changes/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/renderer/src/features/changes/) |
-| **Milestone 9** | ✅ **Completed** | Dual Integrated Terminal (Developer xterm.js + Sandboxed Command Runner) | [`src/main/terminal/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/terminal/), [`src/main/agent/command-runner.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/agent/command-runner.ts) |
-| **Milestone 10** | ✅ **Completed** | Context Window Budgeting, Auto-Summarization & Privacy Retention Purging | [`src/main/agent/context-manager.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/agent/context-manager.ts), [`SettingsView.tsx`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/renderer/src/features/settings/SettingsView.tsx) |
-| **Milestone 11** | ✅ **Completed** | Electron Security Fuses, Penetration Testing & Full E2E Journey Suites | [`src/main/security/fuses.ts`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/src/main/security/fuses.ts), [`tests/e2e/`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/tests/e2e/) |
-| **Milestone 12** | ✅ **Completed** | Production Packaging, Cross-Platform Bundler & Architecture Docs | [`electron-builder.yml`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/electron-builder.yml), [`scripts/after-pack.js`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/scripts/after-pack.js) |
+| **Milestone 0** | ✅ **Completed** | Inspection, Security Threat Model & Architectural Decisions | [`docs/DECISIONS.md`](docs/DECISIONS.md), [`docs/SECURITY_THREAT_MODEL.md`](docs/SECURITY_THREAT_MODEL.md) |
+| **Milestone 1** | ✅ **Completed** | Hardened Electron Shell, Strict CSP, Preload & Typed IPC Bridge | [`src/main/index.ts`](src/main/index.ts), [`src/preload/index.ts`](src/preload/index.ts), [`src/main/ipc/`](src/main/ipc/) |
+| **Milestone 2** | ✅ **Completed** | Local SQLite (`node:sqlite`) Migrations & OS Hardware SafeStorage Keyring | [`src/main/storage/`](src/main/storage/), [`src/main/security/safe-storage.service.ts`](src/main/security/safe-storage.service.ts) |
+| **Milestone 3** | ✅ **Completed** | BYOK Engine (Gemini, Groq, Cerebras, OpenRouter), Tool Dialect Repair | [`src/main/providers/`](src/main/providers/), [`src/renderer/src/features/providers/`](src/renderer/src/features/providers/) |
+| **Milestone 4** | ✅ **Completed** | Real-Time Streaming Chat, Run Cancellation & Conversation Persistence | [`src/main/agent/agent-runtime.ts`](src/main/agent/agent-runtime.ts), [`src/renderer/src/features/chat/`](src/renderer/src/features/chat/) |
+| **Milestone 5** | ✅ **Completed** | Dead-Turn Pre-First-Byte Failover, Context Floor, Live Health Badges | [`src/main/providers/failover-engine.ts`](src/main/providers/failover-engine.ts), [`error-classifier.ts`](src/main/providers/error-classifier.ts) |
+| **Milestone 6** | ✅ **Completed** | Central Tool Registry, Permission Broker, TOCTOU Defenses & Approval Modal | [`src/main/tools/`](src/main/tools/), [`src/main/security/permission-broker.ts`](src/main/security/permission-broker.ts) |
+| **Milestone 7** | ✅ **Completed** | Workspace Safe Filesystem, Path Canonicalization & Sensitive Exclusions | [`src/main/workspace/`](src/main/workspace/), [`tests/security/path-traversal.test.ts`](tests/security/path-traversal.test.ts) |
+| **Milestone 8** | ✅ **Completed** | Diff-First Editing, Unified Diff Review & Pre-Application Conflict Checks | [`src/main/changes/`](src/main/changes/), [`src/renderer/src/features/changes/`](src/renderer/src/features/changes/) |
+| **Milestone 9** | ✅ **Completed** | Dual Integrated Terminal (Developer xterm.js + Sandboxed Command Runner) | [`src/main/terminal/`](src/main/terminal/), [`src/main/agent/command-runner.ts`](src/main/agent/command-runner.ts) |
+| **Milestone 10** | ✅ **Completed** | Context Window Budgeting, Auto-Summarization & Privacy Retention Purging | [`src/main/agent/context-manager.ts`](src/main/agent/context-manager.ts), [`SettingsView.tsx`](src/renderer/src/features/settings/SettingsView.tsx) |
+| **Milestone 11** | ✅ **Completed** | Electron Security Fuses, Penetration Testing & Full E2E Journey Suites | [`src/main/security/fuses.ts`](src/main/security/fuses.ts), [`tests/e2e/`](tests/e2e/) |
+| **Milestone 12** | ✅ **Completed** | Production Packaging, Cross-Platform Bundler & Architecture Docs | [`electron-builder.yml`](electron-builder.yml), [`scripts/after-pack.js`](scripts/after-pack.js) |
 
 ---
 
@@ -115,8 +115,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/himanshu-dotdev/ai-agent-harness.git
-cd ai-agent-harness
+git clone https://github.com/himanshu-dot-dev/versarail-ai.git
+cd versarail-ai
 
 # Install dependencies (pure JS, zero native toolchain builds)
 npm install
@@ -180,12 +180,12 @@ npm run package:linux
 
 ## 📚 Technical Documentation
 
-- [`docs/DECISIONS.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/DECISIONS.md): Architecture Decision Records (ADR-001 through ADR-010).
-- [`docs/SECURITY_THREAT_MODEL.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/SECURITY_THREAT_MODEL.md): Threat modeling, STRIDE analysis, and mitigations.
-- [`docs/PROVIDER_STRATEGY.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/PROVIDER_STRATEGY.md): Free-tier provider routing, token budgeting, and concurrency leases.
-- [`docs/TEST_STRATEGY.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/TEST_STRATEGY.md): Multi-layer testing pyramid and manual platform checklist.
-- [`docs/UI_UX_SPECIFICATION.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/UI_UX_SPECIFICATION.md): VersaRail AI visual design blueprint and layout structure.
-- [`docs/IMPLEMENTATION_PLAN.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/IMPLEMENTATION_PLAN.md): Completed 13-milestone implementation plan.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): Architecture Decision Records (ADR-001 through ADR-010).
+- [`docs/SECURITY_THREAT_MODEL.md`](docs/SECURITY_THREAT_MODEL.md): Threat modeling, STRIDE analysis, and mitigations.
+- [`docs/PROVIDER_STRATEGY.md`](docs/PROVIDER_STRATEGY.md): Free-tier provider routing, token budgeting, and concurrency leases.
+- [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md): Multi-layer testing pyramid and manual platform checklist.
+- [`docs/UI_UX_SPECIFICATION.md`](docs/UI_UX_SPECIFICATION.md): VersaRail AI visual design blueprint and layout structure.
+- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md): Completed 13-milestone implementation plan.
 
 ---
 

@@ -36,7 +36,7 @@ The Secure Multi-Provider AI Agent Harness is a local-first, developer-centric d
 * Third-party plugin marketplace.
 
 ### Visual Design System (VersaRail AI Blueprint)
-* The user interface strictly follows the **VersaRail AI** design specifications located in [`docs/UI_UX_SPECIFICATION.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/UI_UX_SPECIFICATION.md).
+* The user interface strictly follows the **VersaRail AI** design specifications located in [`docs/UI_UX_SPECIFICATION.md`](UI_UX_SPECIFICATION.md).
 * **Color Palette & Atmosphere:** Deep charcoal surfaces (`#13131b`, `#0d0d15`), Electric Violet primary interactive accents (`#c0c1ff` / `#8083ff`), Cyan telemetry accents (`#4cd7f6`), and low-opacity engineered borders (`#212631`).
 * **Layout Structure:** 40px draggable titlebar, 256px left navigation sidebar (Active Project, Chat, Projects, Files, Providers, Quotas, History, Settings), fluid center workspace with expandable execution timeline & tool stream, and 288px right inspector panel (Files, Activity, Changes).
 * **Typography:** Inter for clean structural UI; JetBrains Mono for monospaced telemetry, code, and masked key chips.
@@ -326,7 +326,7 @@ Following the architecture audited in **Kilo Code** (`kilocode-main`), we introd
 ```
 
 ### 6.3 Security Boundaries & Capability Design
-In accordance with [`docs/SECURITY_THREAT_MODEL.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/SECURITY_THREAT_MODEL.md):
+In accordance with [`docs/SECURITY_THREAT_MODEL.md`](SECURITY_THREAT_MODEL.md):
 
 * **Capability Identifier**: `'net:search'`
 * **Risk Classification**: `'low'`

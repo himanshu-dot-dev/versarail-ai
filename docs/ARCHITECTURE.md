@@ -97,7 +97,7 @@ graph TD
 
 ### C. Renderer Process (`src/renderer/`)
 * **Privilege Level:** Completely Sandboxed (Chromium Web Environment).
-* **Visual Blueprint:** Built strictly to the **VersaRail AI** design system specified in [`docs/UI_UX_SPECIFICATION.md`](file:///c:/Users/hs521/Desktop/Devlopment/ai-agent-harness/docs/UI_UX_SPECIFICATION.md).
+* **Visual Blueprint:** Built strictly to the **VersaRail AI** design system specified in [`docs/UI_UX_SPECIFICATION.md`](UI_UX_SPECIFICATION.md).
 * **Core Responsibilities:**
   - Rendering the React 19 UI: 40px custom titlebar, 256px main sidebar, fluid center chat & execution timeline, 288px right inspector panel (Files, Activity, Changes), and anchored composer.
   - Presenting specialized views: Welcome Hero, AI Providers Gateway Dashboard, Task History, Usage & Quotas, and Settings.

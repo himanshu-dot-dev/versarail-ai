@@ -152,7 +152,7 @@ window.electronApi = {
 
   getCurrentWorkspace: async () => ({
     path: '${projectRoot.replace(/\\/g, '\\\\')}',
-    name: 'ai-agent-harness'
+    name: 'versarail-ai'
   }),
 
   setWorkspace: async (path) => ({
@@ -163,7 +163,7 @@ window.electronApi = {
   selectWorkspaceFolder: async () => ({
     canceled: false,
     path: '${projectRoot.replace(/\\/g, '\\\\')}',
-    name: 'ai-agent-harness'
+    name: 'versarail-ai'
   }),
 
   selectFile: async () => ({

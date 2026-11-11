@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '..')
+const normalizedProjectRoot = projectRoot.replace(/\\/g, '/')
+const workspaceName = path.basename(projectRoot)
 const rendererDist = path.join(projectRoot, 'out', 'renderer')
 
 const PORT = 4173
@@ -83,9 +85,9 @@ window.electronApi = {
   },
   onFailoverEvent: () => () => {},
 
-  getWorkspace: async () => ({ path: 'C:/Users/hs521/Desktop/Devlopment/ai-agent-harness', name: 'ai-agent-harness' }),
+  getWorkspace: async () => ({ path: ${JSON.stringify(normalizedProjectRoot)}, name: ${JSON.stringify(workspaceName)} }),
   setWorkspace: async () => ({ success: true }),
-  selectWorkspaceFolder: async () => 'C:/Users/hs521/Desktop/Devlopment/ai-agent-harness',
+  selectWorkspaceFolder: async () => ${JSON.stringify(normalizedProjectRoot)},
   listWorkspaceFiles: async () => ['README.md', 'package.json', 'electron.vite.config.ts', 'src/main/index.ts', 'src/renderer/src/app/App.tsx'],
   getPendingChanges: async () => [],
   getGitDiff: async () => ({ diff: '' }),

@@ -10,7 +10,7 @@
 The application is structured cleanly around process boundaries (`main`, `preload`, `renderer`) and a universal contract layer (`shared`).
 
 ```
-ai-agent-harness/
+versarail-ai/
 ├── .gitattributes
 ├── .gitignore
 ├── electron.vite.config.ts        # electron-vite configuration (main, preload, renderer)
