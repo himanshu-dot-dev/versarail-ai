@@ -59,3 +59,8 @@ linux:
   category: Development
   synopsis: Secure Multi-Provider AI Agent Harness for Desktop
   description: Local-first, developer-centric desktop workstation with BYOK provider orchestration and hardened sandboxing.
+
+publish:
+  provider: github
+  owner: himanshu-dot-dev
+  repo: versarail-ai
