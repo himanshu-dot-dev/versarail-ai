@@ -1,14 +1,28 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { CommandPolicy } from '../../src/main/security/command-policy'
 
 describe('CommandPolicy Security Suite', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('strictly blocks destructive system commands on Windows', () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     expect(CommandPolicy.validate('format', ['C:']).verdict).toBe('blocked')
     expect(CommandPolicy.validate('diskpart').verdict).toBe('blocked')
     expect(CommandPolicy.validate('cipher', ['/w:C:']).verdict).toBe('blocked')
     expect(CommandPolicy.validate('bcdedit').verdict).toBe('blocked')
     expect(CommandPolicy.validate('reg', ['delete', 'HKLM']).verdict).toBe('blocked')
     expect(CommandPolicy.validate('net', ['user', 'hacker', '/add']).verdict).toBe('blocked')
+  })
+
+  it('strictly blocks destructive system commands on Unix', () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('linux')
+    expect(CommandPolicy.validate('mkfs', ['/dev/sda1']).verdict).toBe('blocked')
+    expect(CommandPolicy.validate('dd', ['if=/dev/zero', 'of=/dev/sda']).verdict).toBe('blocked')
+    expect(CommandPolicy.validate('fdisk', ['/dev/sda']).verdict).toBe('blocked')
+    expect(CommandPolicy.validate('iptables', ['-F']).verdict).toBe('blocked')
+    expect(CommandPolicy.validate('systemctl', ['stop', 'sshd']).verdict).toBe('blocked')
   })
 
   it('strictly blocks root-targeted recursive deletion commands', () => {
