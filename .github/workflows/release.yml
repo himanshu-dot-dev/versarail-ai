@@ -73,3 +73,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  checksums:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate and Upload SHA256SUMS.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release-assets
+          gh release download "${GITHUB_REF_NAME}" \
+            -R "${GITHUB_REPOSITORY}" \
+            -D release-assets \
+            --pattern "*.exe" \
+            --pattern "*.dmg" \
+            --pattern "*.zip" \
+            --pattern "*.AppImage" \
+            --pattern "*.deb"
+          (cd release-assets && sha256sum * | sort -k2 > ../SHA256SUMS.txt)
+          gh release upload "${GITHUB_REF_NAME}" SHA256SUMS.txt \
+            -R "${GITHUB_REPOSITORY}" \
+            --clobber
+
