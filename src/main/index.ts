@@ -5,24 +5,24 @@ import { createMainWindow } from './app/window-manager'
 import { registerIpcHandlers } from './ipc/ipc-router'
 import { SqliteDatabase } from './storage/sqlite-database'
 import { AgentCommandRunner } from './agent/command-runner'
+import { resolveUserDataConfig } from './app/user-data-resolver'
 
-// Configure isolated user data directory if specified (e.g. for Playwright or e2e tests)
-const customUserDataArg = process.argv.find((a) => a.startsWith('--user-data-dir='))
-if (customUserDataArg) {
-  const customPath = customUserDataArg.split('=')[1]
-  if (customPath) {
-    app.setPath('userData', customPath)
-  }
-} else if (process.env.HARNESS_USER_DATA_DIR) {
-  app.setPath('userData', process.env.HARNESS_USER_DATA_DIR)
-}
+// Configure user data directory and app identity (dev: 'versarail-ai-dev', prod: 'versarail-ai')
+const userDataConfig = resolveUserDataConfig({
+  argv: process.argv,
+  env: process.env,
+  isPackaged: app.isPackaged,
+  appDataPath: app.getPath('appData')
+})
+app.setName(userDataConfig.appName)
+app.setPath('userData', userDataConfig.userDataPath)
 
 // 1. Register custom 'app://' protocol before app is ready
 registerCustomProtocol()
 
 // Set Application User Model ID for Windows taskbar grouping & icon association
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.versarail.ai.harness')
+  app.setAppUserModelId(app.isPackaged ? 'com.versarail.ai.harness' : 'com.versarail.ai.harness.dev')
 }
 
 // 2. Enforce Single-Instance Lock (bypass in automated test mode to prevent test-runner collision)
