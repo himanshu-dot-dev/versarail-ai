@@ -3,6 +3,10 @@ import Icon from '../../components/common/Icon'
 import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { useUiStore, AgentPersonaType } from '../../app/useUiStore'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
+import {
+  DEFAULT_PRIVACY_SETTINGS,
+  DEFAULT_AGENT_APPEARANCE_SETTINGS
+} from '@shared/schemas/settings.schema'
 
 export const SettingsView: React.FC = () => {
   const {
@@ -114,19 +118,112 @@ export const SettingsView: React.FC = () => {
   }
 
   const handleReset = async () => {
+    const isAppearance = activeCategory === 'appearance'
+
     const confirmed = await showConfirm({
-      title: 'Reset to Defaults',
-      message: 'Reset all privacy and context token configurations to default values?',
+      title: isAppearance ? 'Reset Appearance to Defaults' : 'Reset Privacy to Defaults',
+      message: isAppearance
+        ? 'Reset workspace theme, AI agent name, user display name, avatar icon, and persona tone to default values?'
+        : 'Reset allowed providers, audit retention days, and context token budget to default values?',
       confirmText: 'Reset',
       cancelText: 'Cancel',
       variant: 'warning'
     })
     if (!confirmed) return
-    setAllowedProviders(DEFAULT_ALLOWED_PROVIDERS)
-    setAuditRetentionDays(30)
-    setContextBudgetTokens(32_000)
-    setAutoSummarize(true)
-    handleSave()
+
+    if (isAppearance) {
+      setTheme(DEFAULT_AGENT_APPEARANCE_SETTINGS.theme)
+      setAgentName(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentName)
+      setUserName(DEFAULT_AGENT_APPEARANCE_SETTINGS.userName)
+      setAgentAvatar(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentAvatar)
+      setAgentPersona(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentPersona)
+      setCustomPersonaPrompt(DEFAULT_AGENT_APPEARANCE_SETTINGS.customPersonaPrompt)
+
+      if (window.electronApi?.saveSettings) {
+        await window.electronApi.saveSettings({
+          privacy: {
+            allowedProviders,
+            auditRetentionDays,
+            contextWindowBudgetTokens: contextBudgetTokens,
+            autoSummarizeContext: autoSummarize,
+            allowPublicCloud: true,
+            autoRedactSecrets: true
+          },
+          appearance: DEFAULT_AGENT_APPEARANCE_SETTINGS
+        })
+      }
+    } else {
+      setAllowedProviders(DEFAULT_PRIVACY_SETTINGS.allowedProviders)
+      setAuditRetentionDays(DEFAULT_PRIVACY_SETTINGS.auditRetentionDays)
+      setContextBudgetTokens(DEFAULT_PRIVACY_SETTINGS.contextWindowBudgetTokens)
+      setAutoSummarize(DEFAULT_PRIVACY_SETTINGS.autoSummarizeContext)
+
+      if (window.electronApi?.saveSettings) {
+        await window.electronApi.saveSettings({
+          privacy: DEFAULT_PRIVACY_SETTINGS,
+          appearance: {
+            agentName,
+            userName,
+            agentAvatar,
+            agentPersona,
+            customPersonaPrompt,
+            theme
+          }
+        })
+      }
+    }
+
+    setSavedToast(true)
+    setTimeout(() => {
+      setSavedToast(false)
+    }, 2000)
+
+    await showAlert({
+      title: 'Settings Reset',
+      message: `${isAppearance ? 'Appearance & Agent Identity' : 'Privacy & Security'} settings have been restored to default values.`,
+      variant: 'success'
+    })
+  }
+
+  const handleResetAll = async () => {
+    const confirmed = await showConfirm({
+      title: 'Reset All Settings',
+      message: 'Reset all settings across Appearance, Agent Identity, and Privacy/Security to factory default values?',
+      confirmText: 'Reset All',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    })
+    if (!confirmed) return
+
+    setTheme(DEFAULT_AGENT_APPEARANCE_SETTINGS.theme)
+    setAgentName(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentName)
+    setUserName(DEFAULT_AGENT_APPEARANCE_SETTINGS.userName)
+    setAgentAvatar(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentAvatar)
+    setAgentPersona(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentPersona)
+    setCustomPersonaPrompt(DEFAULT_AGENT_APPEARANCE_SETTINGS.customPersonaPrompt)
+
+    setAllowedProviders(DEFAULT_PRIVACY_SETTINGS.allowedProviders)
+    setAuditRetentionDays(DEFAULT_PRIVACY_SETTINGS.auditRetentionDays)
+    setContextBudgetTokens(DEFAULT_PRIVACY_SETTINGS.contextWindowBudgetTokens)
+    setAutoSummarize(DEFAULT_PRIVACY_SETTINGS.autoSummarizeContext)
+
+    if (window.electronApi?.saveSettings) {
+      await window.electronApi.saveSettings({
+        privacy: DEFAULT_PRIVACY_SETTINGS,
+        appearance: DEFAULT_AGENT_APPEARANCE_SETTINGS
+      })
+    }
+
+    setSavedToast(true)
+    setTimeout(() => {
+      setSavedToast(false)
+    }, 2000)
+
+    await showAlert({
+      title: 'All Settings Reset',
+      message: 'All system settings have been successfully restored to factory defaults.',
+      variant: 'success'
+    })
   }
 
   return (
@@ -152,9 +249,11 @@ export const SettingsView: React.FC = () => {
         <div className="flex items-center gap-space-md">
           <button
             onClick={handleReset}
-            className="px-space-lg py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant transition-colors"
+            className="px-space-lg py-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant transition-colors flex items-center gap-1.5"
+            title={`Reset ${activeCategory === 'appearance' ? 'Appearance & Identity' : 'Privacy & Security'} settings to defaults`}
           >
-            Reset to Defaults
+            <Icon name="restart_alt" size={14} className="text-on-surface-variant" />
+            <span>Reset to Defaults</span>
           </button>
           <button
             onClick={handleSave}
@@ -175,38 +274,51 @@ export const SettingsView: React.FC = () => {
       {/* Main Settings Workspace Layout */}
       <div className="flex flex-1 w-full">
         {/* Secondary Vertical Navigation */}
-        <aside className="w-64 bg-surface-container-lowest p-space-md flex flex-col gap-space-xs shrink-0 select-none border-r border-border-subtle">
-          <div className="text-label-sm text-on-surface-variant px-space-md py-space-sm uppercase tracking-wider text-[10px] font-mono">
-            Categories
+        <aside className="w-64 bg-surface-container-lowest p-space-md flex flex-col justify-between shrink-0 select-none border-r border-border-subtle">
+          <div className="flex flex-col gap-space-xs">
+            <div className="text-label-sm text-on-surface-variant px-space-md py-space-sm uppercase tracking-wider text-[10px] font-mono">
+              Categories
+            </div>
+            <nav className="flex flex-col gap-space-xs text-xs">
+              {(
+                [
+                  { id: 'appearance', label: 'Appearance', icon: 'palette' },
+                  { id: 'privacy', label: 'Privacy & Security', icon: 'shield_lock' }
+                ] as const
+              ).map((cat) => {
+                const isActive = activeCategory === cat.id
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-medium transition-all text-left ${
+                      isActive
+                        ? 'bg-primary/10 text-on-surface dark:bg-white/[0.08] dark:text-on-surface font-semibold border-l-2 border-primary pl-[14px]'
+                        : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                    }`}
+                  >
+                    <Icon
+                      name={cat.icon}
+                      size={18}
+                      className={isActive ? 'text-primary' : 'text-on-surface-variant'}
+                    />
+                    <span>{cat.label}</span>
+                  </button>
+                )
+              })}
+            </nav>
           </div>
-          <nav className="flex flex-col gap-space-xs text-xs">
-            {(
-              [
-                { id: 'appearance', label: 'Appearance', icon: 'palette' },
-                { id: 'privacy', label: 'Privacy & Security', icon: 'shield_lock' }
-              ] as const
-            ).map((cat) => {
-              const isActive = activeCategory === cat.id
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-medium transition-all text-left ${
-                    isActive
-                      ? 'bg-primary/10 text-on-surface dark:bg-white/[0.08] dark:text-on-surface font-semibold border-l-2 border-primary pl-[14px]'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-                  }`}
-                >
-                  <Icon
-                    name={cat.icon}
-                    size={18}
-                    className={isActive ? 'text-primary' : 'text-on-surface-variant'}
-                  />
-                  <span>{cat.label}</span>
-                </button>
-              )
-            })}
-          </nav>
+
+          <div className="pt-space-md border-t border-border-subtle">
+            <button
+              onClick={handleResetAll}
+              className="w-full flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-xs font-medium text-on-surface-variant hover:text-danger hover:bg-danger/10 transition-all text-left"
+              title="Reset all settings across Appearance and Privacy to factory defaults"
+            >
+              <Icon name="restart_alt" size={15} />
+              <span>Reset All Settings</span>
+            </button>
+          </div>
         </aside>
 
         {/* Form Content Area */}

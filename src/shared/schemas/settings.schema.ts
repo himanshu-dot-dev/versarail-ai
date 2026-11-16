@@ -12,6 +12,15 @@ export const PrivacySettingsSchema = z.object({
 
 export type PrivacySettingsDTO = z.infer<typeof PrivacySettingsSchema>
 
+export const DEFAULT_PRIVACY_SETTINGS: PrivacySettingsDTO = {
+  allowedProviders: DEFAULT_ALLOWED_PROVIDERS,
+  allowPublicCloud: true,
+  autoRedactSecrets: true,
+  auditRetentionDays: 30,
+  contextWindowBudgetTokens: 32_000,
+  autoSummarizeContext: true
+}
+
 export const AgentPersonaEnum = z.enum([
   'expert',
   'concise',
@@ -31,6 +40,15 @@ export const AgentAppearanceSettingsSchema = z.object({
 })
 
 export type AgentAppearanceSettingsDTO = z.infer<typeof AgentAppearanceSettingsSchema>
+
+export const DEFAULT_AGENT_APPEARANCE_SETTINGS: AgentAppearanceSettingsDTO = {
+  agentName: 'AI Agent',
+  userName: 'You',
+  agentAvatar: 'smart_toy',
+  agentPersona: 'expert',
+  customPersonaPrompt: '',
+  theme: 'versarail-dark'
+}
 
 export const GlobalSettingsSchema = z.object({
   privacy: PrivacySettingsSchema.default({}),
