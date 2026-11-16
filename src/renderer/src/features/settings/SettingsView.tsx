@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { useUiStore, AgentPersonaType } from '../../app/useUiStore'
+import { themeRegistry, ThemeInsignia, ThemeVariantSelector } from '../../themes'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 import {
   DEFAULT_PRIVACY_SETTINGS,
@@ -12,6 +13,10 @@ export const SettingsView: React.FC = () => {
   const {
     theme,
     setTheme,
+    themeVariant,
+    setThemeVariant,
+    atmosphereOpacity,
+    setAtmosphereOpacity,
     showConfirm,
     showAlert,
     agentName,
@@ -72,7 +77,9 @@ export const SettingsView: React.FC = () => {
           agentAvatar,
           agentPersona,
           customPersonaPrompt,
-          theme
+          theme,
+          themeVariant,
+          atmosphereOpacity
         }
       })
     }
@@ -133,6 +140,8 @@ export const SettingsView: React.FC = () => {
 
     if (isAppearance) {
       setTheme(DEFAULT_AGENT_APPEARANCE_SETTINGS.theme)
+      setThemeVariant(DEFAULT_AGENT_APPEARANCE_SETTINGS.themeVariant)
+      setAtmosphereOpacity(DEFAULT_AGENT_APPEARANCE_SETTINGS.atmosphereOpacity)
       setAgentName(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentName)
       setUserName(DEFAULT_AGENT_APPEARANCE_SETTINGS.userName)
       setAgentAvatar(DEFAULT_AGENT_APPEARANCE_SETTINGS.agentAvatar)
@@ -167,7 +176,9 @@ export const SettingsView: React.FC = () => {
             agentAvatar,
             agentPersona,
             customPersonaPrompt,
-            theme
+            theme,
+            themeVariant,
+            atmosphereOpacity
           }
         })
       }
@@ -412,6 +423,158 @@ export const SettingsView: React.FC = () => {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Superhero & Character Themes */}
+                <div className="flex flex-col gap-space-sm pt-space-md border-t border-border-subtle mt-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="font-headline-sm text-on-surface font-semibold text-xs">
+                        Superhero &amp; Character Themes
+                      </label>
+                      <p className="text-[11px] text-on-surface-variant">
+                        High-contrast, character-inspired color palettes with authentic vector insignias, atmospheric backdrops, and hero pair-programming tone.
+                      </p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-primary/10 text-primary border border-primary/20">
+                      Vector Scaled
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-1">
+                    {themeRegistry.getCharacterThemes().map((charTheme) => {
+                      const isSelected = theme === charTheme.id
+                      return (
+                        <div
+                          key={charTheme.id}
+                          onClick={() => setTheme(charTheme.id)}
+                          className={`flex flex-col p-space-md rounded-xl cursor-pointer transition-all border group relative overflow-hidden select-none ${
+                            isSelected
+                              ? 'border-primary ring-1 ring-primary/40 bg-surface-container-low shadow-md'
+                              : 'border-outline-variant bg-surface-container-low/50 opacity-80 hover:opacity-100 hover:border-outline'
+                          }`}
+                        >
+                          {/* Card Visual Header Preview */}
+                          <div
+                            className="h-24 rounded-lg flex flex-col justify-between p-3 border relative overflow-hidden"
+                            style={{
+                              backgroundColor: charTheme.colors.surfaceContainerLowest,
+                              borderColor: `${charTheme.colors.primary}33`
+                            }}
+                          >
+                            {/* Background faint watermark */}
+                            <div className="absolute right-[-10px] bottom-[-15px] opacity-25 group-hover:opacity-40 transition-opacity pointer-events-none">
+                              <ThemeInsignia
+                                themeId={charTheme.id}
+                                variantId={isSelected ? themeVariant : undefined}
+                                mode="watermark"
+                                size={88}
+                              />
+                            </div>
+
+                            {/* Color Swatch Dots */}
+                            <div className="flex items-center gap-1.5 z-1 relative">
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-xs"
+                                style={{ backgroundColor: charTheme.colors.primary }}
+                                title={`Primary: ${charTheme.colors.primary}`}
+                              />
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-xs"
+                                style={{ backgroundColor: charTheme.colors.secondary }}
+                                title={`Secondary: ${charTheme.colors.secondary}`}
+                              />
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-xs"
+                                style={{ backgroundColor: charTheme.colors.tertiary }}
+                                title={`Tertiary: ${charTheme.colors.tertiary}`}
+                              />
+                            </div>
+
+                            {/* Character Avatar Preview & Codename */}
+                            <div className="flex items-center gap-2 z-1 relative">
+                              <div
+                                className="w-7 h-7 rounded-lg flex items-center justify-center p-1 border shadow-xs"
+                                style={{
+                                  backgroundColor: charTheme.colors.surfaceContainerHighest,
+                                  borderColor: `${charTheme.colors.primary}55`
+                                }}
+                              >
+                                <ThemeInsignia
+                                  themeId={charTheme.id}
+                                  variantId={isSelected ? themeVariant : undefined}
+                                  mode="avatar"
+                                  size={18}
+                                />
+                              </div>
+                              <span
+                                className="text-[10px] font-mono font-bold uppercase tracking-wider"
+                                style={{ color: charTheme.colors.primary }}
+                              >
+                                {charTheme.persona.codename}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Title & Tagline */}
+                          <div className="flex items-center justify-between pt-2">
+                            <span className="font-headline-sm text-on-surface text-xs font-semibold">
+                              {charTheme.name}
+                            </span>
+                            {isSelected && (
+                              <Icon name="check_circle" size={16} className="text-primary shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-on-surface-variant line-clamp-2 leading-relaxed mt-0.5">
+                            {charTheme.persona.tagline}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Character Theme Fine-Tuning Controls */}
+                  {themeRegistry.isCharacterTheme(theme) && (
+                    <div className="flex flex-col gap-space-lg p-space-md rounded-xl bg-surface-container-low border border-primary/25 mt-2 animate-fade-in">
+                      {/* Insignia Variant Selector */}
+                      <ThemeVariantSelector
+                        selectedThemeId={theme}
+                        selectedVariantId={themeVariant}
+                        onSelectVariant={setThemeVariant}
+                      />
+
+                      {/* Atmosphere & Watermark Intensity Slider */}
+                      <div className="flex flex-col gap-2 pt-2 border-t border-border-subtle">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="font-headline-sm text-on-surface font-semibold text-xs">
+                              Atmosphere &amp; Watermark Intensity
+                            </label>
+                            <p className="text-[11px] text-on-surface-variant">
+                              Fine-tune the procedural vector pattern and emblem opacity on chat and workspace surfaces.
+                            </p>
+                          </div>
+                          <span className="font-mono text-xs text-primary font-bold">
+                            {Math.round(atmosphereOpacity * 100)}%
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-mono text-on-surface-variant">Subtle (10%)</span>
+                          <input
+                            type="range"
+                            min="0.10"
+                            max="0.85"
+                            step="0.05"
+                            value={atmosphereOpacity}
+                            onChange={(e) => setAtmosphereOpacity(parseFloat(e.target.value))}
+                            className="flex-1 accent-primary h-1.5 bg-surface-container rounded-lg cursor-pointer"
+                          />
+                          <span className="text-[10px] font-mono text-on-surface-variant">Vivid (85%)</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

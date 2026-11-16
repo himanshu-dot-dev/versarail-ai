@@ -1,5 +1,6 @@
 import React from 'react'
 import { useUiStore } from '../../app/useUiStore'
+import { themeRegistry, ThemeInsignia } from '../../themes'
 import Icon from '../../components/common/Icon'
 import vLogo from '../../assets/glowing-gradient-v-logo.png'
 
@@ -8,7 +9,17 @@ export interface WelcomeHeroProps {
 }
 
 export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
-  const { selectWorkspaceFolder, setActiveView, recentWorkspaces, openWorkspacePath, workspace } = useUiStore()
+  const {
+    selectWorkspaceFolder,
+    setActiveView,
+    recentWorkspaces,
+    openWorkspacePath,
+    workspace,
+    theme,
+    themeVariant
+  } = useUiStore()
+
+  const heroThemeDef = themeRegistry.isCharacterTheme(theme) ? themeRegistry.get(theme) : null
 
   const quickStarters = [
     {
@@ -54,6 +65,14 @@ export const WelcomeHero: React.FC<WelcomeHeroProps> = ({ onStartPrompt }) => {
         </div>
 
         {/* Headline */}
+        {heroThemeDef && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-[11px] font-mono mb-2 shadow-xs">
+            <ThemeInsignia themeId={heroThemeDef.id} variantId={themeVariant} mode="avatar" size={14} />
+            <span className="font-semibold">{heroThemeDef.name} Edition</span>
+            <span className="opacity-40">•</span>
+            <span>{heroThemeDef.persona.codename}</span>
+          </div>
+        )}
         <h1 className="font-headline-xl text-on-surface tracking-tight mb-space-xs text-xl md:text-2xl font-bold">
           VersaRail AI Agent Workstation
         </h1>

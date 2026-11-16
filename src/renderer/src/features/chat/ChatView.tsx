@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useUiStore } from '../../app/useUiStore'
+import { ThemeAtmosphereLayer, ThemeInsignia, themeRegistry } from '../../themes'
 import WelcomeHero from '../workspace/WelcomeHero'
 import PromptComposer from './PromptComposer'
 import Icon from '../../components/common/Icon'
@@ -888,8 +889,16 @@ export const ChatView: React.FC = () => {
     dismissFailoverNotice,
     agentName,
     userName,
-    agentAvatar
+    agentAvatar,
+    theme,
+    themeVariant,
+    atmosphereOpacity,
+    hideMessages,
+    toggleHideMessages
   } = useUiStore()
+
+  const activeThemeDef = themeRegistry.get(theme)
+  const isHeroTheme = themeRegistry.isCharacterTheme(theme)
 
   const activeConv = conversations.find((c) => c.id === activeConversationId)
   const messages = messagesByConv[activeConversationId] || []
@@ -922,23 +931,56 @@ export const ChatView: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-surface relative min-w-0 overflow-hidden font-sans">
+      {/* Dynamic Theme Atmosphere & Watermark Layer */}
+      <ThemeAtmosphereLayer
+        themeId={theme}
+        variantId={themeVariant}
+        opacity={atmosphereOpacity}
+      />
+
       {/* Top Context Bar / Banner */}
       <div className="h-12 bg-surface-container-lowest flex items-center justify-between px-space-xl z-10 border-b border-border-subtle shrink-0">
         <div className="flex items-center gap-space-sm min-w-0">
           <span
-            className={`w-2 h-2 rounded-full shrink-0 ${isStreaming ? 'bg-primary animate-ping' : 'bg-emerald-500 animate-pulse'
-              }`}
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              isStreaming ? 'bg-primary animate-ping' : 'bg-emerald-500 animate-pulse'
+            }`}
           />
 
-          <span className="font-semibold text-on-surface text-xs truncate max-w-[240px]">
+          <span className="font-semibold text-on-surface text-xs truncate max-w-[200px]">
             {activeConv?.title || 'Chat'}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-mono shrink-0 border border-outline-variant">
             {isStreaming ? 'Generating...' : 'Ready'}
           </span>
+
+          {isHeroTheme && activeThemeDef?.persona && (
+            <span
+              className="hidden sm:inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full font-mono font-medium border border-primary/30 bg-primary/10 text-primary shadow-xs"
+              title={activeThemeDef.persona.tagline}
+            >
+              <ThemeInsignia themeId={theme} variantId={themeVariant} mode="avatar" size={12} />
+              <span>{activeThemeDef.persona.codename}</span>
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-space-sm shrink-0">
+          {isHeroTheme && (
+            <button
+              onClick={toggleHideMessages}
+              className={`flex items-center gap-space-xs px-2.5 py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${
+                hideMessages
+                  ? 'bg-primary text-on-primary border-primary shadow-xs'
+                  : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+              }`}
+              title={hideMessages ? 'Show Chat Messages' : 'Hide Messages (Preview Theme Atmosphere)'}
+            >
+              <Icon name={hideMessages ? 'visibility' : 'wallpaper'} size={14} />
+              <span className="hidden md:inline">{hideMessages ? 'Show Chat' : 'Atmosphere'}</span>
+            </button>
+          )}
+
           {isStreaming ? (
             <button
               onClick={handleCancelRun}
@@ -962,10 +1004,11 @@ export const ChatView: React.FC = () => {
           {/* Files & Diffs Inspector Toggle */}
           <button
             onClick={toggleInspector}
-            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${isInspectorOpen
-              ? 'bg-primary text-on-primary border-primary shadow-xs'
-              : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
-              }`}
+            className={`flex items-center gap-space-xs px-space-md py-1 rounded text-xs font-mono transition-colors border cursor-pointer ${
+              isInspectorOpen
+                ? 'bg-primary text-on-primary border-primary shadow-xs'
+                : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+            }`}
             title="Toggle Workspace Files & Diffs Panel"
           >
             <Icon name="description" size={14} />
@@ -984,8 +1027,32 @@ export const ChatView: React.FC = () => {
       </div>
 
       {/* Scrollable Conversation Area */}
-      <div className="flex-1 overflow-y-auto px-space-xl py-space-xl flex flex-col gap-space-xl">
-        {messages.length === 0 ? (
+      <div className="flex-1 overflow-y-auto px-space-xl py-space-xl flex flex-col gap-space-xl relative z-1">
+        {hideMessages ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
+            <div className="bg-surface-container/85 backdrop-blur-md px-8 py-6 rounded-2xl border border-outline-variant shadow-2xl flex flex-col items-center gap-3 max-w-sm">
+              <ThemeInsignia themeId={theme} variantId={themeVariant} mode="avatar" size={44} />
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-bold text-on-surface">
+                  {activeThemeDef?.name || 'Superhero Theme'}
+                </span>
+                <span className="text-[11px] text-primary font-mono uppercase tracking-wider">
+                  {activeThemeDef?.persona?.codename}
+                </span>
+                <p className="text-xs text-on-surface-variant leading-relaxed mt-1">
+                  {activeThemeDef?.persona?.tagline || 'Atmospheric background layer active'}
+                </p>
+              </div>
+              <button
+                onClick={toggleHideMessages}
+                className="mt-2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-medium hover:opacity-90 transition-opacity shadow-sm cursor-pointer"
+              >
+                <Icon name="chat" size={14} />
+                <span>Return to Conversation</span>
+              </button>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
           <WelcomeHero onStartPrompt={handleSendPrompt} />
         ) : (
           messages.map((msg) => {
@@ -997,16 +1064,32 @@ export const ChatView: React.FC = () => {
                 className={`flex gap-space-lg ${isUser ? 'max-w-3xl' : 'max-w-4xl'}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant ${isUser ? 'bg-surface-container-high' : 'bg-primary text-on-primary shadow-sm'
-                    }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant overflow-hidden ${
+                    isUser
+                      ? 'bg-surface-container-high'
+                      : isHeroTheme
+                        ? 'bg-surface-container-highest shadow-md border-primary/40'
+                        : 'bg-primary text-on-primary shadow-sm'
+                  }`}
                 >
-                  <Icon name={isUser ? 'person' : agentAvatar} size={18} />
+                  {isUser ? (
+                    <Icon name="person" size={18} />
+                  ) : isHeroTheme ? (
+                    <ThemeInsignia themeId={theme} variantId={themeVariant} mode="avatar" size={20} />
+                  ) : (
+                    <Icon name={agentAvatar} size={18} />
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-space-xs flex-1 min-w-0 select-text">
                   <div className="flex items-center gap-space-sm select-none">
-                    <span className="font-headline-sm text-on-surface font-semibold text-xs">
+                    <span className="font-headline-sm text-on-surface font-semibold text-xs flex items-center gap-1.5">
                       {isUser ? userName : agentName}
+                      {!isUser && isHeroTheme && activeThemeDef?.persona && (
+                        <span className="text-[9.5px] px-1.5 py-0.2 rounded font-mono uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                          {activeThemeDef.persona.codename}
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] text-on-surface-variant font-mono">{msg.time}</span>
                     {!isUser && msg.model && msg.model !== agentName && (

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { soundService } from '../services/sound-service'
+import { themeRegistry } from '../themes'
 
 export interface ChatMessageItem {
   id: string
@@ -26,7 +27,14 @@ export type ViewId =
   | 'settings'
   | (string & {}) // Allows any future view extension
 
-export type ThemeMode = 'versarail-dark' | 'light' | 'system'
+export type ThemeMode =
+  | 'versarail-dark'
+  | 'light'
+  | 'system'
+  | 'spiderman'
+  | 'batman'
+  | 'ironman'
+  | (string & {}) // Allows any future custom character theme
 
 export type AgentPersonaType = 'expert' | 'concise' | 'security' | 'friendly' | 'custom'
 
@@ -71,6 +79,13 @@ export interface UiState {
 
   theme: ThemeMode
   setTheme: (theme: ThemeMode) => void
+  themeVariant: string
+  setThemeVariant: (variant: string) => void
+  atmosphereOpacity: number
+  setAtmosphereOpacity: (opacity: number) => void
+  hideMessages: boolean
+  setHideMessages: (hide: boolean) => void
+  toggleHideMessages: () => void
 
   isInspectorOpen: boolean
   toggleInspector: () => void
@@ -132,6 +147,17 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     return (localStorage.getItem('versarail_theme') as ThemeMode) || 'versarail-dark'
   })
+  const [themeVariant, setThemeVariantState] = useState<string>(() => {
+    return localStorage.getItem('versarail_theme_variant') || ''
+  })
+  const [atmosphereOpacity, setAtmosphereOpacityState] = useState<number>(() => {
+    const saved = localStorage.getItem('versarail_atmosphere_opacity')
+    return saved ? parseFloat(saved) : 0.45
+  })
+  const [hideMessages, setHideMessages] = useState<boolean>(false)
+  const toggleHideMessages = useCallback(() => {
+    setHideMessages((prev) => !prev)
+  }, [])
   const [isInspectorOpen, setInspectorOpen] = useState(true)
   const [workspace, setWorkspace] = useState<WorkspaceInfo>({
     path: null,
@@ -686,29 +712,80 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     loadConversations()
   }, [])
 
+  const setThemeVariant = useCallback((variant: string) => {
+    setThemeVariantState(variant)
+    localStorage.setItem('versarail_theme_variant', variant)
+  }, [])
+
+  const setAtmosphereOpacity = useCallback((opacity: number) => {
+    setAtmosphereOpacityState(opacity)
+    localStorage.setItem('versarail_atmosphere_opacity', String(opacity))
+    document.documentElement.style.setProperty('--effect-opacity', String(opacity))
+    document.documentElement.style.setProperty('--watermark-opacity', String(opacity * 0.45))
+  }, [])
+
   // Sync theme attribute on document root
-  const setTheme = (newTheme: ThemeMode) => {
-    setThemeState(newTheme)
-    localStorage.setItem('versarail_theme', newTheme)
-    const isDark =
-      newTheme === 'versarail-dark' ||
-      (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const setTheme = useCallback(
+    (newTheme: ThemeMode) => {
+      setThemeState(newTheme)
+      localStorage.setItem('versarail_theme', newTheme)
 
-    if (newTheme === 'system') {
-      document.documentElement.dataset.theme = isDark ? 'versarail-dark' : 'light'
-    } else {
-      document.documentElement.dataset.theme = newTheme
-    }
+      // Automatically set default variant if switching to a character theme without a valid variant
+      const themeDef = themeRegistry.get(newTheme)
+      if (themeDef && themeDef.insignias && themeDef.insignias.length > 0) {
+        const defaultVariant = themeRegistry.getDefaultInsignia(newTheme)
+        if (defaultVariant) {
+          setThemeVariantState(defaultVariant.id)
+          localStorage.setItem('versarail_theme_variant', defaultVariant.id)
+        }
+      }
 
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
+      const isLight =
+        newTheme === 'light' ||
+        (newTheme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+      if (newTheme === 'system') {
+        document.documentElement.dataset.theme = isLight ? 'light' : 'versarail-dark'
+      } else {
+        document.documentElement.dataset.theme = newTheme
+      }
+
+      if (isLight) {
+        document.documentElement.classList.remove('dark')
+      } else {
+        document.documentElement.classList.add('dark')
+      }
+
+      document.documentElement.style.setProperty('--effect-opacity', String(atmosphereOpacity))
+      document.documentElement.style.setProperty(
+        '--watermark-opacity',
+        String(atmosphereOpacity * 0.45)
+      )
+    },
+    [atmosphereOpacity]
+  )
 
   useEffect(() => {
     setTheme(theme)
+    if (window.electronApi?.getSettings) {
+      window.electronApi
+        .getSettings()
+        .then((res: any) => {
+          if (res?.appearance) {
+            const app = res.appearance
+            if (app.theme && app.theme !== theme) {
+              setTheme(app.theme)
+            }
+            if (app.themeVariant) {
+              setThemeVariant(app.themeVariant)
+            }
+            if (typeof app.atmosphereOpacity === 'number') {
+              setAtmosphereOpacity(app.atmosphereOpacity)
+            }
+          }
+        })
+        .catch(console.error)
+    }
   }, [])
 
   // Sync with native backend workspace
@@ -856,6 +933,13 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setActiveView,
     theme,
     setTheme,
+    themeVariant,
+    setThemeVariant,
+    atmosphereOpacity,
+    setAtmosphereOpacity,
+    hideMessages,
+    setHideMessages,
+    toggleHideMessages,
     isInspectorOpen,
     toggleInspector,
     setInspectorOpen,

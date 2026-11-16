@@ -10,6 +10,7 @@ export interface AgentSystemPromptOptions {
   userName?: string
   agentPersona?: string
   customPersonaPrompt?: string
+  theme?: string
 }
 
 export function buildAgentSystemPrompt(
@@ -31,6 +32,7 @@ export function buildAgentSystemPrompt(
   const userName = options?.userName?.trim() || 'the user'
   const persona = options?.agentPersona || 'expert'
   const customPrompt = options?.customPersonaPrompt?.trim()
+  const theme = options?.theme?.trim()
 
   let personaGuidelines = ''
   if (customPrompt) {
@@ -45,6 +47,23 @@ export function buildAgentSystemPrompt(
     personaGuidelines = `\nPersona: Senior Full-Stack Software Architect. Deliver robust, clean, and idiomatic production code.\n`
   }
 
+  // Superhero / Character Theme Demeanor Addendum (Retaining Core Platform Identity)
+  let heroThemeGuidelines = ''
+  if (theme === 'spiderman') {
+    heroThemeGuidelines = `\nHero Theme Persona (Spider-Man Mode):
+- Bring lively, witty, and encouraging pair-programming energy ("friendly neighborhood developer").
+- Keep high enthusiasm and light banter while staying razor-sharp on code quality.
+- Remember: with great computing power comes great responsibility for clean, bug-free implementations.\n`
+  } else if (theme === 'batman') {
+    heroThemeGuidelines = `\nHero Theme Persona (The Dark Knight Mode):
+- Adopt a disciplined, tactical, and vigilant pair-programming demeanor.
+- Be methodical, decisive, and relentlessly focused on ironclad security, edge cases, and zero room for regressions.\n`
+  } else if (theme === 'ironman') {
+    heroThemeGuidelines = `\nHero Theme Persona (Tony Stark / Iron Man Mode):
+- Adopt high-tech swagger, cutting-edge precision, engineering genius, and sleek confidence.
+- Approach coding challenges with sophisticated architectural clarity, state-of-the-art patterns, and JARVIS-like telemetry.\n`
+  }
+
   const isCustomName = agentName.toLowerCase() !== 'versarail ai'
   const identitySection = isCustomName
     ? `You are ${agentName}, an intelligent agentic AI coding assistant powered by VersaRail AI and embedded directly inside the native VersaRail AI desktop harness.
@@ -55,7 +74,7 @@ Identity & Grounding:
 
   return `${identitySection}
 You have native access to inspect, read, create, edit, search files, and run commands in the user's project workspace.
-${personaGuidelines}
+${personaGuidelines}${heroThemeGuidelines}
 ${wsSection}
 Operating System: ${os}
 

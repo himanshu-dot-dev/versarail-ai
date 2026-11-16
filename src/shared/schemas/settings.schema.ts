@@ -36,7 +36,9 @@ export const AgentAppearanceSettingsSchema = z.object({
   agentAvatar: z.string().default('smart_toy'),
   agentPersona: AgentPersonaEnum.default('expert'),
   customPersonaPrompt: z.string().max(2000).default(''),
-  theme: z.enum(['versarail-dark', 'light', 'system']).default('versarail-dark')
+  theme: z.string().default('versarail-dark'),
+  themeVariant: z.string().default(''),
+  atmosphereOpacity: z.number().min(0).max(1).default(0.45)
 })
 
 export type AgentAppearanceSettingsDTO = z.infer<typeof AgentAppearanceSettingsSchema>
@@ -47,7 +49,9 @@ export const DEFAULT_AGENT_APPEARANCE_SETTINGS: AgentAppearanceSettingsDTO = {
   agentAvatar: 'smart_toy',
   agentPersona: 'expert',
   customPersonaPrompt: '',
-  theme: 'versarail-dark'
+  theme: 'versarail-dark',
+  themeVariant: '',
+  atmosphereOpacity: 0.45
 }
 
 export const GlobalSettingsSchema = z.object({
@@ -55,7 +59,7 @@ export const GlobalSettingsSchema = z.object({
   appearance: AgentAppearanceSettingsSchema.default({}),
   defaultModel: z.string().default('gemini-3.5-flash'),
   temperature: z.number().min(0).max(2).default(0.7),
-  theme: z.enum(['versarail-dark', 'light', 'system']).default('versarail-dark')
+  theme: z.string().default('versarail-dark')
 })
 
 export type GlobalSettingsDTO = z.infer<typeof GlobalSettingsSchema>

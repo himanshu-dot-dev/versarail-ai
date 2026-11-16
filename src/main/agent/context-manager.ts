@@ -5,7 +5,11 @@
  */
 
 import { SqliteDatabase } from '../storage/sqlite-database'
-import { PrivacySettingsDTO, AgentAppearanceSettingsDTO } from '@shared/schemas/settings.schema'
+import {
+  PrivacySettingsDTO,
+  AgentAppearanceSettingsDTO,
+  DEFAULT_AGENT_APPEARANCE_SETTINGS
+} from '@shared/schemas/settings.schema'
 import { DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export interface ContextMessage {
@@ -272,14 +276,7 @@ export class ContextManager {
    * Loads global agent appearance and identity settings from SQLite settings table.
    */
   public getAppearanceSettings(): AgentAppearanceSettingsDTO {
-    const defaults: AgentAppearanceSettingsDTO = {
-      agentName: 'AI Agent',
-      userName: 'You',
-      agentAvatar: 'smart_toy',
-      agentPersona: 'expert',
-      customPersonaPrompt: '',
-      theme: 'versarail-dark'
-    }
+    const defaults = { ...DEFAULT_AGENT_APPEARANCE_SETTINGS }
 
     try {
       const row = this.db
