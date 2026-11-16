@@ -885,7 +885,10 @@ export const ChatView: React.FC = () => {
     loadConversationMessages,
     sendChatPrompt,
     cancelChatRun,
-    dismissFailoverNotice
+    dismissFailoverNotice,
+    agentName,
+    userName,
+    agentAvatar
   } = useUiStore()
 
   const activeConv = conversations.find((c) => c.id === activeConversationId)
@@ -997,16 +1000,16 @@ export const ChatView: React.FC = () => {
                   className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-outline-variant ${isUser ? 'bg-surface-container-high' : 'bg-primary text-on-primary shadow-sm'
                     }`}
                 >
-                  <Icon name={isUser ? 'person' : 'smart_toy'} size={18} />
+                  <Icon name={isUser ? 'person' : agentAvatar} size={18} />
                 </div>
 
                 <div className="flex flex-col gap-space-xs flex-1 min-w-0 select-text">
                   <div className="flex items-center gap-space-sm select-none">
                     <span className="font-headline-sm text-on-surface font-semibold text-xs">
-                      {isUser ? 'You' : 'AI Agent'}
+                      {isUser ? userName : agentName}
                     </span>
                     <span className="text-[10px] text-on-surface-variant font-mono">{msg.time}</span>
-                    {!isUser && msg.model && msg.model !== 'AI Agent' && (
+                    {!isUser && msg.model && msg.model !== agentName && (
                       <span className="text-[9.5px] text-on-surface-variant/70 font-mono bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/30">
                         {msg.model}
                       </span>

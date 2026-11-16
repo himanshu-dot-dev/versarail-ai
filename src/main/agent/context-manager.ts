@@ -5,7 +5,7 @@
  */
 
 import { SqliteDatabase } from '../storage/sqlite-database'
-import { PrivacySettingsDTO } from '@shared/schemas/settings.schema'
+import { PrivacySettingsDTO, AgentAppearanceSettingsDTO } from '@shared/schemas/settings.schema'
 import { DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export interface ContextMessage {
@@ -261,6 +261,47 @@ export class ContextManager {
     const stmt = this.db.prepare(`
       INSERT INTO settings (key, value_json, updated_at)
       VALUES ('privacy', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value_json = excluded.value_json,
+        updated_at = excluded.updated_at
+    `)
+    stmt.run(JSON.stringify(settings), now)
+  }
+
+  /**
+   * Loads global agent appearance and identity settings from SQLite settings table.
+   */
+  public getAppearanceSettings(): AgentAppearanceSettingsDTO {
+    const defaults: AgentAppearanceSettingsDTO = {
+      agentName: 'AI Agent',
+      userName: 'You',
+      agentAvatar: 'smart_toy',
+      agentPersona: 'expert',
+      customPersonaPrompt: '',
+      theme: 'versarail-dark'
+    }
+
+    try {
+      const row = this.db
+        .prepare(`SELECT value_json FROM settings WHERE key = 'appearance'`)
+        .get() as { value_json: string } | undefined
+
+      if (!row) return defaults
+      const saved = JSON.parse(row.value_json)
+      return { ...defaults, ...saved }
+    } catch {
+      return defaults
+    }
+  }
+
+  /**
+   * Saves global agent appearance and companion settings to SQLite settings table.
+   */
+  public saveAppearanceSettings(settings: AgentAppearanceSettingsDTO): void {
+    const now = new Date().toISOString()
+    const stmt = this.db.prepare(`
+      INSERT INTO settings (key, value_json, updated_at)
+      VALUES ('appearance', ?, ?)
       ON CONFLICT(key) DO UPDATE SET
         value_json = excluded.value_json,
         updated_at = excluded.updated_at

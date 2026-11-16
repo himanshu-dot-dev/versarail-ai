@@ -12,7 +12,7 @@ import {
   UnifiedDiffResultDTO,
   ApplyPatchResponseDTO
 } from '../schemas/diff.schema'
-import { PrivacySettingsDTO } from '../schemas/settings.schema'
+import { PrivacySettingsDTO, AgentAppearanceSettingsDTO } from '../schemas/settings.schema'
 
 export interface FailoverEventDTO {
   runId?: string
@@ -115,8 +115,10 @@ export interface IElectronApi {
   applyPatch: (request: ApplyPatchRequestDTO) => Promise<ApplyPatchResponseDTO>
 
   // Settings & Privacy
-  getSettings: () => Promise<{ privacy: PrivacySettingsDTO }>
-  saveSettings: (settings: PrivacySettingsDTO) => Promise<{ success: boolean; error?: string }>
+  getSettings: () => Promise<{ privacy: PrivacySettingsDTO; appearance?: AgentAppearanceSettingsDTO }>
+  saveSettings: (
+    settings: { privacy?: PrivacySettingsDTO; appearance?: AgentAppearanceSettingsDTO } | PrivacySettingsDTO
+  ) => Promise<{ success: boolean; error?: string }>
   purgeData: (retentionDays?: number) => Promise<{ success: boolean; purgedConversations: number }>
 
   // Per-Provider Token Calculator

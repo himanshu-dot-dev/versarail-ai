@@ -5,7 +5,17 @@
  * role, tools, active workspace directory, operating system, and security permissions.
  */
 
-export function buildAgentSystemPrompt(workspacePath?: string | null): string {
+export interface AgentSystemPromptOptions {
+  agentName?: string
+  userName?: string
+  agentPersona?: string
+  customPersonaPrompt?: string
+}
+
+export function buildAgentSystemPrompt(
+  workspacePath?: string | null,
+  options?: AgentSystemPromptOptions
+): string {
   const os =
     process.platform === 'win32'
       ? 'Windows'
@@ -17,9 +27,35 @@ export function buildAgentSystemPrompt(workspacePath?: string | null): string {
     ? `Active Project Workspace: ${workspacePath}`
     : `Active Project Workspace: None opened. If the user asks about project files or to modify code, politely advise them to open a project folder via "Open Folder" in the top bar.`
 
-  return `You are VersaRail AI, an intelligent agentic AI coding assistant embedded directly inside a native desktop AI harness.
-You have native access to inspect, read, create, edit, search files, and run commands in the user's project workspace.
+  const agentName = options?.agentName?.trim() || 'VersaRail AI'
+  const userName = options?.userName?.trim() || 'the user'
+  const persona = options?.agentPersona || 'expert'
+  const customPrompt = options?.customPersonaPrompt?.trim()
 
+  let personaGuidelines = ''
+  if (customPrompt) {
+    personaGuidelines = `\nCustom Persona & Instructions:\n${customPrompt}\n`
+  } else if (persona === 'concise') {
+    personaGuidelines = `\nPersona: Ultra-Concise & Direct Pair Programmer. Keep narrative minimal, prioritize immediate code diffs and concrete execution, and avoid filler commentary.\n`
+  } else if (persona === 'security') {
+    personaGuidelines = `\nPersona: Hardened Security Engineer. Scrutinize potential vulnerabilities, validate path boundaries, enforce least privilege, and verify diff safety.\n`
+  } else if (persona === 'friendly') {
+    personaGuidelines = `\nPersona: Helpful & Encouraging Coding Mentor. Explain architectural decisions clearly, offer best practice tips, and guide ${userName} step-by-step.\n`
+  } else {
+    personaGuidelines = `\nPersona: Senior Full-Stack Software Architect. Deliver robust, clean, and idiomatic production code.\n`
+  }
+
+  const isCustomName = agentName.toLowerCase() !== 'versarail ai'
+  const identitySection = isCustomName
+    ? `You are ${agentName}, an intelligent agentic AI coding assistant powered by VersaRail AI and embedded directly inside the native VersaRail AI desktop harness.
+Identity & Grounding:
+- Core Platform & Identity: You are VersaRail AI. Never discard or lose your identity as VersaRail AI. If asked about your underlying platform, architecture, or origin, you are VersaRail AI.
+- Custom Name & Call Sign: The user (${userName}) has designated your display name as "${agentName}". Treat yourself as "${agentName}" in your conversational interactions, seamlessly adopting this name while retaining your foundational VersaRail AI identity and capabilities.`
+    : `You are VersaRail AI, an intelligent agentic AI coding assistant embedded directly inside the native VersaRail AI desktop harness.`
+
+  return `${identitySection}
+You have native access to inspect, read, create, edit, search files, and run commands in the user's project workspace.
+${personaGuidelines}
 ${wsSection}
 Operating System: ${os}
 
@@ -56,4 +92,3 @@ Rules & Behavior:
      [Official Event Page](https://...) - Event schedule, venue, and fight card details
    - Formatting Preference: Only use Markdown tables for compact, concise tabular comparisons (e.g. version matrices or 2-3 short columns). For detailed feature breakdowns or explanations, prefer structured bullet points and bold headers instead of cramming multi-sentence paragraphs into wide table cells.`
 }
-

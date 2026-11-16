@@ -16,7 +16,7 @@ interface ModelItem {
 
 export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled = false }) => {
   const [prompt, setPrompt] = useState('')
-  const { connectedModel, setConnectedModel, workspace, setActiveView, activeView } = useUiStore()
+  const { connectedModel, setConnectedModel, workspace, setActiveView, activeView, agentName } = useUiStore()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Mention Picker State (@file)
@@ -354,7 +354,7 @@ export const PromptComposer: React.FC<PromptComposerProps> = ({ onSend, disabled
           className="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/70 resize-none focus:outline-none text-body-lg min-h-[44px]"
           placeholder={
             isAutoModeActive
-              ? 'Ask AI Agent to modify code, run tests, or type @ to mention files... (Enter to send)'
+              ? `Ask ${agentName} to modify code, run tests, or type @ to mention files... (Enter to send)`
               : `Ask ${connectedModel.name} to modify code, run tests, or type @ to mention files... (Enter to send)`
           }
           rows={2}

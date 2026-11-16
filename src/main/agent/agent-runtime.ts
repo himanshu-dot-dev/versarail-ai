@@ -176,8 +176,9 @@ export class AgentRuntime {
     // Resolve active workspace either from prompt options or the native WorkspaceService
     const effectiveWorkspace = options.workspacePath || WorkspaceService.getInstance().getWorkspaceRoot()
 
-    // Prepend or refresh Agent System Prompt with active workspace context
-    const systemPrompt = buildAgentSystemPrompt(effectiveWorkspace)
+    // Prepend or refresh Agent System Prompt with active workspace context and custom persona
+    const appearance = contextManager.getAppearanceSettings()
+    const systemPrompt = buildAgentSystemPrompt(effectiveWorkspace, appearance)
     let contextMessages = [...budgeted.messages]
     if (contextMessages.length === 0 || contextMessages[0].role !== 'system') {
       contextMessages.unshift({

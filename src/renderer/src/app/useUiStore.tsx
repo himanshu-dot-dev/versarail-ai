@@ -28,6 +28,8 @@ export type ViewId =
 
 export type ThemeMode = 'versarail-dark' | 'light' | 'system'
 
+export type AgentPersonaType = 'expert' | 'concise' | 'security' | 'friendly' | 'custom'
+
 export interface WorkspaceInfo {
   path: string | null
   name: string | null
@@ -109,6 +111,18 @@ export interface UiState {
   showConfirm: (options: DialogOptions | string) => Promise<boolean>
   showAlert: (options: DialogOptions | string) => Promise<void>
   closeDialog: (confirmed: boolean) => void
+
+  // Agent Identity & Appearance Customization
+  agentName: string
+  setAgentName: (name: string) => void
+  userName: string
+  setUserName: (name: string) => void
+  agentAvatar: string
+  setAgentAvatar: (avatar: string) => void
+  agentPersona: AgentPersonaType
+  setAgentPersona: (persona: AgentPersonaType) => void
+  customPersonaPrompt: string
+  setCustomPersonaPrompt: (prompt: string) => void
 }
 
 const UiContext = createContext<UiState | undefined>(undefined)
@@ -199,6 +213,60 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   useEffect(() => {
     workspacePathRef.current = workspace.path
   }, [workspace.path])
+
+  // Agent Appearance & Customization State
+  const [agentName, setAgentNameState] = useState<string>(() => {
+    return localStorage.getItem('versarail_agent_name') || 'AI Agent'
+  })
+  const [userName, setUserNameState] = useState<string>(() => {
+    return localStorage.getItem('versarail_user_name') || 'You'
+  })
+  const [agentAvatar, setAgentAvatarState] = useState<string>(() => {
+    return localStorage.getItem('versarail_agent_avatar') || 'smart_toy'
+  })
+  const [agentPersona, setAgentPersonaState] = useState<AgentPersonaType>(() => {
+    return (localStorage.getItem('versarail_agent_persona') as AgentPersonaType) || 'expert'
+  })
+  const [customPersonaPrompt, setCustomPersonaPromptState] = useState<string>(() => {
+    return localStorage.getItem('versarail_custom_persona_prompt') || ''
+  })
+
+  const setAgentName = (name: string) => {
+    setAgentNameState(name)
+    localStorage.setItem('versarail_agent_name', name)
+  }
+  const setUserName = (name: string) => {
+    setUserNameState(name)
+    localStorage.setItem('versarail_user_name', name)
+  }
+  const setAgentAvatar = (avatar: string) => {
+    setAgentAvatarState(avatar)
+    localStorage.setItem('versarail_agent_avatar', avatar)
+  }
+  const setAgentPersona = (persona: AgentPersonaType) => {
+    setAgentPersonaState(persona)
+    localStorage.setItem('versarail_agent_persona', persona)
+  }
+  const setCustomPersonaPrompt = (prompt: string) => {
+    setCustomPersonaPromptState(prompt)
+    localStorage.setItem('versarail_custom_persona_prompt', prompt)
+  }
+
+  // Hydrate settings from backend SQLite on mount
+  useEffect(() => {
+    if (window.electronApi?.getSettings) {
+      window.electronApi.getSettings().then((res: any) => {
+        if (res?.appearance) {
+          const app = res.appearance
+          if (app.agentName) setAgentNameState(app.agentName)
+          if (app.userName) setUserNameState(app.userName)
+          if (app.agentAvatar) setAgentAvatarState(app.agentAvatar)
+          if (app.agentPersona) setAgentPersonaState(app.agentPersona)
+          if (app.customPersonaPrompt !== undefined) setCustomPersonaPromptState(app.customPersonaPrompt)
+        }
+      }).catch(console.error)
+    }
+  }, [])
 
   const updateStreamingState = useCallback((convId: string, isStreaming: boolean) => {
     const next = { ...streamingByConvRef.current, [convId]: isStreaming }
@@ -819,7 +887,17 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     dialogState,
     showConfirm,
     showAlert,
-    closeDialog
+    closeDialog,
+    agentName,
+    setAgentName,
+    userName,
+    setUserName,
+    agentAvatar,
+    setAgentAvatar,
+    agentPersona,
+    setAgentPersona,
+    customPersonaPrompt,
+    setCustomPersonaPrompt
   }
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>

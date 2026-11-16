@@ -32,6 +32,23 @@ describe('Agent Harness System Prompt & Tool Calling Loop', () => {
     expect(prompt).toContain('Active Project Workspace: None opened')
   })
 
+  it('preserves VersaRail AI identity even when custom agent name and persona are configured', () => {
+    const prompt = buildAgentSystemPrompt('/home/user/project', {
+      agentName: 'Jarvis',
+      userName: 'Himanshu',
+      agentPersona: 'concise',
+      customPersonaPrompt: 'Always explain memory layout.'
+    })
+
+    // Must preserve VersaRail AI platform identity
+    expect(prompt).toContain('VersaRail AI')
+    expect(prompt).toContain('Never discard or lose your identity as VersaRail AI')
+    // Must also reflect custom agent name, user name, and custom persona
+    expect(prompt).toContain('Jarvis')
+    expect(prompt).toContain('Himanshu')
+    expect(prompt).toContain('Always explain memory layout.')
+  })
+
   it('declares all 5 CRUD tool definitions for OpenAI wire format', () => {
     const toolNames = BUILTIN_TOOL_DEFINITIONS.map((t) => t.function.name)
     expect(toolNames).toContain('read_file')

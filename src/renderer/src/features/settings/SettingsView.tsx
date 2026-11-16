@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { ProviderIcon } from '../../components/common/ProviderIcon'
-import { useUiStore } from '../../app/useUiStore'
+import { useUiStore, AgentPersonaType } from '../../app/useUiStore'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 
 export const SettingsView: React.FC = () => {
-  const { theme, setTheme, showConfirm, showAlert } = useUiStore()
+  const {
+    theme,
+    setTheme,
+    showConfirm,
+    showAlert,
+    agentName,
+    setAgentName,
+    userName,
+    setUserName,
+    agentAvatar,
+    setAgentAvatar,
+    agentPersona,
+    setAgentPersona,
+    customPersonaPrompt,
+    setCustomPersonaPrompt
+  } = useUiStore()
 
   const [activeCategory, setActiveCategory] = useState<'appearance' | 'privacy'>('appearance')
 
@@ -39,12 +54,22 @@ export const SettingsView: React.FC = () => {
   const handleSave = async () => {
     if (window.electronApi?.saveSettings) {
       await window.electronApi.saveSettings({
-        allowedProviders,
-        auditRetentionDays,
-        contextWindowBudgetTokens: contextBudgetTokens,
-        autoSummarizeContext: autoSummarize,
-        allowPublicCloud: true,
-        autoRedactSecrets: true
+        privacy: {
+          allowedProviders,
+          auditRetentionDays,
+          contextWindowBudgetTokens: contextBudgetTokens,
+          autoSummarizeContext: autoSummarize,
+          allowPublicCloud: true,
+          autoRedactSecrets: true
+        },
+        appearance: {
+          agentName,
+          userName,
+          agentAvatar,
+          agentPersona,
+          customPersonaPrompt,
+          theme
+        }
       })
     }
     setSavedToast(true)
@@ -188,7 +213,8 @@ export const SettingsView: React.FC = () => {
         <div className="flex-1 p-space-xl overflow-y-auto max-w-4xl flex flex-col gap-space-xl">
           {/* Appearance Section */}
           {activeCategory === 'appearance' && (
-            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+            <>
+              <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
               <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
                 <div>
                   <h2 className="font-headline-lg text-on-surface text-base font-semibold">
@@ -277,9 +303,195 @@ export const SettingsView: React.FC = () => {
                 </div>
               </div>
             </section>
-          )}
 
-          {/* Privacy & Security Section */}
+            {/* AI Agent & User Identity Section */}
+            <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">
+                <div>
+                  <h2 className="font-headline-lg text-on-surface text-base font-semibold">
+                    AI Agent &amp; User Identity
+                  </h2>
+                  <p className="font-body-md text-on-surface-variant text-xs">
+                    Customize the AI Agent's display name, avatar icon, conversational persona, and your username.
+                  </p>
+                </div>
+                <Icon name={agentAvatar} size={24} className="text-primary" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-space-xl text-xs">
+                {/* Agent Name & Preset Shortcuts */}
+                <div className="flex flex-col gap-space-sm">
+                  <label className="font-headline-sm text-on-surface font-medium">
+                    AI Agent Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={agentName}
+                    onChange={(e) => setAgentName(e.target.value)}
+                    placeholder="AI Agent"
+                    maxLength={40}
+                    className="w-full px-space-md py-2 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-sans text-xs focus:outline-none focus:border-primary"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                    <span className="text-[10.5px] text-on-surface-variant font-mono">Presets:</span>
+                    {['AI Agent', 'Jarvis', 'Friday', 'Nova', 'Cipher', 'CodeBuddy'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setAgentName(preset)}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-all ${
+                          agentName === preset
+                            ? 'bg-primary/20 text-primary border-primary/40 font-semibold'
+                            : 'bg-surface-container-high text-on-surface-variant border-outline-variant hover:text-on-surface'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* User Display Name */}
+                <div className="flex flex-col gap-space-sm">
+                  <label className="font-headline-sm text-on-surface font-medium">
+                    Your Display Name
+                  </label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="You"
+                    maxLength={40}
+                    className="w-full px-space-md py-2 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-sans text-xs focus:outline-none focus:border-primary"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                    <span className="text-[10.5px] text-on-surface-variant font-mono">Presets:</span>
+                    {['You', 'Developer', 'Engineer', 'Architect'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setUserName(preset)}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-all ${
+                          userName === preset
+                            ? 'bg-primary/20 text-primary border-primary/40 font-semibold'
+                            : 'bg-surface-container-high text-on-surface-variant border-outline-variant hover:text-on-surface'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Agent Avatar Icon Picker */}
+                <div className="flex flex-col gap-space-sm md:col-span-2">
+                  <label className="font-headline-sm text-on-surface font-medium">
+                    AI Agent Avatar Icon
+                  </label>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                    {[
+                      { id: 'smart_toy', label: 'Bot' },
+                      { id: 'terminal', label: 'Terminal' },
+                      { id: 'bolt', label: 'Lightning' },
+                      { id: 'psychology', label: 'Brain' },
+                      { id: 'code', label: 'Code' },
+                      { id: 'auto_awesome', label: 'Sparkles' },
+                      { id: 'build', label: 'Wrench' },
+                      { id: 'hub', label: 'Chip' }
+                    ].map((iconItem) => (
+                      <button
+                        key={iconItem.id}
+                        type="button"
+                        onClick={() => setAgentAvatar(iconItem.id)}
+                        className={`flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl border transition-all ${
+                          agentAvatar === iconItem.id
+                            ? 'bg-primary/15 border-primary text-primary shadow-sm ring-1 ring-primary/40'
+                            : 'bg-surface-container-low border-outline-variant text-on-surface-variant hover:border-outline hover:text-on-surface'
+                        }`}
+                      >
+                        <Icon name={iconItem.id} size={20} />
+                        <span className="text-[10px] font-mono">{iconItem.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Agent Persona Preset Selector */}
+                <div className="flex flex-col gap-space-sm md:col-span-2">
+                  <label className="font-headline-sm text-on-surface font-medium">
+                    Agent Persona &amp; Tone Preset
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                    {[
+                      {
+                        id: 'expert' as AgentPersonaType,
+                        title: 'Senior Architect',
+                        desc: 'Clean, robust, idiomatic production code'
+                      },
+                      {
+                        id: 'concise' as AgentPersonaType,
+                        title: 'Ultra-Concise',
+                        desc: 'Zero fluff, immediate code diffs and actions'
+                      },
+                      {
+                        id: 'security' as AgentPersonaType,
+                        title: 'Security Auditor',
+                        desc: 'Defensive, path validation, hardened safety'
+                      },
+                      {
+                        id: 'friendly' as AgentPersonaType,
+                        title: 'Coding Mentor',
+                        desc: 'Supportive, educational, clear walkthroughs'
+                      },
+                      {
+                        id: 'custom' as AgentPersonaType,
+                        title: 'Custom Persona',
+                        desc: 'Write custom system grounding instructions'
+                      }
+                    ].map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => setAgentPersona(p.id)}
+                        className={`p-space-md rounded-xl cursor-pointer border transition-all flex flex-col justify-between gap-1.5 ${
+                          agentPersona === p.id
+                            ? 'bg-primary/10 border-primary ring-1 ring-primary/40 text-on-surface'
+                            : 'bg-surface-container-low border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-outline'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-xs text-on-surface">{p.title}</span>
+                          {agentPersona === p.id && (
+                            <Icon name="check_circle" size={14} className="text-primary" />
+                          )}
+                        </div>
+                        <p className="text-[10.5px] leading-tight text-on-surface-variant/80">
+                          {p.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {agentPersona === 'custom' && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      <label className="text-[11px] text-on-surface-variant font-mono">
+                        Custom Persona Grounding Instructions
+                      </label>
+                      <textarea
+                        value={customPersonaPrompt}
+                        onChange={(e) => setCustomPersonaPrompt(e.target.value)}
+                        placeholder="e.g. You are Jarvis, a highly sophisticated AI assistant. You speak in a polite British tone, explain low-level memory implications, and always write TypeScript with strict types..."
+                        rows={3}
+                        className="w-full px-space-md py-2 rounded-lg bg-surface-container-low border border-outline-variant text-on-surface font-sans text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* Privacy & Security Section */}
           {activeCategory === 'privacy' && (
             <section className="flex flex-col gap-space-lg bg-surface-container p-space-xl rounded-xl border border-outline-variant shadow-sm">
               <div className="flex items-center justify-between pb-space-md border-b border-border-subtle">

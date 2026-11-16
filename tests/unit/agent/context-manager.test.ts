@@ -160,4 +160,28 @@ describe('ContextManager - Token Budgeting, Summarization & Privacy Gating', () 
     expect(updated.contextWindowBudgetTokens).toBe(16_000)
     expect(updated.autoSummarizeContext).toBe(false)
   })
+
+  it('persists and retrieves agent appearance and identity settings from SQLite', () => {
+    const initial = contextManager.getAppearanceSettings()
+    expect(initial.agentName).toBe('AI Agent')
+    expect(initial.userName).toBe('You')
+    expect(initial.agentAvatar).toBe('smart_toy')
+    expect(initial.agentPersona).toBe('expert')
+
+    contextManager.saveAppearanceSettings({
+      agentName: 'Jarvis',
+      userName: 'Himanshu',
+      agentAvatar: 'terminal',
+      agentPersona: 'concise',
+      customPersonaPrompt: 'Be extremely direct.',
+      theme: 'versarail-dark'
+    })
+
+    const updated = contextManager.getAppearanceSettings()
+    expect(updated.agentName).toBe('Jarvis')
+    expect(updated.userName).toBe('Himanshu')
+    expect(updated.agentAvatar).toBe('terminal')
+    expect(updated.agentPersona).toBe('concise')
+    expect(updated.customPersonaPrompt).toBe('Be extremely direct.')
+  })
 })
