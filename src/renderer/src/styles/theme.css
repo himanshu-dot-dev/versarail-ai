@@ -258,6 +258,38 @@
 }
 
 /* =====================================================================
+   Insignia Vector Scaling & Sizing Rules
+   ===================================================================== */
+.theme-insignia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.theme-insignia svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: block;
+}
+
+.theme-insignia-watermark {
+  filter: drop-shadow(0 0 35px var(--color-primary));
+}
+
+.theme-atmosphere-container {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* =====================================================================
    Procedural Theme Atmosphere Layers
    ===================================================================== */
 .chat-bg-layer-pattern {
@@ -265,33 +297,36 @@
 }
 
 /* Spider-Man Webbing */
-[data-theme="spiderman"] .chat-bg-layer-pattern {
+[data-theme="spiderman"] .chat-bg-layer-pattern,
+.theme-atmosphere-container[data-theme="spiderman"] .chat-bg-layer-pattern {
   background-image: 
-    radial-gradient(ellipse 800px 180px at 50% 0%, rgba(225, 29, 72, 0.28) 0%, transparent 80%),
-    radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.12) 0%, transparent 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23e11d48' stroke-width='1.2' stroke-opacity='0.25'%3E%3Cpath d='M0 0 L160 160 M160 0 L0 160 M80 0 L80 160 M0 80 L160 80' /%3E%3Cpath d='M80 0 Q120 40 160 80 Q120 120 80 160 Q40 120 0 80 Q40 40 80 0 Z' stroke='%232563eb' stroke-opacity='0.22' /%3E%3Cpath d='M80 20 Q110 50 140 80 Q110 110 80 140 Q50 110 20 80 Q50 50 80 20 Z' /%3E%3Cpath d='M80 40 Q100 60 120 80 Q100 100 80 120 Q60 100 40 80 Q60 60 80 40 Z' stroke='%232563eb' stroke-opacity='0.22' /%3E%3Cpath d='M80 60 Q90 70 100 80 Q90 90 80 100 Q70 90 60 80 Q70 70 80 60 Z' /%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(ellipse 900px 240px at 50% 0%, rgba(225, 29, 72, 0.45) 0%, transparent 80%),
+    radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.25) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%23e11d48' stroke-width='1.5' stroke-opacity='0.65'%3E%3Cpath d='M0 0 L160 160 M160 0 L0 160 M80 0 L80 160 M0 80 L160 80' /%3E%3Cpath d='M80 0 Q120 40 160 80 Q120 120 80 160 Q40 120 0 80 Q40 40 80 0 Z' stroke='%232563eb' stroke-opacity='0.60' /%3E%3Cpath d='M80 20 Q110 50 140 80 Q110 110 80 140 Q50 110 20 80 Q50 50 80 20 Z' /%3E%3Cpath d='M80 40 Q100 60 120 80 Q100 100 80 120 Q60 100 40 80 Q60 60 80 40 Z' stroke='%232563eb' stroke-opacity='0.60' /%3E%3Cpath d='M80 60 Q90 70 100 80 Q90 90 80 100 Q70 90 60 80 Q70 70 80 60 Z' /%3E%3C/g%3E%3C/svg%3E");
   background-repeat: no-repeat, no-repeat, repeat;
   background-position: top center, center, center;
   background-size: 100% 100%, 100% 100%, 160px 160px;
 }
 
 /* Batman Gotham Bats & Spotlight */
-[data-theme="batman"] .chat-bg-layer-pattern {
+[data-theme="batman"] .chat-bg-layer-pattern,
+.theme-atmosphere-container[data-theme="batman"] .chat-bg-layer-pattern {
   background-image: 
-    radial-gradient(ellipse 750px 420px at 50% 0%, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 80%),
-    radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.85) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='%23f59e0b' fill-opacity='0.16'%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(20, 20) scale(0.65)' /%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(150, 110) scale(0.42) rotate(15)' /%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(60, 170) scale(0.32) rotate(-12)' /%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(ellipse 850px 480px at 50% 0%, rgba(245, 158, 11, 0.40) 0%, rgba(245, 158, 11, 0.15) 50%, transparent 80%),
+    radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.90) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='%23f59e0b' fill-opacity='0.55'%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(20, 20) scale(0.70)' /%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(150, 110) scale(0.48) rotate(15)' /%3E%3Cpath d='M70,30 C60,25 45,28 35,38 C28,34 18,36 12,42 C16,46 22,48 26,46 C32,54 44,58 52,54 C58,62 70,64 78,56 C74,50 72,40 70,30 Z M70,30 C80,25 95,28 105,38 C112,34 122,36 128,42 C124,46 118,48 114,46 C108,54 96,58 88,54 C82,62 70,64 62,56 C66,50 68,40 70,30 Z' transform='translate(60, 170) scale(0.38) rotate(-12)' /%3E%3C/g%3E%3C/svg%3E");
   background-repeat: no-repeat, no-repeat, repeat;
   background-position: top center, center, center;
   background-size: 100% 100%, 100% 100%, 260px 260px;
 }
 
 /* Iron Man Stark HUD & Hex Mesh */
-[data-theme="ironman"] .chat-bg-layer-pattern {
+[data-theme="ironman"] .chat-bg-layer-pattern,
+.theme-atmosphere-container[data-theme="ironman"] .chat-bg-layer-pattern {
   background-image: 
-    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.28) 0%, rgba(220, 38, 38, 0.12) 48%, transparent 75%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%2306b6d4' stroke-width='1' stroke-opacity='0.20'%3E%3Ccircle cx='200' cy='200' r='180' stroke-dasharray='10 6' /%3E%3Ccircle cx='200' cy='200' r='130' stroke='%23eab308' stroke-opacity='0.18' stroke-dasharray='4 8' /%3E%3Ccircle cx='200' cy='200' r='75' /%3E%3Cline x1='20' y1='200' x2='70' y2='200' /%3E%3Cline x1='330' y1='200' x2='380' y2='200' /%3E%3Cline x1='200' y1='20' x2='200' y2='70' /%3E%3Cline x1='200' y1='330' x2='200' y2='380' /%3E%3Cpath d='M30 30 L60 30 M30 30 L30 60' stroke='%2306b6d4' stroke-width='1.5' /%3E%3Cpath d='M370 30 L340 30 M370 30 L370 60' stroke='%2306b6d4' stroke-width='1.5' /%3E%3Cpath d='M30 370 L60 370 M30 370 L30 340' stroke='%2306b6d4' stroke-width='1.5' /%3E%3Cpath d='M370 370 L340 370 M370 370 L370 340' stroke='%2306b6d4' stroke-width='1.5' /%3E%3C/g%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill='none' stroke='%23eab308' stroke-width='0.8' stroke-opacity='0.14'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM1 16.75l12.99 7.5 13-7.5M14 24.25v15' /%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.42) 0%, rgba(220, 38, 38, 0.22) 48%, transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%2306b6d4' stroke-width='1.4' stroke-opacity='0.60'%3E%3Ccircle cx='200' cy='200' r='180' stroke-dasharray='10 6' /%3E%3Ccircle cx='200' cy='200' r='130' stroke='%23eab308' stroke-opacity='0.55' stroke-dasharray='4 8' /%3E%3Ccircle cx='200' cy='200' r='75' /%3E%3Cline x1='20' y1='200' x2='70' y2='200' /%3E%3Cline x1='330' y1='200' x2='380' y2='200' /%3E%3Cline x1='200' y1='20' x2='200' y2='70' /%3E%3Cline x1='200' y1='330' x2='200' y2='380' /%3E%3Cpath d='M30 30 L60 30 M30 30 L30 60' stroke='%2306b6d4' stroke-width='2' /%3E%3Cpath d='M370 30 L340 30 M370 30 L370 60' stroke='%2306b6d4' stroke-width='2' /%3E%3Cpath d='M30 370 L60 370 M30 370 L30 340' stroke='%2306b6d4' stroke-width='2' /%3E%3Cpath d='M370 370 L340 370 M370 370 L370 340' stroke='%2306b6d4' stroke-width='2' /%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill='none' stroke='%23eab308' stroke-width='1' stroke-opacity='0.35'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM1 16.75l12.99 7.5 13-7.5M14 24.25v15' /%3E%3C/g%3E%3C/svg%3E");
   background-repeat: no-repeat, no-repeat, repeat;
   background-position: center, center, center;
   background-size: 100% 100%, 400px 400px, 28px 49px;

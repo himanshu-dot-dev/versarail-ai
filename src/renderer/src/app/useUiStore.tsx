@@ -278,22 +278,6 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     localStorage.setItem('versarail_custom_persona_prompt', prompt)
   }
 
-  // Hydrate settings from backend SQLite on mount
-  useEffect(() => {
-    if (window.electronApi?.getSettings) {
-      window.electronApi.getSettings().then((res: any) => {
-        if (res?.appearance) {
-          const app = res.appearance
-          if (app.agentName) setAgentNameState(app.agentName)
-          if (app.userName) setUserNameState(app.userName)
-          if (app.agentAvatar) setAgentAvatarState(app.agentAvatar)
-          if (app.agentPersona) setAgentPersonaState(app.agentPersona)
-          if (app.customPersonaPrompt !== undefined) setCustomPersonaPromptState(app.customPersonaPrompt)
-        }
-      }).catch(console.error)
-    }
-  }, [])
-
   const updateStreamingState = useCallback((convId: string, isStreaming: boolean) => {
     const next = { ...streamingByConvRef.current, [convId]: isStreaming }
     streamingByConvRef.current = next
@@ -715,55 +699,105 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const setThemeVariant = useCallback((variant: string) => {
     setThemeVariantState(variant)
     localStorage.setItem('versarail_theme_variant', variant)
+
+    if (window.electronApi?.saveSettings) {
+      window.electronApi
+        .saveSettings({
+          appearance: {
+            agentName: localStorage.getItem('versarail_agent_name') || 'AI Agent',
+            userName: localStorage.getItem('versarail_user_name') || 'You',
+            agentAvatar: localStorage.getItem('versarail_agent_avatar') || 'smart_toy',
+            agentPersona: (localStorage.getItem('versarail_agent_persona') as any) || 'expert',
+            customPersonaPrompt: localStorage.getItem('versarail_custom_persona_prompt') || '',
+            theme: (localStorage.getItem('versarail_theme') as any) || 'versarail-dark',
+            themeVariant: variant,
+            atmosphereOpacity: parseFloat(localStorage.getItem('versarail_atmosphere_opacity') || '0.45')
+          }
+        })
+        .catch(console.error)
+    }
   }, [])
 
   const setAtmosphereOpacity = useCallback((opacity: number) => {
     setAtmosphereOpacityState(opacity)
     localStorage.setItem('versarail_atmosphere_opacity', String(opacity))
     document.documentElement.style.setProperty('--effect-opacity', String(opacity))
-    document.documentElement.style.setProperty('--watermark-opacity', String(opacity * 0.45))
+    document.documentElement.style.setProperty('--watermark-opacity', String(opacity * 0.90))
+
+    if (window.electronApi?.saveSettings) {
+      window.electronApi
+        .saveSettings({
+          appearance: {
+            agentName: localStorage.getItem('versarail_agent_name') || 'AI Agent',
+            userName: localStorage.getItem('versarail_user_name') || 'You',
+            agentAvatar: localStorage.getItem('versarail_agent_avatar') || 'smart_toy',
+            agentPersona: (localStorage.getItem('versarail_agent_persona') as any) || 'expert',
+            customPersonaPrompt: localStorage.getItem('versarail_custom_persona_prompt') || '',
+            theme: (localStorage.getItem('versarail_theme') as any) || 'versarail-dark',
+            themeVariant: localStorage.getItem('versarail_theme_variant') || '',
+            atmosphereOpacity: opacity
+          }
+        })
+        .catch(console.error)
+    }
   }, [])
 
   // Sync theme attribute on document root
-  const setTheme = useCallback(
-    (newTheme: ThemeMode) => {
-      setThemeState(newTheme)
-      localStorage.setItem('versarail_theme', newTheme)
+  const setTheme = useCallback((newTheme: ThemeMode) => {
+    setThemeState(newTheme)
+    localStorage.setItem('versarail_theme', newTheme)
 
-      // Automatically set default variant if switching to a character theme without a valid variant
-      const themeDef = themeRegistry.get(newTheme)
-      if (themeDef && themeDef.insignias && themeDef.insignias.length > 0) {
-        const defaultVariant = themeRegistry.getDefaultInsignia(newTheme)
-        if (defaultVariant) {
-          setThemeVariantState(defaultVariant.id)
-          localStorage.setItem('versarail_theme_variant', defaultVariant.id)
-        }
+    let activeVariant = localStorage.getItem('versarail_theme_variant') || ''
+    const themeDef = themeRegistry.get(newTheme)
+    if (themeDef && themeDef.insignias && themeDef.insignias.length > 0) {
+      const defaultVariant = themeRegistry.getDefaultInsignia(newTheme)
+      if (defaultVariant && (!activeVariant || !themeDef.insignias.some((i) => i.id === activeVariant))) {
+        activeVariant = defaultVariant.id
+        setThemeVariantState(defaultVariant.id)
+        localStorage.setItem('versarail_theme_variant', defaultVariant.id)
       }
+    }
 
-      const isLight =
-        newTheme === 'light' ||
-        (newTheme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const isLight =
+      newTheme === 'light' ||
+      (newTheme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)
 
-      if (newTheme === 'system') {
-        document.documentElement.dataset.theme = isLight ? 'light' : 'versarail-dark'
-      } else {
-        document.documentElement.dataset.theme = newTheme
-      }
+    if (newTheme === 'system') {
+      document.documentElement.dataset.theme = isLight ? 'light' : 'versarail-dark'
+    } else {
+      document.documentElement.dataset.theme = newTheme
+    }
 
-      if (isLight) {
-        document.documentElement.classList.remove('dark')
-      } else {
-        document.documentElement.classList.add('dark')
-      }
+    if (isLight) {
+      document.documentElement.classList.remove('dark')
+    } else {
+      document.documentElement.classList.add('dark')
+    }
 
-      document.documentElement.style.setProperty('--effect-opacity', String(atmosphereOpacity))
-      document.documentElement.style.setProperty(
-        '--watermark-opacity',
-        String(atmosphereOpacity * 0.45)
-      )
-    },
-    [atmosphereOpacity]
-  )
+    const curOpacity = parseFloat(localStorage.getItem('versarail_atmosphere_opacity') || '0.45')
+    document.documentElement.style.setProperty('--effect-opacity', String(curOpacity))
+    document.documentElement.style.setProperty(
+      '--watermark-opacity',
+      String(curOpacity * 0.90)
+    )
+
+    if (window.electronApi?.saveSettings) {
+      window.electronApi
+        .saveSettings({
+          appearance: {
+            agentName: localStorage.getItem('versarail_agent_name') || 'AI Agent',
+            userName: localStorage.getItem('versarail_user_name') || 'You',
+            agentAvatar: localStorage.getItem('versarail_agent_avatar') || 'smart_toy',
+            agentPersona: (localStorage.getItem('versarail_agent_persona') as any) || 'expert',
+            customPersonaPrompt: localStorage.getItem('versarail_custom_persona_prompt') || '',
+            theme: newTheme,
+            themeVariant: activeVariant,
+            atmosphereOpacity: curOpacity
+          }
+        })
+        .catch(console.error)
+    }
+  }, [])
 
   useEffect(() => {
     setTheme(theme)
@@ -773,6 +807,26 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         .then((res: any) => {
           if (res?.appearance) {
             const app = res.appearance
+            if (app.agentName) {
+              setAgentNameState(app.agentName)
+              localStorage.setItem('versarail_agent_name', app.agentName)
+            }
+            if (app.userName) {
+              setUserNameState(app.userName)
+              localStorage.setItem('versarail_user_name', app.userName)
+            }
+            if (app.agentAvatar) {
+              setAgentAvatarState(app.agentAvatar)
+              localStorage.setItem('versarail_agent_avatar', app.agentAvatar)
+            }
+            if (app.agentPersona) {
+              setAgentPersonaState(app.agentPersona)
+              localStorage.setItem('versarail_agent_persona', app.agentPersona)
+            }
+            if (app.customPersonaPrompt !== undefined) {
+              setCustomPersonaPromptState(app.customPersonaPrompt)
+              localStorage.setItem('versarail_custom_persona_prompt', app.customPersonaPrompt)
+            }
             if (app.theme && app.theme !== theme) {
               setTheme(app.theme)
             }

@@ -8,6 +8,7 @@ interface ThemeAtmosphereLayerProps {
   opacity?: number
   showWatermark?: boolean
   className?: string
+  watermarkSize?: number | string
 }
 
 export const ThemeAtmosphereLayer: React.FC<ThemeAtmosphereLayerProps> = ({
@@ -15,7 +16,8 @@ export const ThemeAtmosphereLayer: React.FC<ThemeAtmosphereLayerProps> = ({
   variantId,
   opacity = 0.45,
   showWatermark = true,
-  className = ''
+  className = '',
+  watermarkSize
 }) => {
   const isCharacter = themeRegistry.isCharacterTheme(themeId)
 
@@ -23,16 +25,18 @@ export const ThemeAtmosphereLayer: React.FC<ThemeAtmosphereLayerProps> = ({
     return null
   }
 
-  const watermarkOpacity = opacity * 0.45
+  // Watermark scales directly with the atmosphere opacity setting for high dynamic range
+  const watermarkOpacity = Math.min(1, Math.max(0.06, opacity * 0.90))
 
   return (
     <div
+      data-theme={themeId}
       className={`theme-atmosphere-container pointer-events-none absolute inset-0 z-0 overflow-hidden select-none ${className}`}
       aria-hidden="true"
     >
       {/* Layer 1: Procedural Background Pattern (Web, Bats, HUD) */}
       <div
-        className="chat-bg-layer-pattern absolute inset-0 transition-opacity duration-300"
+        className="chat-bg-layer-pattern absolute inset-0 transition-opacity duration-200"
         style={{
           opacity: opacity
         }}
@@ -41,12 +45,17 @@ export const ThemeAtmosphereLayer: React.FC<ThemeAtmosphereLayerProps> = ({
       {/* Layer 2: Center Insignia Watermark */}
       {showWatermark && (
         <div
-          className="chat-bg-watermark absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300"
+          className="chat-bg-watermark absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-200 pointer-events-none flex items-center justify-center"
           style={{
             opacity: watermarkOpacity
           }}
         >
-          <ThemeInsignia themeId={themeId} variantId={variantId} mode="watermark" />
+          <ThemeInsignia
+            themeId={themeId}
+            variantId={variantId}
+            mode="watermark"
+            size={watermarkSize}
+          />
         </div>
       )}
     </div>

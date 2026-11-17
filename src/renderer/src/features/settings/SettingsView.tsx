@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Icon from '../../components/common/Icon'
 import { ProviderIcon } from '../../components/common/ProviderIcon'
 import { useUiStore, AgentPersonaType } from '../../app/useUiStore'
-import { themeRegistry, ThemeInsignia, ThemeVariantSelector } from '../../themes'
+import { themeRegistry, ThemeInsignia, ThemeVariantSelector, ThemeAtmosphereLayer } from '../../themes'
 import { ALL_SUPPORTED_PROVIDERS, DEFAULT_ALLOWED_PROVIDERS } from '@shared/schemas/provider.schema'
 import {
   DEFAULT_PRIVACY_SETTINGS,
@@ -542,6 +542,38 @@ export const SettingsView: React.FC = () => {
                         selectedVariantId={themeVariant}
                         onSelectVariant={setThemeVariant}
                       />
+
+                      {/* Live Interactive Atmosphere Preview Box */}
+                      <div className="relative h-44 rounded-xl border border-primary/30 overflow-hidden bg-surface flex flex-col justify-between p-3.5 shadow-inner select-none">
+                        {/* Live Theme Atmosphere Layer */}
+                        <ThemeAtmosphereLayer
+                          themeId={theme}
+                          variantId={themeVariant}
+                          opacity={atmosphereOpacity}
+                          watermarkSize={150}
+                        />
+
+                        {/* Top Overlay Badge */}
+                        <div className="flex items-center justify-between z-1 relative">
+                          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-surface-container/90 backdrop-blur-md border border-outline-variant/60 shadow-xs">
+                            <ThemeInsignia themeId={theme} variantId={themeVariant} mode="avatar" size={16} />
+                            <span className="text-xs font-semibold text-on-surface">
+                              {themeRegistry.get(theme).name} Live Atmosphere
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">
+                            Live Preview • {Math.round(atmosphereOpacity * 100)}%
+                          </span>
+                        </div>
+
+                        {/* Bottom Overlay Hint */}
+                        <div className="z-1 relative flex items-center justify-between text-[11px] text-on-surface-variant bg-surface-container/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant/50">
+                          <span>Real-time vector pattern + centered watermark</span>
+                          <span className="font-mono text-[10px] text-primary font-semibold">
+                            {themeRegistry.getInsignia(theme, themeVariant)?.label || 'Active Insignia'}
+                          </span>
+                        </div>
+                      </div>
 
                       {/* Atmosphere & Watermark Intensity Slider */}
                       <div className="flex flex-col gap-2 pt-2 border-t border-border-subtle">

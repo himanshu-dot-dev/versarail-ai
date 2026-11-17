@@ -1106,7 +1106,13 @@ export const ChatView: React.FC = () => {
 
                   <div
                     className={`text-body-md text-on-surface p-space-lg rounded-xl border border-outline-variant shadow-sm leading-relaxed text-xs select-text cursor-text ${
-                      isUser ? 'bg-surface-container-lowest' : 'bg-surface-container'
+                      isUser
+                        ? isHeroTheme
+                          ? 'bg-surface-container-lowest/80 backdrop-blur-md'
+                          : 'bg-surface-container-lowest'
+                        : isHeroTheme
+                          ? 'bg-surface-container/85 backdrop-blur-md border-primary/20'
+                          : 'bg-surface-container'
                     } ${msg.error ? 'border-error/40 text-error' : ''}`}
                   >
                     {!isUser && msg.text && <TodoDock content={msg.text} />}
