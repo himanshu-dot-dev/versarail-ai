@@ -1,5 +1,6 @@
 import React from 'react'
 import { ThemeInsignia } from './ThemeInsignia'
+import { ThemeAtmosphereCanvas } from './ThemeAtmosphereCanvas'
 import { themeRegistry } from '../registry'
 
 interface ThemeAtmosphereLayerProps {
@@ -34,12 +35,10 @@ export const ThemeAtmosphereLayer: React.FC<ThemeAtmosphereLayerProps> = ({
       className={`theme-atmosphere-container pointer-events-none absolute inset-0 z-0 overflow-hidden select-none ${className}`}
       aria-hidden="true"
     >
-      {/* Layer 1: Procedural Background Pattern (Web, Bats, HUD) */}
-      <div
-        className="chat-bg-layer-pattern absolute inset-0 transition-opacity duration-200"
-        style={{
-          opacity: opacity
-        }}
+      {/* Layer 1: Living Real-Time Canvas Atmosphere (Web & Hanging Spiders, Flocking Bats, Stark HUD) */}
+      <ThemeAtmosphereCanvas
+        themeId={themeId}
+        opacity={opacity}
       />
 
       {/* Layer 2: Center Insignia Watermark */}

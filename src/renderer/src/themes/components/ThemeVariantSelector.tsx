@@ -2,19 +2,25 @@ import React from 'react'
 import { themeRegistry } from '../registry'
 
 interface ThemeVariantSelectorProps {
-  themeId: string
-  activeVariantId: string
+  themeId?: string
+  selectedThemeId?: string
+  activeVariantId?: string
+  selectedVariantId?: string
   onSelectVariant: (variantId: string) => void
   className?: string
 }
 
 export const ThemeVariantSelector: React.FC<ThemeVariantSelectorProps> = ({
   themeId,
+  selectedThemeId,
   activeVariantId,
+  selectedVariantId,
   onSelectVariant,
   className = ''
 }) => {
-  const theme = themeRegistry.get(themeId)
+  const resolvedThemeId = themeId || selectedThemeId || ''
+  const resolvedVariantId = activeVariantId || selectedVariantId || ''
+  const theme = themeRegistry.get(resolvedThemeId)
   if (!theme || !theme.insignias || theme.insignias.length <= 1) {
     return null
   }
@@ -25,7 +31,7 @@ export const ThemeVariantSelector: React.FC<ThemeVariantSelectorProps> = ({
       <div className="flex items-center gap-1.5 flex-wrap">
         {theme.insignias.map((variant) => {
           const isActive =
-            variant.id === activeVariantId || (!activeVariantId && variant.isDefault)
+            variant.id === resolvedVariantId || (!resolvedVariantId && variant.isDefault)
           return (
             <button
               key={variant.id}

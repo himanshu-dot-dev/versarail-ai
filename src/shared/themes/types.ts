@@ -22,6 +22,8 @@ export interface ThemeColorTokens {
   surfaceDim: string
   surfaceBright: string
   surfaceContainer: string
+  surfaceContainerLowest?: string
+  surfaceContainerHighest?: string
   onSurface: string
   onSurfaceVariant: string
   outline: string
@@ -46,6 +48,8 @@ export interface ThemePersonaDef {
   personaTitle: string
   personaDescription: string
   systemPromptAddendum: string
+  codename?: string
+  tagline?: string
 }
 
 export interface ThemeAtmosphereRenderer {

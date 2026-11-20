@@ -17,4 +17,6 @@ export * from './types'
 export { themeRegistry }
 export { ThemeInsignia } from './components/ThemeInsignia'
 export { ThemeAtmosphereLayer } from './components/ThemeAtmosphereLayer'
+export { ThemeAtmosphereCanvas } from './components/ThemeAtmosphereCanvas'
 export { ThemeVariantSelector } from './components/ThemeVariantSelector'
+export * from './atmospheres'
